@@ -125,6 +125,7 @@
     .cal-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
     .cal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; padding: 1rem; }
     .cal-month { background: var(--card-header); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; }
+    .cal-month.current { border-color: #facc15; box-shadow: 0 0 0 1px #facc15; }
     .cal-month-title { font-weight: 700; text-align: center; margin-bottom: 0.4rem; font-size: 0.95rem; }
     .cal-weekdays, .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
     .cal-weekdays span { text-align: center; font-size: 0.65rem; color: var(--text-muted); font-weight: 600; padding-bottom: 2px; }
@@ -203,8 +204,8 @@
     </div>
 
     <div class="nav-tabs">
-      <button class="nav-tab" onclick="switchTab('kalender')">📆 Kalender</button>
-      <button class="nav-tab active" onclick="switchTab('dashboard')">📊 Übersicht</button>
+      <button class="nav-tab active" onclick="switchTab('kalender')">📆 Kalender</button>
+      <button class="nav-tab" onclick="switchTab('dashboard')">📊 Übersicht</button>
       <button class="nav-tab" onclick="switchTab('dienste')">📅 Dienstbuch</button>
       <button class="nav-tab" onclick="switchTab('atemschutz')">🤿 Atemschutz & G26.3</button>
       <button class="nav-tab" onclick="switchTab('lehrgaenge')">🎓 Lehrgangsplanung</button>
@@ -212,7 +213,7 @@
     </div>
 
     <!-- TAB 1: ÜBERSICHT -->
-    <section id="view-dashboard" class="view-section active">
+    <section id="view-dashboard" class="view-section">
       <div class="card">
         <div class="card-header">
           <div class="card-title">📊 Jahresstunden-Übersicht</div>
@@ -293,7 +294,7 @@
     </section>
 
     <!-- TAB: KALENDER -->
-    <section id="view-kalender" class="view-section">
+    <section id="view-kalender" class="view-section active">
       <div class="card">
         <div class="card-header">
           <div class="card-title">📆 Jahreskalender</div>
@@ -424,8 +425,8 @@
 
   <!-- UNTERE MOBILE NAVIGATION -->
   <div class="mobile-nav">
-    <button class="mobile-btn" onclick="switchTab('kalender')"><span class="icon">📆</span>Kalender</button>
-    <button class="mobile-btn active" onclick="switchTab('dashboard')"><span class="icon">📊</span>Übersicht</button>
+    <button class="mobile-btn active" onclick="switchTab('kalender')"><span class="icon">📆</span>Kalender</button>
+    <button class="mobile-btn" onclick="switchTab('dashboard')"><span class="icon">📊</span>Übersicht</button>
     <button class="mobile-btn" onclick="switchTab('dienste')"><span class="icon">📅</span>Dienste</button>
     <button class="mobile-btn" onclick="switchTab('atemschutz')"><span class="icon">🤿</span>Atemschutz</button>
     <button class="mobile-btn" onclick="switchTab('lehrgaenge')"><span class="icon">🎓</span>Lehrgänge</button>
@@ -906,6 +907,7 @@
           if (user) {
             zeigeLogin(false);
             startCloudSync();
+            setTimeout(kalenderZumAktuellenMonat, 200);
           } else {
             stopCloudSync();
             zeigeLogin(true, '');
@@ -1187,6 +1189,26 @@
       return t[2] + '.' + t[1] + '.' + t[0];
     }
 
+    // Beim Start den aktuellen Monat ins Bild holen, falls er nicht sichtbar ist
+    let kalenderStartScrollErledigt = false;
+    function kalenderZumAktuellenMonat() {
+      if (kalenderStartScrollErledigt) return;
+      kalenderStartScrollErledigt = true;
+      const el = document.getElementById('kal-monat-' + new Date().getMonth());
+      if (!el || kalenderJahr !== new Date().getFullYear()) return;
+      const r = el.getBoundingClientRect();
+      if (r.top < 0 || r.bottom > window.innerHeight) el.scrollIntoView({ block: 'center' });
+    }
+
+    // Namen ("Vorname Nachname") zu Mitglieds-IDs, alphabetisch nach Nachname
+    function kalNamen(ids) {
+      return (ids || [])
+        .map(id => appData.members.find(m => m.id === id))
+        .filter(Boolean)
+        .sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de') || (a.vorname || '').localeCompare(b.vorname || '', 'de'))
+        .map(m => `${m.vorname || ''} ${m.nachname || ''}`.trim());
+    }
+
     function kalenderJahrWechsel(delta) { kalenderJahr += delta; kalenderAuswahl = null; renderKalender(); }
     function kalenderHeute() { kalenderJahr = new Date().getFullYear(); kalenderAuswahl = kalKey(new Date()); renderKalender(); }
     function kalenderTagWaehlen(key) { kalenderAuswahl = (kalenderAuswahl === key) ? null : key; renderKalender(); }
@@ -1225,22 +1247,29 @@
         else if (d.typ === 'Versammlung' || d.typ === 'OWF-Versammlung') kat = 'versammlung';
         const zeit = (d.zeitVon || d.von || '') ? `${d.zeitVon || d.von} - ${d.zeitBis || d.bis || ''} Uhr` : '';
         const tn = d.teilnehmer ? d.teilnehmer.length : 0;
+        const namen = (kat === 'lehrgang') ? kalNamen(d.teilnehmer || []) : [];
         add(d.datumVon || d.datum, d.datumBis || d.datumVon || d.datum, {
-          kat, titel: d.thema || d.typ || 'Dienst',
+          kat, titel: d.thema || d.typ || 'Dienst', namen,
           info: [d.typ, zeit, tn ? tn + ' Teilnehmer' : ''].filter(Boolean).join(' · '),
           geplant: status === 'Geplant'
         });
       });
 
+      // Gleiche Lehrgänge mehrerer Kameraden (gleiche Bezeichnung, Ort, Zeitraum, Status) werden zusammengefasst
+      const gruppen = {};
       (appData.lehrgangPlan || []).forEach(l => {
         if (!l.startDatum) return; // Bewerbungen ohne Termin erscheinen nicht im Kalender
-        const mem = appData.members.find(m => m.id === l.memberId);
-        const name = mem ? `${mem.vorname || ''} ${mem.nachname || ''}`.trim() : 'Unbekannt';
+        const schluessel = [l.titel, l.ort, l.startDatum, l.endeDatum || l.startDatum, l.status].join('|');
+        (gruppen[schluessel] = gruppen[schluessel] || { l, ids: [] }).ids.push(l.memberId);
+      });
+      Object.keys(gruppen).forEach(k => {
+        const { l, ids } = gruppen[k];
         // FTZ Kyritz: mehrwöchige Lehrgänge finden jeweils nur samstags statt
         const kyritz = (l.ort === 'FTZ Kyritz' || l.ort === 'Kreisebene OPR');
+        const namen = kalNamen(ids);
         add(l.startDatum, l.endeDatum || l.startDatum, {
-          kat: 'lehrgang', titel: `${l.titel || 'Lehrgang'}`,
-          info: [name, l.ort, l.status].filter(Boolean).join(' · '),
+          kat: 'lehrgang', titel: `${l.titel || 'Lehrgang'}`, namen,
+          info: [namen.length ? (namen.length > 1 ? 'Teilnehmer: ' : '') + namen.join(', ') : 'Unbekannt', l.ort, l.status].filter(Boolean).join(' · '),
           geplant: l.status === 'Angemeldet'
         }, kyritz);
       });
@@ -1263,7 +1292,8 @@
         const erster = new Date(kalenderJahr, m, 1);
         const anzahl = new Date(kalenderJahr, m + 1, 0).getDate();
         const offset = (erster.getDay() + 6) % 7; // Woche beginnt am Montag
-        html += `<div class="cal-month"><div class="cal-month-title">${monate[m]}</div>`;
+        const aktuell = (kalenderJahr === new Date().getFullYear() && m === new Date().getMonth());
+        html += `<div class="cal-month${aktuell ? ' current' : ''}" id="kal-monat-${m}"><div class="cal-month-title">${monate[m]}</div>`;
         html += '<div class="cal-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div class="cal-days">';
         for (let i = 0; i < offset; i++) html += '<div class="cal-day"></div>';
         for (let tag = 1; tag <= anzahl; tag++) {
@@ -1284,7 +1314,7 @@
               style = `background:linear-gradient(135deg, ${stops});`;
             }
             if (ev.every(e => e.geplant)) klassen.push('planned');
-            tip = ev.map(e => e.titel).join(' | ').replace(/"/g, '&quot;');
+            tip = ev.map(e => e.titel + (e.namen && e.namen.length ? ': ' + e.namen.join(', ') : '')).join('\n').replace(/"/g, '&quot;');
           }
           if (key === heuteKey) klassen.push('today');
           if (key === kalenderAuswahl) klassen.push('selected');
