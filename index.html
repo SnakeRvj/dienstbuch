@@ -527,7 +527,7 @@
             <div style="font-weight: 700; font-size: 0.85rem; color: #fca5a5; margin-bottom: 0.6rem;">👨‍🚒 Führungs- & Fahrzeugfunktionen:</div>
             <div class="form-row">
               <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Einheitsführer / Gruppenführer</label>
+                <label class="form-label">Einheitsführer</label>
                 <select id="dienstEinheitsfuehrer" class="form-control">
                   <option value="">-- Nicht festgelegt --</option>
                 </select>
@@ -1417,6 +1417,14 @@
       uvvBox.style.display = (typ === 'UVV') ? 'block' : 'none';
       owfBox.style.display = (typ === 'OWF-Versammlung') ? 'block' : 'none';
 
+      // Ausbilder wird bei Einsätzen nicht benötigt
+      const ausbilderBox = document.getElementById('ausbilderBox');
+      if (ausbilderBox) ausbilderBox.style.display = (typ === 'Einsatz') ? 'none' : 'block';
+
+      // Einheitsführer & Maschinist werden nur bei Einsätzen benötigt
+      const rollenBox = document.getElementById('einsatzRollenBox');
+      if (rollenBox) rollenBox.style.display = (typ === 'Einsatz') ? 'block' : 'none';
+
       // Nur bei Lehrgängen ein Bis-Datum einblenden, alle anderen finden an einem Tag statt
       if (typ === 'Lehrgang') {
         groupDatumBis.style.display = 'block';
@@ -1706,7 +1714,7 @@
             }
             if (d.einheitsfuehrer) {
               const ef = appData.members.find(m => m.id === d.einheitsfuehrer);
-              rollenBadges.push(`<span class="badge badge-gf">GF: ${ef ? ef.nachname : 'Unbekannt'}</span>`);
+              rollenBadges.push(`<span class="badge badge-gf">EF: ${ef ? ef.nachname : 'Unbekannt'}</span>`);
             }
             if (d.maschinist) {
               const ma = appData.members.find(m => m.id === d.maschinist);
@@ -2027,11 +2035,13 @@
       const datumBis = (typ === 'Lehrgang' && document.getElementById('dienstDatumBis').value) ? document.getElementById('dienstDatumBis').value : datumVon;
       const zeitBis = document.getElementById('dienstZeitBis').value;
       const dauer = parseFloat(document.getElementById('dienstDauer').value);
-      const einheitsfuehrer = document.getElementById('dienstEinheitsfuehrer').value;
-      const maschinist = document.getElementById('dienstMaschinist').value;
+      // Rollen nur bei Einsätzen speichern
+      const einheitsfuehrer = (typ === 'Einsatz') ? document.getElementById('dienstEinheitsfuehrer').value : '';
+      const maschinist = (typ === 'Einsatz') ? document.getElementById('dienstMaschinist').value : '';
       
-      const selAusbilder = document.getElementById('dienstAusbilderSelect').value;
-      const custAusbilder = document.getElementById('dienstAusbilderCustom').value.trim();
+      // Ausbilder nur bei Nicht-Einsätzen speichern
+      const selAusbilder = (typ === 'Einsatz') ? '' : document.getElementById('dienstAusbilderSelect').value;
+      const custAusbilder = (typ === 'Einsatz') ? '' : document.getElementById('dienstAusbilderCustom').value.trim();
       const ausbilder = custAusbilder ? custAusbilder : selAusbilder;
 
       const thema = document.getElementById('dienstThema').value.trim();
