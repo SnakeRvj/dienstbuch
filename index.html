@@ -146,10 +146,6 @@
         <span class="sync-dot" id="syncDot"></span>
         <span id="syncText">Verbinde Cloud...</span>
       </div>
-      <button class="btn btn-light btn-sm" onclick="exportDataJSON()" title="Komplettes Backup herunterladen">💾 Backup</button>
-      <label class="btn btn-light btn-sm" style="cursor: pointer;" title="Backup-Datei laden">
-        📂 Laden <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importDataJSON(event)">
-      </label>
       <button class="btn btn-light btn-sm" onclick="logout()" title="Von diesem Gerät abmelden">🔒 Abmelden</button>
     </div>
   </header>
@@ -2082,37 +2078,6 @@
         appData.members = appData.members.filter(m => m.id !== id);
         saveData();
       }
-    }
-
-    function exportDataJSON() {
-      const jsonStr = JSON.stringify(appData, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `FF_Christdorf_Backup_${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-    }
-
-    function importDataJSON(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        try {
-          const imported = JSON.parse(event.target.result);
-          if (imported.members && imported.dienste) {
-            normalizeData(imported);
-            sortMembers();
-            saveData();
-            alert('Daten erfolgreich wiederhergestellt und live mit der Cloud synchronisiert!');
-          } else {
-            alert('Ungültiges Datenformat!');
-          }
-        } catch (err) {
-          alert('Fehler beim Lesen der Datei!');
-        }
-      };
-      reader.readAsText(file);
     }
 
     window.onload = loadData;
