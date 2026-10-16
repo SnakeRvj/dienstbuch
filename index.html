@@ -460,7 +460,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">Planungs- & Durchführungsstatus</label>
-              <select id="dienstStatus" class="form-control" style="font-weight:700; border-color:#3b82f6;">
+              <select id="dienstStatus" class="form-control" style="font-weight:700; border-color:#3b82f6;" onchange="dienstAutoGeplant = false;">
                 <option value="Durchgeführt" selected>✅ Durchgeführt (Stunden werden gezählt)</option>
                 <option value="Geplant">⏳ Geplant / Vorankündigung (Keine Stundenanrechnung)</option>
                 <option value="Ausgefallen">❌ Ausgefallen / Abgesagt</option>
@@ -632,7 +632,7 @@
 
           <div class="form-group">
             <label class="form-label">Status des Lehrgangs</label>
-            <select id="lehrgangStatus" class="form-control" onchange="toggleLehrgangFields()">
+            <select id="lehrgangStatus" class="form-control" onchange="lehrgangStatusGeaendert()">
               <option value="Beworben" selected>📝 Beworben / Vorgemerkt (Nur Interesse, kein Datum nötig)</option>
               <option value="Angemeldet">⏳ Angemeldet / Platz bestätigt</option>
               <option value="Bestanden">✅ Erfolgreich absolviert / Bestanden (Hakt Qualifikation automatisch ab)</option>
@@ -644,11 +644,11 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Beginn Datum</label>
-                <input type="date" id="lehrgangStartDatum" class="form-control">
+                <input type="date" id="lehrgangStartDatum" class="form-control" onchange="lehrgangZukunftRegel(false)">
               </div>
               <div class="form-group">
                 <label class="form-label">Ende Datum</label>
-                <input type="date" id="lehrgangEndeDatum" class="form-control">
+                <input type="date" id="lehrgangEndeDatum" class="form-control" onchange="lehrgangZukunftRegel(false)">
               </div>
             </div>
             <div class="form-group">
@@ -1335,6 +1335,29 @@
         dBisInput.value = dVon;
       }
       autoCalculateHours();
+      dienstZukunftRegel();
+    }
+
+    // Neue Dienste in der Zukunft: automatisch "Geplant" und noch kein Kamerad ausgewählt
+    let dienstAutoGeplant = false;
+    function dienstZukunftRegel() {
+      if (document.getElementById('dienstId').value) return; // nur beim Neuanlegen
+      const von = document.getElementById('dienstDatumVon').value;
+      if (!von) return;
+      const heute = kalKey(new Date());
+      const statusEl = document.getElementById('dienstStatus');
+      const boxen = document.querySelectorAll('#attendanceCheckboxes input[name="attendance"]');
+      if (von > heute) {
+        if (statusEl.value === 'Durchgeführt' || dienstAutoGeplant) {
+          statusEl.value = 'Geplant';
+          boxen.forEach(c => c.checked = false);
+          dienstAutoGeplant = true;
+        }
+      } else if (dienstAutoGeplant) {
+        statusEl.value = 'Durchgeführt';
+        boxen.forEach(c => c.checked = true);
+        dienstAutoGeplant = false;
+      }
     }
 
     function autoCalculateHours() {
@@ -1442,6 +1465,23 @@
         if (opt && opt.dataset.hours) stundenInput.value = opt.dataset.hours;
         if (opt && opt.dataset.ort) ortSelect.value = opt.dataset.ort;
       }
+    }
+
+    // Lehrgänge, die noch nicht zu Ende sind, können nicht "Bestanden" / "Nicht bestanden" sein
+    function lehrgangZukunftRegel(hinweis) {
+      const statusEl = document.getElementById('lehrgangStatus');
+      const start = document.getElementById('lehrgangStartDatum').value;
+      const ende = document.getElementById('lehrgangEndeDatum').value || start;
+      if (!ende) return;
+      if (ende > kalKey(new Date()) && (statusEl.value === 'Bestanden' || statusEl.value === 'Nicht bestanden')) {
+        statusEl.value = 'Angemeldet';
+        if (hinweis) alert('Der Lehrgang liegt (zumindest teilweise) in der Zukunft. Der Status bleibt "Angemeldet", bis er stattgefunden hat.');
+      }
+    }
+
+    function lehrgangStatusGeaendert() {
+      toggleLehrgangFields();
+      lehrgangZukunftRegel(true);
     }
 
     function toggleLehrgangFields() {
@@ -1877,6 +1917,7 @@
       const maSelect = document.getElementById('dienstMaschinist');
       
       abSelect.innerHTML = '<option value="">-- Kamerad aus Christdorf auswählen --</option>';
+      dienstAutoGeplant = false;
       efSelect.innerHTML = '<option value="">-- Nicht festgelegt --</option>';
       maSelect.innerHTML = '<option value="">-- Nicht festgelegt --</option>';
 
@@ -1980,7 +2021,7 @@
       e.preventDefault();
       const id = document.getElementById('dienstId').value || 'd-' + Date.now();
       const typ = document.getElementById('dienstTyp').value;
-      const status = document.getElementById('dienstStatus').value;
+      let status = document.getElementById('dienstStatus').value;
       const datumVon = document.getElementById('dienstDatumVon').value;
       const zeitVon = document.getElementById('dienstZeitVon').value;
       const datumBis = (typ === 'Lehrgang' && document.getElementById('dienstDatumBis').value) ? document.getElementById('dienstDatumBis').value : datumVon;
@@ -1996,9 +2037,15 @@
       const thema = document.getElementById('dienstThema').value.trim();
       const teilnehmer = Array.from(document.querySelectorAll('#attendanceCheckboxes input:checked')).map(c => c.value);
 
-      if (einheitsfuehrer && !teilnehmer.includes(einheitsfuehrer)) teilnehmer.push(einheitsfuehrer);
-      if (maschinist && !teilnehmer.includes(maschinist)) teilnehmer.push(maschinist);
-      if (selAusbilder && !teilnehmer.includes(selAusbilder)) teilnehmer.push(selAusbilder);
+      // Termine in der Zukunft können noch nicht durchgeführt sein
+      if (status === 'Durchgeführt' && datumVon > kalKey(new Date())) status = 'Geplant';
+
+      // Bei geplanten Terminen werden Rollen nicht automatisch als Teilnehmer eingetragen
+      if (status !== 'Geplant') {
+        if (einheitsfuehrer && !teilnehmer.includes(einheitsfuehrer)) teilnehmer.push(einheitsfuehrer);
+        if (maschinist && !teilnehmer.includes(maschinist)) teilnehmer.push(maschinist);
+        if (selAusbilder && !teilnehmer.includes(selAusbilder)) teilnehmer.push(selAusbilder);
+      }
 
       const dObj = { id, typ, status, datumVon, zeitVon, datumBis, zeitBis, dauer, einheitsfuehrer, maschinist, ausbilder, thema, teilnehmer };
 
@@ -2040,7 +2087,7 @@
     function openLehrgangModal(lehrgangId = null) {
       document.getElementById('lehrgangForm').reset();
       const mSelect = document.getElementById('lehrgangMemberSelect');
-      mSelect.innerHTML = appData.members.map(m => `<option value="${m.id}">${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})</option>`).join('');
+      mSelect.innerHTML = '<option value="">-- Kamerad auswählen --</option>' + appData.members.map(m => `<option value="${m.id}">${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})</option>`).join('');
 
       const sel = document.getElementById('lehrgangSelect');
       const customBox = document.getElementById('lehrgangCustomBox');
@@ -2125,7 +2172,7 @@
       }
 
       const ort = document.getElementById('lehrgangOrt').value;
-      const status = document.getElementById('lehrgangStatus').value;
+      let status = document.getElementById('lehrgangStatus').value;
       
       let startDatum = '';
       let endeDatum = '';
@@ -2138,6 +2185,9 @@
       }
 
       if (!appData.lehrgangPlan) appData.lehrgangPlan = [];
+
+      // Noch nicht beendete Lehrgänge bleiben "Angemeldet"
+      if ((status === 'Bestanden' || status === 'Nicht bestanden') && (endeDatum || startDatum) > kalKey(new Date())) status = 'Angemeldet';
 
       const lObj = { id, memberId, titel, ort, startDatum, endeDatum, stunden, status };
       const idx = appData.lehrgangPlan.findIndex(x => x.id === id);
