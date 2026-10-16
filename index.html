@@ -203,9 +203,9 @@
     </div>
 
     <div class="nav-tabs">
+      <button class="nav-tab" onclick="switchTab('kalender')">📆 Kalender</button>
       <button class="nav-tab active" onclick="switchTab('dashboard')">📊 Übersicht</button>
       <button class="nav-tab" onclick="switchTab('dienste')">📅 Dienstbuch</button>
-      <button class="nav-tab" onclick="switchTab('kalender')">📆 Kalender</button>
       <button class="nav-tab" onclick="switchTab('atemschutz')">🤿 Atemschutz & G26.3</button>
       <button class="nav-tab" onclick="switchTab('lehrgaenge')">🎓 Lehrgangsplanung</button>
       <button class="nav-tab" onclick="switchTab('mitglieder')">👨‍🚒 Mannschaftsliste</button>
@@ -424,9 +424,9 @@
 
   <!-- UNTERE MOBILE NAVIGATION -->
   <div class="mobile-nav">
+    <button class="mobile-btn" onclick="switchTab('kalender')"><span class="icon">📆</span>Kalender</button>
     <button class="mobile-btn active" onclick="switchTab('dashboard')"><span class="icon">📊</span>Übersicht</button>
     <button class="mobile-btn" onclick="switchTab('dienste')"><span class="icon">📅</span>Dienste</button>
-    <button class="mobile-btn" onclick="switchTab('kalender')"><span class="icon">📆</span>Kalender</button>
     <button class="mobile-btn" onclick="switchTab('atemschutz')"><span class="icon">🤿</span>Atemschutz</button>
     <button class="mobile-btn" onclick="switchTab('lehrgaenge')"><span class="icon">🎓</span>Lehrgänge</button>
     <button class="mobile-btn" onclick="switchTab('mitglieder')"><span class="icon">👨‍🚒</span>Mannschaft</button>
@@ -1191,13 +1191,22 @@
 
     function kalenderSammleTermine() {
       const tage = {}; // key -> [{kat, titel, info, geplant}]
-      const add = (von, bis, eintrag) => {
+      const add = (von, bis, eintrag, nurSamstage) => {
         const a = kalIsoToDate(von);
         if (!a) return;
         let b = kalIsoToDate(bis) || a;
         if (b < a) b = a;
+        // Nur Samstage markieren, sofern der Zeitraum mehrtägig ist und mindestens einen Samstag enthält
+        let samstagsModus = false;
+        if (nurSamstage && b > a) {
+          let c = 0;
+          for (let d = new Date(a); d <= b && c < 400; d.setDate(d.getDate() + 1), c++) {
+            if (d.getDay() === 6) { samstagsModus = true; break; }
+          }
+        }
         let n = 0;
         for (let d = new Date(a); d <= b && n < 400; d.setDate(d.getDate() + 1), n++) {
+          if (samstagsModus && d.getDay() !== 6) continue;
           const k = kalKey(d);
           (tage[k] = tage[k] || []).push(eintrag);
         }
@@ -1223,11 +1232,13 @@
         if (!l.startDatum) return; // Bewerbungen ohne Termin erscheinen nicht im Kalender
         const mem = appData.members.find(m => m.id === l.memberId);
         const name = mem ? `${mem.vorname || ''} ${mem.nachname || ''}`.trim() : 'Unbekannt';
+        // FTZ Kyritz: mehrwöchige Lehrgänge finden jeweils nur samstags statt
+        const kyritz = (l.ort === 'FTZ Kyritz' || l.ort === 'Kreisebene OPR');
         add(l.startDatum, l.endeDatum || l.startDatum, {
           kat: 'lehrgang', titel: `${l.titel || 'Lehrgang'}`,
           info: [name, l.ort, l.status].filter(Boolean).join(' · '),
           geplant: l.status === 'Angemeldet'
-        });
+        }, kyritz);
       });
       return tage;
     }
@@ -1308,7 +1319,7 @@
 
       const tabs = Array.from(document.querySelectorAll('.nav-tab'));
       const mobBtns = Array.from(document.querySelectorAll('.mobile-btn'));
-      const idx = ['dashboard', 'dienste', 'kalender', 'atemschutz', 'lehrgaenge', 'mitglieder'].indexOf(tabId);
+      const idx = ['kalender', 'dashboard', 'dienste', 'atemschutz', 'lehrgaenge', 'mitglieder'].indexOf(tabId);
       if (idx !== -1) {
         if (tabs[idx]) tabs[idx].classList.add('active');
         if (mobBtns[idx]) mobBtns[idx].classList.add('active');
