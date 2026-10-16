@@ -410,7 +410,6 @@
                   <th>Geburtsdatum</th>
                   <th>Lehrgänge & Qualifikationen</th>
                   <th>Status</th>
-                  <th>Führerscheine</th>
                   <th>Aktionen</th>
                 </tr>
               </thead>
@@ -693,6 +692,13 @@
                 <option value="Inaktiv">Inaktiv</option>
               </select>
             </div>
+            <div class="form-group">
+              <label class="form-label">Einsatzfähigkeit</label>
+              <select id="memberEinsatzfaehig" class="form-control">
+                <option value="ja">✅ Einsatzfähig</option>
+                <option value="nein">⛔ Nicht einsatzfähig</option>
+              </select>
+            </div>
           </div>
 
           <div class="form-row">
@@ -746,19 +752,6 @@
                 <option value="Einsatzkraft">Einsatzkraft (ohne Sonderfunktion)</option>
                 <option value="Alters- und Ehrenabteilung">Alters- und Ehrenabteilung</option>
               </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Führerscheinklassen</label>
-            <div class="checkbox-grid" id="fsCheckboxGrid">
-              <label class="checkbox-item"><input type="checkbox" name="fs" value="B"> B (PKW)</label>
-              <label class="checkbox-item"><input type="checkbox" name="fs" value="BE"> BE (Anhänger)</label>
-              <label class="checkbox-item"><input type="checkbox" name="fs" value="C1"> C1 (bis 7,5t)</label>
-              <label class="checkbox-item"><input type="checkbox" name="fs" value="C1E"> C1E</label>
-              <label class="checkbox-item"><input type="checkbox" name="fs" value="C"> C (LKW)</label>
-              <label class="checkbox-item"><input type="checkbox" name="fs" value="CE"> CE (LKW-Zug)</label>
-              <label class="checkbox-item"><input type="checkbox" name="fs" value="T"> T (Traktor)</label>
-              <label class="checkbox-item"><input type="checkbox" name="fs" value="L"> L</label>
             </div>
           </div>
           <div class="form-group">
@@ -843,7 +836,6 @@
           nachname: 'Mustermann',
           dienstgrad: 'Brandmeister',
           funktion: 'Ortswehrführer',
-          fuehrerschein: ['B', 'BE', 'C1', 'C1E', 'C', 'CE', 'T'],
           lehrgaenge: ['TM 1', 'TM 2', 'TF Brand', 'TF TH', 'Funk', 'AGT', 'Maschinist', 'GF', 'Motorkettensäge'],
           g26Ablauf: '2027-06-30',
           streckeDatum: '2025-12-15',
@@ -866,7 +858,6 @@
         } else {
           m.personalnummer = parseInt(m.personalnummer) || (idx + 1);
         }
-        if (!m.fuehrerschein) m.fuehrerschein = [];
         if (!m.lehrgaenge) m.lehrgaenge = [];
 
         if (m.lehrgaenge) {
@@ -1078,20 +1069,6 @@
     };
 
     // Gespeichert wird immer die männliche Grundform (für die Logik), angezeigt wird je nach Geschlecht
-    // Höherwertige Führerscheinklasse schließt niedrigere ein; in der Anzeige wird nur die höhere gezeigt
-    const FS_ENTHAELT = {
-      'CE': ['C', 'C1E', 'C1', 'BE', 'B'],
-      'C': ['C1', 'B'],
-      'C1E': ['C1', 'BE', 'B'],
-      'C1': ['B'],
-      'BE': ['B']
-    };
-
-    function fuehrerscheinAnzeige(liste) {
-      const fs = liste || [];
-      return fs.filter(k => !fs.some(h => h !== k && (FS_ENTHAELT[h] || []).includes(k)));
-    }
-
     function dienstgradAnzeige(m) {
       const dg = m.dienstgrad || '';
       return m.geschlecht === 'w' ? (DIENSTGRAD_W[dg] || dg) : dg;
@@ -1361,6 +1338,75 @@
       }
     }
 
+    // ===== EINSATZ-AUSWAHL: UVV-Pflicht & Einsatzfähigkeit =====
+    function istUvvDienst(d) {
+      const t = (d.thema || '').toLowerCase();
+      return (d.typ === 'UVV') || t.includes('uvv') || t.includes('sicherheitsbelehrung') || t.includes('sicherheitsunterweisung');
+    }
+
+    // Liefert '' wenn der Kamerad für den Einsatz wählbar ist, sonst den Grund der Sperre.
+    function einsatzGesperrtGrund(m, einsatzDatum) {
+      if (m.einsatzfaehig === false) return 'nicht einsatzfähig';
+      const datum = einsatzDatum || kalKey(new Date());
+      const jahr = datum.slice(0, 4);
+      let uvvSchonGehalten = false, teilgenommen = false;
+      (appData.dienste || []).forEach(d => {
+        if ((d.status || 'Durchgeführt') !== 'Durchgeführt') return;
+        if (!istUvvDienst(d)) return;
+        const start = d.datumVon || d.datum || '';
+        if (start.slice(0, 4) !== jahr) return;
+        if (start >= datum) return; // UVV-Belehrung liegt am selben Tag oder erst nach dem Einsatz
+        uvvSchonGehalten = true;
+        if (d.teilnehmer && d.teilnehmer.includes(m.id)) teilgenommen = true;
+      });
+      // Pflicht gilt erst, wenn die Jahres-UVV-Belehrung vor dem Einsatz stattgefunden hat
+      if (uvvSchonGehalten && !teilgenommen) return 'keine UVV ' + jahr;
+      return '';
+    }
+
+    function aktualisiereEinsatzAuswahl() {
+      const einsatz = document.getElementById('dienstTyp').value === 'Einsatz';
+      const datum = document.getElementById('dienstDatumVon').value;
+      const neu = !document.getElementById('dienstId').value;
+
+      document.querySelectorAll('#attendanceCheckboxes .attendance-row').forEach(row => {
+        const cb = row.querySelector('input[name="attendance"]');
+        if (!cb) return;
+        const m = appData.members.find(x => x.id === cb.value);
+        // Bereits gespeicherte Teilnehmer eines bestehenden Eintrags bleiben unverändert
+        const grund = (einsatz && m && cb.dataset.vorhanden !== '1') ? einsatzGesperrtGrund(m, datum) : '';
+        let badge = row.querySelector('.einsatz-sperre');
+        if (grund) {
+          cb.checked = false;
+          cb.disabled = true;
+          row.style.opacity = '0.55';
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'badge badge-danger einsatz-sperre';
+            row.appendChild(badge);
+          }
+          badge.textContent = '⛔ ' + grund;
+        } else {
+          cb.disabled = false;
+          row.style.opacity = '';
+          if (badge) badge.remove();
+        }
+      });
+
+      // Einheitsführer & Maschinist: gesperrte Kameraden nicht wählbar
+      ['dienstEinheitsfuehrer', 'dienstMaschinist'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        Array.from(sel.options).forEach(opt => {
+          if (!opt.value) return;
+          const m = appData.members.find(x => x.id === opt.value);
+          const gesperrt = einsatz && m && !!einsatzGesperrtGrund(m, datum);
+          opt.disabled = !!gesperrt;
+          if (gesperrt && neu && sel.value === opt.value) sel.value = '';
+        });
+      });
+    }
+
     function handleDatumVonChange() {
       const dVon = document.getElementById('dienstDatumVon').value;
       const dBisInput = document.getElementById('dienstDatumBis');
@@ -1371,6 +1417,7 @@
       }
       autoCalculateHours();
       dienstZukunftRegel();
+      aktualisiereEinsatzAuswahl();
     }
 
     // Neue Dienste in der Zukunft: automatisch "Geplant" und noch kein Kamerad ausgewählt
@@ -1479,6 +1526,7 @@
         themaInput.value = `Dienstberatung Ortswehrführer (Stadt Wittstock/Dosse)`;
       }
       autoCalculateHours();
+      aktualisiereEinsatzAuswahl();
     }
 
     function syncAusbilderChoice(source) {
@@ -1555,7 +1603,7 @@
 
         const dYear = new Date(d.datumVon || d.datum).getFullYear();
         if (dYear === year) {
-          const isUvvService = (d.typ === 'UVV') || (d.thema && (d.thema.toLowerCase().includes('uvv') || d.thema.toLowerCase().includes('sicherheitsbelehrung') || d.thema.toLowerCase().includes('sicherheitsunterweisung')));
+          const isUvvService = istUvvDienst(d);
           if (isUvvService && d.teilnehmer && d.teilnehmer.includes(memberId)) {
             return true;
           }
@@ -1852,7 +1900,6 @@
         if (memBody) {
           memBody.innerHTML = '';
           appData.members.forEach((m) => {
-            const fsBadges = fuehrerscheinAnzeige(m.fuehrerschein).map(f => `<span class="badge badge-fs">${f}</span>`).join('');
             
             const hasTm1 = m.lehrgaenge && m.lehrgaenge.includes('TM 1');
             const hasTm2 = m.lehrgaenge && m.lehrgaenge.includes('TM 2');
@@ -1920,8 +1967,7 @@
                 <td>${funktionAnzeige(m)}</td>
                 <td>${geburtsdatumDisplay}</td>
                 <td>${qualiCell}</td>
-                <td><span class="badge ${m.status === 'Aktiv' ? 'badge-success' : 'badge-tag'}">${m.status || 'Aktiv'}</span></td>
-                <td>${fsBadges || '-'}</td>
+                <td><span class="badge ${m.status === 'Aktiv' ? 'badge-success' : 'badge-tag'}">${m.status || 'Aktiv'}</span>${m.einsatzfaehig === false ? '<br><span class="badge badge-danger" style="margin-top:0.3rem;">⛔ Nicht einsatzfähig</span>' : ''}</td>
                 <td>
                   <button class="btn btn-secondary btn-sm" onclick="openMemberModal('${m.id}')">✏️ Bearbeiten</button>
                   <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">🗑️</button>
@@ -1967,7 +2013,7 @@
       appData.members.forEach(m => {
         abSelect.innerHTML += `<option value="${m.id}">${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})</option>`;
         efSelect.innerHTML += `<option value="${m.id}">${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})</option>`;
-        maSelect.innerHTML += `<option value="${m.id}">${m.nachname}, ${m.vorname} (${fuehrerscheinAnzeige(m.fuehrerschein).join(',')})</option>`;
+        maSelect.innerHTML += `<option value="${m.id}">${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})</option>`;
       });
 
       if (dienstId) {
@@ -2003,7 +2049,7 @@
             container.innerHTML += `
               <div class="attendance-row">
                 <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:100%; color:#f1f5f9;">
-                  <input type="checkbox" name="attendance" value="${m.id}" ${isChecked ? 'checked' : ''}>
+                  <input type="checkbox" name="attendance" value="${m.id}" ${isChecked ? 'checked data-vorhanden="1"' : ''}>
                   <span><strong>${m.nachname}</strong>, ${m.vorname} (${dienstgradAnzeige(m)})</span>
                 </label>
                 ${(m.funktion === 'Ortswehrführer' || m.funktion === 'Stellv. Ortswehrführer') ? '<span class="badge badge-owf">Führung</span>' : ''}
@@ -2039,6 +2085,7 @@
         });
       }
 
+      aktualisiereEinsatzAuswahl();
       document.getElementById('modalDienst').style.display = 'flex';
     }
 
@@ -2276,7 +2323,6 @@
     function openMemberModal(memberId = null) {
       document.getElementById('memberForm').reset();
       updateGeschlechtLabels();
-      document.querySelectorAll('#fsCheckboxGrid input').forEach(c => c.checked = false);
       document.querySelectorAll('#lehrgangGrid input').forEach(c => c.checked = false);
 
       if (memberId) {
@@ -2285,6 +2331,7 @@
           document.getElementById('memberId').value = m.id;
           document.getElementById('memberPersonalnummer').value = m.personalnummer !== undefined ? m.personalnummer : '';
           document.getElementById('memberStatus').value = m.status || 'Aktiv';
+          document.getElementById('memberEinsatzfaehig').value = (m.einsatzfaehig === false) ? 'nein' : 'ja';
           document.getElementById('memberVorname').value = m.vorname || '';
           document.getElementById('memberNachname').value = m.nachname || '';
           document.getElementById('memberGeburtsdatum').value = m.geburtsdatum || '';
@@ -2296,11 +2343,6 @@
           document.getElementById('memberStrecke').value = m.streckeDatum || '';
           document.getElementById('memberCsa').value = m.csaDatum || '';
 
-          (m.fuehrerschein || []).forEach(fs => {
-            const cb = document.querySelector(`#fsCheckboxGrid input[value="${fs}"]`);
-            if (cb) cb.checked = true;
-          });
-          
           (m.lehrgaenge || []).forEach(lg => {
             const cb = document.querySelector(`#lehrgangGrid input[value="${lg}"]`);
             if (cb) cb.checked = true;
@@ -2328,6 +2370,7 @@
       const pnrInput = document.getElementById('memberPersonalnummer').value;
       const personalnummer = pnrInput !== '' ? parseInt(pnrInput) : 9999;
       const status = document.getElementById('memberStatus').value;
+      const einsatzfaehig = document.getElementById('memberEinsatzfaehig').value !== 'nein';
       const vorname = document.getElementById('memberVorname').value.trim();
       const nachname = document.getElementById('memberNachname').value.trim();
       const geburtsdatum = document.getElementById('memberGeburtsdatum').value;
@@ -2338,13 +2381,12 @@
       const streckeDatum = document.getElementById('memberStrecke').value;
       const csaDatum = document.getElementById('memberCsa').value;
 
-      const fuehrerschein = Array.from(document.querySelectorAll('#fsCheckboxGrid input:checked')).map(c => c.value);
       const lehrgaenge = Array.from(document.querySelectorAll('#lehrgangGrid input:checked')).map(c => c.value);
 
       const existingIdx = appData.members.findIndex(m => m.id === id);
 
       const memberObj = {
-        id, personalnummer, status, vorname, nachname, geburtsdatum, geschlecht, dienstgrad, funktion, fuehrerschein, lehrgaenge,
+        id, personalnummer, status, vorname, nachname, geburtsdatum, geschlecht, dienstgrad, funktion, einsatzfaehig, lehrgaenge,
         g26Ablauf, streckeDatum, csaDatum
       };
 
