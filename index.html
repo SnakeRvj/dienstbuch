@@ -1163,10 +1163,12 @@
 
     // ===== KALENDER =====
     const KAL_KATEGORIEN = {
-      einsatz:   { label: 'Einsatz',                  farbe: '#dc2626', prio: 1 },
-      lehrgang:  { label: 'Lehrgang',                 farbe: '#8b5cf6', prio: 2 },
-      ausbildung:{ label: 'Ausbildung / Übung',       farbe: '#3b82f6', prio: 3 },
-      sonstiges: { label: 'Versammlung / Arbeitsdienst', farbe: '#14b8a6', prio: 4 }
+      einsatz:       { label: 'Einsatz',                          farbe: '#e02424', prio: 1 }, // Signalrot
+      strecke:       { label: 'AGT-Übungsstrecke / CSA-Übungslauf', farbe: '#ff8a00', prio: 2 }, // Leuchtorange
+      ausbildung:    { label: 'Ausbildung / Übung',               farbe: '#1f8fff', prio: 4 }, // Azurblau
+      arbeitsdienst: { label: 'Arbeitsdienst',                    farbe: '#10a874', prio: 5 }, // Smaragdgrün
+      versammlung:   { label: 'Versammlung',                      farbe: '#0e8a8f', prio: 6 }, // Petrol / Türkis
+      lehrgang:      { label: 'Lehrgang',                         farbe: '#5b61ad', prio: 3 }  // Mattes Indigo
     };
     let kalenderJahr = new Date().getFullYear();
     let kalenderAuswahl = null;
@@ -1218,7 +1220,9 @@
         let kat = 'ausbildung';
         if (d.typ === 'Einsatz') kat = 'einsatz';
         else if (d.typ === 'Lehrgang') kat = 'lehrgang';
-        else if (d.typ === 'Arbeitsdienst' || d.typ === 'Versammlung' || d.typ === 'OWF-Versammlung') kat = 'sonstiges';
+        else if (d.typ === 'Strecke' || d.typ === 'CSA') kat = 'strecke';
+        else if (d.typ === 'Arbeitsdienst') kat = 'arbeitsdienst';
+        else if (d.typ === 'Versammlung' || d.typ === 'OWF-Versammlung') kat = 'versammlung';
         const zeit = (d.zeitVon || d.von || '') ? `${d.zeitVon || d.von} - ${d.zeitBis || d.bis || ''} Uhr` : '';
         const tn = d.teilnehmer ? d.teilnehmer.length : 0;
         add(d.datumVon || d.datum, d.datumBis || d.datumVon || d.datum, {
@@ -1251,7 +1255,8 @@
       const tage = kalenderSammleTermine();
       const heuteKey = kalKey(new Date());
       const monate = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
-      const zaehler = { einsatz: 0, lehrgang: 0, ausbildung: 0, sonstiges: 0 };
+      const zaehler = {};
+      Object.keys(KAL_KATEGORIEN).forEach(k => zaehler[k] = 0);
 
       let html = '';
       for (let m = 0; m < 12; m++) {
