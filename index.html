@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#7f1d1d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FF Christdorf">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚒</text></svg>">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>Freiwillige Feuerwehr Christdorf - Dienstbuch & Personal</title>
+  <style>
+    :root {
+      --primary: #dc2626;
+      --primary-dark: #991b1b;
+      --accent: #3b82f6;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-header: #172033;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --input-bg: #0f172a;
+      --table-stripe: #192437;
+      --table-hover: #243248;
+      --success: #22c55e;
+      --warning: #eab308;
+      --danger: #ef4444;
+      --radius: 10px;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 75px; min-height: 100vh; }
+    header { background: linear-gradient(135deg, #7f1d1d, #450a0a); color: white; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 50; border-bottom: 1px solid rgba(220, 38, 38, 0.4); flex-wrap: wrap; gap: 0.5rem; }
+    .header-brand { display: flex; align-items: center; gap: 0.75rem; }
+    .header-logo { font-size: 1.8rem; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+    .header-text h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; color: #ffffff; }
+    .header-text p { font-size: 0.8rem; color: #fca5a5; }
+    .header-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .sync-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.65rem; font-size: 0.75rem; font-weight: 700; border-radius: 9999px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.2); color: #f8fafc; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #eab308; display: inline-block; }
+    .sync-dot.online { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+    .sync-dot.offline { background: #ef4444; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.55rem 0.9rem; font-size: 0.875rem; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    .btn-light { background: rgba(255, 255, 255, 0.12); color: white; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.15); }
+    .btn-light:hover { background: rgba(255, 255, 255, 0.22); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: #334155; color: #e2e8f0; border: 1px solid #475569; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-success { background: var(--success); color: #022c22; font-weight: 700; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-sm { padding: 0.35rem 0.6rem; font-size: 0.75rem; }
+    .container { max-width: 1250px; margin: 1.25rem auto; padding: 0 1rem; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--card-bg); padding: 1.25rem; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; flex-direction: column; }
+    .stat-card.highlight { border-left: 4px solid var(--primary); }
+    .stat-title { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem; }
+    .stat-value { font-size: 1.75rem; font-weight: 800; color: #ffffff; }
+    .stat-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; }
+    .nav-tabs { display: flex; gap: 0.5rem; background: #1e293b; padding: 0.35rem; border-radius: 8px; margin-bottom: 1.5rem; overflow-x: auto; border: 1px solid var(--border); }
+    .nav-tab { flex: 1; min-width: 130px; padding: 0.6rem 0.8rem; border: none; background: transparent; font-weight: 600; font-size: 0.85rem; color: var(--text-muted); border-radius: 6px; cursor: pointer; text-align: center; white-space: nowrap; transition: 0.2s; }
+    .nav-tab.active { background: #334155; color: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); border: 1px solid #475569; }
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+    .card { background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 1.5rem; overflow: hidden; }
+    .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--card-header); flex-wrap: wrap; gap: 0.5rem; }
+    .card-title { font-size: 1.05rem; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 0.5rem; }
+    .card-body { padding: 1.25rem; }
+    .table-responsive { width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem; color: var(--text); }
+    th { background: #172033; padding: 0.75rem 1rem; font-weight: 600; color: #cbd5e1; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background-color: var(--table-hover); }
+    .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.55rem; font-size: 0.7rem; font-weight: 700; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .badge-pnr { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; font-weight: 800; font-family: monospace; font-size: 0.75rem; }
+    .badge-owf { background: rgba(220, 38, 38, 0.25); color: #fca5a5; border: 1px solid #ef4444; }
+    .badge-stv { background: rgba(217, 119, 6, 0.25); color: #fde047; border: 1px solid #f59e0b; }
+    .badge-gf { background: rgba(59, 130, 246, 0.25); color: #93c5fd; border: 1px solid #3b82f6; }
+    .badge-masch { background: rgba(245, 158, 11, 0.25); color: #fcd34d; border: 1px solid #f59e0b; }
+    .badge-ausb { background: rgba(168, 85, 247, 0.25); color: #d8b4fe; border: 1px solid #a855f7; }
+    .badge-success { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e; }
+    .badge-warning { background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid #eab308; }
+    .badge-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+    .badge-info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; }
+    .badge-tag { background: #334155; color: #e2e8f0; border: 1px solid #475569; margin: 1px; }
+    .badge-fs { background: rgba(139, 92, 246, 0.25); color: #c4b5fd; border: 1px solid #a78bfa; font-weight: 800; margin: 1px; }
+    .form-group { margin-bottom: 1.1rem; }
+    .form-label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: #cbd5e1; }
+    .form-control { width: 100%; padding: 0.6rem 0.75rem; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; outline: none; }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.3); }
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+    .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 0.5rem; margin-top: 0.4rem; }
+    .checkbox-item { display: flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; background: #172033; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; color: #cbd5e1; }
+    .checkbox-item input { cursor: pointer; accent-color: var(--primary); }
+    .attendance-list { max-height: 280px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; background: #0f172a; }
+    .attendance-row { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.6rem; border-bottom: 1px solid #1e293b; background: #1e293b; margin-bottom: 4px; border-radius: 4px; }
+    .attendance-row input { accent-color: var(--primary); }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; backdrop-filter: blur(4px); }
+    .modal { background: #1e293b; border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); color: var(--text); }
+    .modal-header { padding: 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #172033; }
+    .modal-title { font-size: 1.1rem; font-weight: 700; color: #ffffff; }
+    .modal-body { padding: 1.25rem; }
+    .modal-footer { padding: 1rem 1.25rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.5rem; background: #172033; }
+    .calc-hint { font-size: 0.8rem; color: #38bdf8; font-weight: 600; margin-top: 0.35rem; display: block; }
+    .uvv-alert-hint { background: rgba(34, 197, 94, 0.15); border: 1px solid #22c55e; padding: 0.6rem 0.75rem; border-radius: 6px; font-size: 0.8rem; color: #86efac; margin-bottom: 1rem; display: none; }
+    .owf-alert-hint { background: rgba(220, 38, 38, 0.15); border: 1px solid #ef4444; padding: 0.6rem 0.75rem; border-radius: 6px; font-size: 0.8rem; color: #fca5a5; margin-bottom: 1rem; display: none; }
+    .mobile-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; border-top: 1px solid var(--border); box-shadow: 0 -4px 15px rgba(0,0,0,0.5); z-index: 99; padding: 0.4rem 0.5rem; }
+    @media (max-width: 768px) {
+      .mobile-nav { display: flex; justify-content: space-around; }
+      .nav-tabs { display: none; }
+      .mobile-btn { display: flex; flex-direction: column; align-items: center; background: none; border: none; font-size: 0.7rem; color: #94a3b8; font-weight: 600; gap: 2px; padding: 0.2rem; }
+      .mobile-btn.active { color: #f87171; }
+      .mobile-btn span.icon { font-size: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ANMELDUNG: App-Inhalt ist erst nach erfolgreichem Login sichtbar -->
+  <div id="loginOverlay" style="position:fixed; inset:0; z-index:99999; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:1rem;">
+    <div style="background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:2rem 1.75rem; width:100%; max-width:360px; text-align:center;">
+      <div style="font-size:3rem; line-height:1;">🚒</div>
+      <h2 style="margin:0.75rem 0 0.25rem; font-size:1.2rem;">FF Christdorf Dienstbuch</h2>
+      <p style="margin:0 0 1.25rem; color:var(--text-muted); font-size:0.85rem;">Bitte anmelden</p>
+      <form onsubmit="loginSubmit(event)">
+        <input type="password" id="loginPasswort" class="form-control" placeholder="Passwort" autocomplete="current-password" style="text-align:center; margin-bottom:0.75rem;">
+        <button type="submit" id="loginButton" class="btn btn-primary" style="width:100%;" disabled>Anmelden</button>
+      </form>
+      <p id="loginMeldung" style="margin:0.9rem 0 0; min-height:1.2em; font-size:0.85rem; color:var(--text-muted);">Prüfe Anmeldung...</p>
+    </div>
+  </div>
+
+  <header>
+    <div class="header-brand">
+      <div class="header-logo">🚒</div>
+      <div class="header-text">
+        <h1>Freiwillige Feuerwehr Christdorf</h1>
+        <p>Dienstbuch, Lehrgangs- & Tauglichkeitsnachweis</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="sync-badge" id="syncStatusBadge" title="Verbindungsstatus zur Echtzeit-Datenbank">
+        <span class="sync-dot" id="syncDot"></span>
+        <span id="syncText">Verbinde Cloud...</span>
+      </div>
+      <button class="btn btn-light btn-sm" onclick="exportDataJSON()" title="Komplettes Backup herunterladen">💾 Backup</button>
+      <label class="btn btn-light btn-sm" style="cursor: pointer;" title="Backup-Datei laden">
+        📂 Laden <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importDataJSON(event)">
+      </label>
+      <button class="btn btn-light btn-sm" onclick="logout()" title="Von diesem Gerät abmelden">🔒 Abmelden</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card highlight">
+        <span class="stat-title">Geleistete Stunden Aktive</span>
+        <span class="stat-value" id="statTotalHours">0,0 h</span>
+        <span class="stat-sub" id="statYearSub">Laufendes Dienstjahr (durchgeführte Dienste & Lehrgänge)</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-title">Beteiligung Aktive</span>
+        <span class="stat-value" id="statBeteiligung">0%</span>
+        <span class="stat-sub" id="statBeteiligungSub">Ø Teilnahme pro Dienst</span>
+        <span class="stat-sub" id="statBeteiligungStunden" style="margin-top:0.15rem;"></span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-title">UVV-Sicherheitsunterweisung</span>
+        <span class="stat-value" id="statUvvCount">0%</span>
+        <span class="stat-sub" id="statUvvSub">für laufendes Jahr absolviert</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-title">Atemschutz (G26.3 & Strecke)</span>
+        <span class="stat-value" id="statAgtCount">0</span>
+        <span class="stat-sub" id="statAgtSub">tauglich im 365-Tage-Fenster</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-title">Mannschaftsstärke</span>
+        <span class="stat-value" id="statMembersCount">0</span>
+        <span class="stat-sub" id="statMembersSub">Aktive Kameraden</span>
+      </div>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('dashboard')">📊 Übersicht</button>
+      <button class="nav-tab" onclick="switchTab('dienste')">📅 Dienstbuch</button>
+      <button class="nav-tab" onclick="switchTab('atemschutz')">🤿 Atemschutz & G26.3</button>
+      <button class="nav-tab" onclick="switchTab('lehrgaenge')">🎓 Lehrgangsplanung</button>
+      <button class="nav-tab" onclick="switchTab('mitglieder')">👨‍🚒 Mannschaftsliste</button>
+    </div>
+
+    <!-- TAB 1: ÜBERSICHT -->
+    <section id="view-dashboard" class="view-section active">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📊 Jahresstunden-Übersicht</div>
+          <div style="display: flex; gap: 0.5rem;">
+            <select id="filterYearSelect" class="form-control" style="width: auto; padding: 0.3rem 0.6rem;" onchange="renderApp()">
+            </select>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Kamerad / Kameradin</th>
+                  <th>Funktion</th>
+                  <th>UVV</th>
+                  <th>Ausbildung</th>
+                  <th>Lehrgänge</th>
+                  <th>Einsatz</th>
+                  <th>Gesamt</th>
+                </tr>
+              </thead>
+              <tbody id="rankingTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: DIENSTE -->
+    <section id="view-dienste" class="view-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📅 Durchgeführte & Geplante Dienste / Einsätze</div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-primary btn-sm" onclick="openDienstModal()">+ Neuer Dienst / Termin</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);">
+          <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:flex-end;">
+            <div style="flex:1 1 240px; min-width:200px;">
+              <label class="form-label" style="margin-bottom:0.25rem;">🔍 Suche</label>
+              <input type="text" id="dienstSuchText" class="form-control" placeholder="Suchbegriff eingeben..." oninput="renderApp()">
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="resetDienstSuche()">✕ Zurücksetzen</button>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:1rem; margin-top:0.6rem; align-items:center; font-size:0.85rem;">
+            <span style="color:var(--text-muted);">Suchen in:</span>
+            <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="dienstSuchStatus" checked onchange="renderApp()"> Status</label>
+            <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="dienstSuchDatum" checked onchange="renderApp()"> Datum / Zeitraum</label>
+            <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="dienstSuchKategorie" checked onchange="renderApp()"> Kategorie</label>
+            <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="dienstSuchThema" checked onchange="renderApp()"> Thema / Einsatzstichwort</label>
+            <span id="dienstSuchTreffer" style="margin-left:auto; color:var(--text-muted);"></span>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Datum / Zeitraum</th>
+                  <th>Kategorie</th>
+                  <th>Thema / Einsatzstichwort</th>
+                  <th>Rollen / Ausbilder</th>
+                  <th>Dauer</th>
+                  <th>Teilnehmer</th>
+                  <th>Aktionen</th>
+                </tr>
+              </thead>
+              <tbody id="diensteTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: LEHRGANGSPLANUNG -->
+    <section id="view-lehrgaenge" class="view-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🎓 Lehrgangsverwaltung & Bewerbungen</div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-primary btn-sm" onclick="openLehrgangModal()">+ Lehrgang / Bewerbung eintragen</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);">
+          <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:flex-end;">
+            <div style="flex:1 1 240px; min-width:200px;">
+              <label class="form-label" style="margin-bottom:0.25rem;">🔍 Suche</label>
+              <input type="text" id="lehrgangSuchText" class="form-control" placeholder="Name, Lehrgang, Ausbildungsstätte..." oninput="renderApp()">
+            </div>
+            <div>
+              <label class="form-label" style="margin-bottom:0.25rem;">Status</label>
+              <select id="lehrgangSuchStatus" class="form-control" onchange="renderApp()">
+                <option value="">Alle</option>
+                <option value="Beworben">Beworben</option>
+                <option value="Angemeldet">Angemeldet</option>
+                <option value="Bestanden">Bestanden</option>
+                <option value="Nicht bestanden">Nicht bestanden</option>
+              </select>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="resetLehrgangSuche()">✕ Zurücksetzen</button>
+          </div>
+          <div style="margin-top:0.6rem; font-size:0.85rem; text-align:right;">
+            <span id="lehrgangSuchTreffer" style="color:var(--text-muted);"></span>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Kamerad</th>
+                  <th>Lehrgang / Bezeichnung</th>
+                  <th>Ausbildungsstätte</th>
+                  <th>Zeitraum (Datum)</th>
+                  <th>Stunden</th>
+                  <th>Status</th>
+                  <th>Aktionen</th>
+                </tr>
+              </thead>
+              <tbody id="lehrgangTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: ATEMSCHUTZ & TAUGLICHKEIT -->
+    <section id="view-atemschutz" class="view-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🤿 Atemschutzüberwachung (365-Tage-Regelung nach FwDV 7)</div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Kamerad</th>
+                  <th>G 26.3 Ablaufdatum</th>
+                  <th>AGT-Übungsstrecke (1 Jahr gültig)</th>
+                  <th>CSA-Übungslauf (1 Jahr gültig)</th>
+                  <th>UVV</th>
+                  <th>Einsatztauglichkeit</th>
+                  <th>Schnellaktion</th>
+                </tr>
+              </thead>
+              <tbody id="agtTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: MANNSCHAFT -->
+    <section id="view-mitglieder" class="view-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👨‍🚒 Mannschaftsverwaltung</div>
+          <button class="btn btn-primary btn-sm" onclick="openMemberModal()">+ Kamerad hinzufügen</button>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Dienstgrad</th>
+                  <th>Funktion</th>
+                  <th>Geburtsdatum</th>
+                  <th>Lehrgänge & Qualifikationen</th>
+                  <th>Status</th>
+                  <th>Führerscheine</th>
+                  <th>Aktionen</th>
+                </tr>
+              </thead>
+              <tbody id="membersTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- UNTERE MOBILE NAVIGATION -->
+  <div class="mobile-nav">
+    <button class="mobile-btn active" onclick="switchTab('dashboard')"><span class="icon">📊</span>Übersicht</button>
+    <button class="mobile-btn" onclick="switchTab('dienste')"><span class="icon">📅</span>Dienste</button>
+    <button class="mobile-btn" onclick="switchTab('atemschutz')"><span class="icon">🤿</span>Atemschutz</button>
+    <button class="mobile-btn" onclick="switchTab('lehrgaenge')"><span class="icon">🎓</span>Lehrgänge</button>
+    <button class="mobile-btn" onclick="switchTab('mitglieder')"><span class="icon">👨‍🚒</span>Mannschaft</button>
+  </div>
+
+  <!-- MODAL: DIENST ERFASSEN / BEARBEITEN -->
+  <div id="modalDienst" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="dienstModalTitle">Dienst / Termin erfassen</div>
+        <button class="btn btn-sm btn-secondary" onclick="closeModal('modalDienst')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="dienstForm" onsubmit="saveDienst(event)">
+          <input type="hidden" id="dienstId">
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Kategorie des Dienstes</label>
+              <select id="dienstTyp" class="form-control" onchange="handleDienstTypChange()" required>
+                <option value="Ausbildung">🚒 Ausbildung / Übungsdienst</option>
+                <option value="Lehrgang">🎓 Lehrgangs-Dienst (Standort/Stadt/Kreis)</option>
+                <option value="UVV">🛡️ UVV-Unterweisung / Sicherheitsbelehrung (Setzt Jahres-UVV auf Gültig)</option>
+                <option value="OWF-Versammlung">🏛️ Ortswehrführer-Versammlung / Beratung (Wehrführung)</option>
+                <option value="Einsatz">🚨 Einsatz (Brand / TH)</option>
+                <option value="Strecke">🤿 AGT-Übungsstrecke (Belastungsübung)</option>
+                <option value="CSA">🧪 CSA-Übungslauf (Gefahrgut)</option>
+                <option value="Arbeitsdienst">🔧 Arbeits- & Pflegedienst</option>
+                <option value="Versammlung">📋 Jahreshaupt- / Dienstversammlung</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Planungs- & Durchführungsstatus</label>
+              <select id="dienstStatus" class="form-control" style="font-weight:700; border-color:#3b82f6;">
+                <option value="Durchgeführt" selected>✅ Durchgeführt (Stunden werden gezählt)</option>
+                <option value="Geplant">⏳ Geplant / Vorankündigung (Keine Stundenanrechnung)</option>
+                <option value="Ausgefallen">❌ Ausgefallen / Abgesagt</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="uvvHintBox" class="uvv-alert-hint">
+            🛡️ <strong>Automatischer UVV-Abgleich:</strong> Wenn dieser Dienst als <em>Durchgeführt</em> gespeichert wird, wird für alle anwesenden Kameraden die jährliche UVV-Unterweisung automatisch für dieses Dienstjahr als absolviert (`✓ Gültig`) eingetragen!
+          </div>
+
+          <div id="owfHintBox" class="owf-alert-hint">
+            🏛️ <strong>Ortswehrführer-Versammlung:</strong> Spezielle Versammlung der Wehrführung. Nutze unten den Button <em>„Nur Wehrführung“</em>, um direkt Ortswehrführer und Stellvertreter auszuwählen.
+          </div>
+
+          <div style="background: #172033; padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.1rem;">
+            <div id="zeitraumHeaderTitle" style="font-weight: 700; font-size: 0.85rem; color: #93c5fd; margin-bottom: 0.6rem;">⏱️ Datum & Uhrzeit:</div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label class="form-label" id="labelDatumVon">Datum</label>
+                <input type="date" id="dienstDatumVon" class="form-control" onchange="handleDatumVonChange()" required>
+              </div>
+              <div class="form-group" id="groupDatumBis" style="margin-bottom: 0.5rem; display: none;">
+                <label class="form-label">Datum Bis</label>
+                <input type="date" id="dienstDatumBis" class="form-control" onchange="autoCalculateHours()">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label class="form-label">Uhrzeit Von</label>
+                <input type="time" id="dienstZeitVon" class="form-control" onchange="autoCalculateHours()" required>
+              </div>
+              <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label class="form-label">Uhrzeit Bis</label>
+                <input type="time" id="dienstZeitBis" class="form-control" onchange="autoCalculateHours()" required>
+              </div>
+            </div>
+            <div class="form-row" style="margin-top: 0.4rem;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Berechnete Gesamtdauer (h)</label>
+                <input type="number" step="0.05" min="0.1" id="dienstDauer" class="form-control" required placeholder="z. B. 2.0">
+                <span id="calcHint" class="calc-hint">Wird minutengenau errechnet</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="ausbilderBox" style="background: #172033; padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.1rem;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: #d8b4fe; margin-bottom: 0.6rem;">🎓 Ausbildungsleitung / Dozent:</div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Ausbilder auswählen (Christdorf)</label>
+                <select id="dienstAusbilderSelect" class="form-control" onchange="syncAusbilderChoice('select')">
+                  <option value="">-- Kamerad aus Christdorf auswählen --</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Oder: Externer Ausbilder / Gastdozent</label>
+                <input type="text" id="dienstAusbilderCustom" class="form-control" placeholder="z. B. KBM Schmidt, FTZ-Ausbilder, Polizei..." oninput="syncAusbilderChoice('custom')">
+              </div>
+            </div>
+          </div>
+
+          <div id="einsatzRollenBox" style="background: #172033; padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.1rem;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: #fca5a5; margin-bottom: 0.6rem;">👨‍🚒 Führungs- & Fahrzeugfunktionen:</div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Einheitsführer / Gruppenführer</label>
+                <select id="dienstEinheitsfuehrer" class="form-control">
+                  <option value="">-- Nicht festgelegt --</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Maschinist (Fahrer)</label>
+                <select id="dienstMaschinist" class="form-control">
+                  <option value="">-- Nicht festgelegt --</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Thema / Ausbildungsziel / Einsatzstichwort</label>
+            <input type="text" id="dienstThema" class="form-control" required placeholder="z. B. Jährliche Sicherheitsbelehrung / UVV, FwDV 3, Dienstberatung...">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem;">
+              <span>Teilnehmer / Anwesenheit</span>
+              <div style="display:flex; gap:0.25rem;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="selectAllAttendance(true)">Alle</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="selectAllAttendance(false)">Keine</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="selectWehrfuehrungAttendance()">Nur Wehrführung</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="selectAgtAttendance()">Nur AGT</button>
+              </div>
+            </label>
+            <div class="attendance-list" id="attendanceCheckboxes"></div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modalDienst')">Abbrechen</button>
+            <button type="submit" class="btn btn-primary" id="dienstSubmitBtn">Dienst speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LEHRGANG ANLEGEN / BEARBEITEN -->
+  <div id="modalLehrgang" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="lehrgangModalTitle">Lehrgang erfassen</div>
+        <button class="btn btn-sm btn-secondary" onclick="closeModal('modalLehrgang')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="lehrgangForm" onsubmit="saveLehrgang(event)">
+          <input type="hidden" id="lehrgangId">
+          <div class="form-group">
+            <label class="form-label">Kamerad / Kameradin</label>
+            <select id="lehrgangMemberSelect" class="form-control" required></select>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Lehrgang auswählen (Dropdown Brandenburg / OPR)</label>
+              <select id="lehrgangSelect" class="form-control" onchange="handleLehrgangSelectChange()" required>
+                <option value="">-- Lehrgang auswählen --</option>
+                <optgroup label="Truppausbildung">
+                  <option value="Truppmann Teil 1" data-code="TM 1" data-hours="70" data-ort="FTZ Kyritz">Truppmann Teil 1 (TM 1)</option>
+                  <option value="Truppmann Teil 2" data-code="TM 2" data-hours="80" data-ort="Stadt Wittstock/Dosse">Truppmann Teil 2 (TM 2)</option>
+                  <option value="Truppführer Brandbekämpfung" data-code="TF Brand" data-hours="35" data-ort="FTZ Kyritz">Truppführer Brandbekämpfung</option>
+                  <option value="Truppführer TH (Technische Hilfe)" data-code="TF TH" data-hours="35" data-ort="FTZ Kyritz">Truppführer TH (Technische Hilfe)</option>
+                </optgroup>
+                <optgroup label="Sonderausbildungen / Fachlehrgänge">
+                  <option value="Sprechfunker" data-code="Funk" data-hours="16" data-ort="FTZ Kyritz">Sprechfunker (Funk)</option>
+                  <option value="Atemschutzgeräteträger (AGT)" data-code="AGT" data-hours="25" data-ort="FTZ Kyritz">Atemschutzgeräteträger (AGT)</option>
+                  <option value="Maschinist für Löschfahrzeuge" data-code="Maschinist" data-hours="35" data-ort="FTZ Kyritz">Maschinist für Löschfahrzeuge</option>
+                  <option value="Motorkettensägenführer (Modul A/B)" data-code="Motorkettensäge" data-hours="16" data-ort="FTZ Kyritz">Motorkettensägenführer</option>
+                  <option value="Chemikalienschutzanzug (CSA)" data-code="CSA" data-hours="16" data-ort="FTZ Kyritz">CSA-Träger</option>
+                  <option value="Erste Hilfe / Ersthelfer Feuerwehr" data-code="Erste Hilfe" data-hours="16" data-ort="FTZ Kyritz">Erste Hilfe Feuerwehr</option>
+                </optgroup>
+                <optgroup label="Führungsausbildung (LSTE / Kreis)">
+                  <option value="Gruppenführer (F III)" data-code="GF" data-hours="70" data-ort="LSTE Eisenhüttenstadt">Gruppenführer (GF)</option>
+                  <option value="Zugführer (F IV)" data-code="ZF" data-hours="70" data-ort="LSTE Eisenhüttenstadt">Zugführer (ZF)</option>
+                  <option value="Leiter einer Feuerwehr / Ortswehrführer" data-code="OWF-Lehrgang" data-hours="35" data-ort="LSTE Eisenhüttenstadt">Führungskräfte-Fortbildung / OWF</option>
+                  <option value="Gerätewart" data-code="Gerätewart" data-hours="35" data-ort="LSTE Eisenhüttenstadt">Gerätewart</option>
+                  <option value="Atemschutzgerätewart" data-code="Atemschutzgerätewart" data-hours="35" data-ort="LSTE Eisenhüttenstadt">Atemschutzgerätewart</option>
+                  <option value="Jugendfeuerwehrwart" data-code="Jugendfeuerwehrwart" data-hours="35" data-ort="LSTE Eisenhüttenstadt">Jugendfeuerwehrwart</option>
+                </optgroup>
+                <option value="Sonstiges">✏️ Anderer / Spezieller Lehrgang (Freitext)</option>
+              </select>
+            </div>
+            <div class="form-group" id="lehrgangCustomBox" style="display:none;">
+              <label class="form-label">Eigener Lehrgangsname</label>
+              <input type="text" id="lehrgangTitelCustom" class="form-control" placeholder="z. B. Vegetationsbrandbekämpfung, Drohnenpilot...">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Ausbildungsstätte</label>
+            <select id="lehrgangOrt" class="form-control">
+              <option value="FTZ Kyritz">FTZ Kyritz</option>
+              <option value="LSTE Eisenhüttenstadt">LSTE Eisenhüttenstadt</option>
+              <option value="LSTE Wünsdorf">LSTE Wünsdorf</option>
+              <option value="Stadt Wittstock/Dosse">Stadt Wittstock/Dosse</option>
+              <option value="Sonstige">Sonstige Ausbildungsstätte</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Status des Lehrgangs</label>
+            <select id="lehrgangStatus" class="form-control" onchange="toggleLehrgangFields()">
+              <option value="Beworben" selected>📝 Beworben / Vorgemerkt (Nur Interesse, kein Datum nötig)</option>
+              <option value="Angemeldet">⏳ Angemeldet / Platz bestätigt</option>
+              <option value="Bestanden">✅ Erfolgreich absolviert / Bestanden (Hakt Qualifikation automatisch ab)</option>
+              <option value="Nicht bestanden">❌ Nicht bestanden / Abgebrochen</option>
+            </select>
+          </div>
+
+          <div id="lehrgangDateHoursSection" style="display:none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Beginn Datum</label>
+                <input type="date" id="lehrgangStartDatum" class="form-control">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Ende Datum</label>
+                <input type="date" id="lehrgangEndeDatum" class="form-control">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ausbildungsstunden (für Jahreskonto)</label>
+              <input type="number" step="0.5" min="1" id="lehrgangStunden" class="form-control" placeholder="z. B. 35.0">
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modalLehrgang')">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Lehrgang speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: KAMERAD BEARBEITEN / ANLEGEN MIT TF BRAND & TF TH -->
+  <div id="modalMember" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="memberModalTitle">Kamerad bearbeiten</div>
+        <button class="btn btn-sm btn-secondary" onclick="closeModal('modalMember')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="memberForm" onsubmit="saveMember(event)">
+          <input type="hidden" id="memberId">
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Personalnummer / Sortiernummer (z. B. 1, 2, 10, 101...)</label>
+              <input type="number" id="memberPersonalnummer" class="form-control" placeholder="1" style="font-weight: 700; border-color: #3b82f6;">
+              <span style="font-size: 0.75rem; color: #94a3b8;">Bestimmt die feste Reihenfolge im Hintergrund</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <select id="memberStatus" class="form-control">
+                <option value="Aktiv">Aktiv (Einsatzabteilung)</option>
+                <option value="Reserve">Reserve</option>
+                <option value="Altersabteilung">Alters- und Ehrenabteilung</option>
+                <option value="Inaktiv">Inaktiv</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Vorname</label>
+              <input type="text" id="memberVorname" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nachname</label>
+              <input type="text" id="memberNachname" class="form-control" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Geburtsdatum</label>
+              <input type="date" id="memberGeburtsdatum" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Geschlecht</label>
+              <select id="memberGeschlecht" class="form-control" onchange="updateGeschlechtLabels()">
+                <option value="m">Männlich</option>
+                <option value="w">Weiblich</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Dienstgrad</label>
+              <select id="memberDienstgrad" class="form-control">
+                <option value="Feuerwehrmann-Anwärter">Feuerwehrmann-Anwärter / -in</option>
+                <option value="Feuerwehrmann">Feuerwehrmann / Feuerwehrfrau</option>
+                <option value="Oberfeuerwehrmann">Oberfeuerwehrmann / -frau</option>
+                <option value="Hauptfeuerwehrmann">Hauptfeuerwehrmann / -frau</option>
+                <option value="Löschmeister">Löschmeister / -in</option>
+                <option value="Oberlöschmeister">Oberlöschmeister / -in</option>
+                <option value="Hauptlöschmeister">Hauptlöschmeister / -in</option>
+                <option value="Erster Hauptlöschmeister">Erster Hauptlöschmeister / -in</option>
+                <option value="Brandmeister">Brandmeister / -in</option>
+                <option value="Oberbrandmeister">Oberbrandmeister / -in</option>
+                <option value="Hauptbrandmeister">Hauptbrandmeister / -in</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Funktion / Dienststellung</label>
+              <select id="memberFunktion" class="form-control">
+                <option value="Ortswehrführer">Ortswehrführer (OWF)</option>
+                <option value="Stellv. Ortswehrführer">Stellv. Ortswehrführer (Stv. OWF)</option>
+                <option value="Gerätewart">Gerätewart</option>
+                <option value="Sicherheitsbeauftragter">Sicherheitsbeauftragter</option>
+                <option value="Schriftführer">Schriftführer</option>
+                <option value="Einsatzkraft">Einsatzkraft (ohne Sonderfunktion)</option>
+                <option value="Alters- und Ehrenabteilung">Alters- und Ehrenabteilung</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Führerscheinklassen</label>
+            <div class="checkbox-grid" id="fsCheckboxGrid">
+              <label class="checkbox-item"><input type="checkbox" name="fs" value="B"> B (PKW)</label>
+              <label class="checkbox-item"><input type="checkbox" name="fs" value="BE"> BE (Anhänger)</label>
+              <label class="checkbox-item"><input type="checkbox" name="fs" value="C1"> C1 (bis 7,5t)</label>
+              <label class="checkbox-item"><input type="checkbox" name="fs" value="C1E"> C1E</label>
+              <label class="checkbox-item"><input type="checkbox" name="fs" value="C"> C (LKW)</label>
+              <label class="checkbox-item"><input type="checkbox" name="fs" value="CE"> CE (LKW-Zug)</label>
+              <label class="checkbox-item"><input type="checkbox" name="fs" value="T"> T (Traktor)</label>
+              <label class="checkbox-item"><input type="checkbox" name="fs" value="L"> L</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Besuchte Lehrgänge & Qualifikationen (Brandenburg / OPR Konform)</label>
+            <div class="checkbox-grid" id="lehrgangGrid">
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="TM 1"> Truppmann 1</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="TM 2"> Truppmann 2</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="TF Brand"> 🔥 TF Brand</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="TF TH"> 🚗 TF TH</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="Funk"> Sprechfunker</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="AGT"> Atemschutz (AGT)</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="Maschinist"> Maschinist</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="GF"> Gruppenführer</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="ZF"> Zugführer</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="VF"> Verbandsführer</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="Motorkettensäge"> Motorkettensäge</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="CSA"> CSA-Träger</label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">G 26.3 Gültig bis</label>
+              <input type="date" id="memberG26" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Letzte AGT-Übungsstrecke</label>
+              <input type="date" id="memberStrecke" class="form-control">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Letzter CSA-Übungslauf</label>
+              <input type="date" id="memberCsa" class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modalMember')">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE SDK FÜR ECHTZEIT-DATENBANK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+  <script>
+    // FIREBASE KONFIGURATION (FEUERWEHR CHRISTDORF)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBqCIht0GEu7kRlgFfM6ksmNDylQLUPrsw",
+      authDomain: "feuerwehr-christdorf.firebaseapp.com",
+      databaseURL: "https://feuerwehr-christdorf-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "feuerwehr-christdorf",
+      storageBucket: "feuerwehr-christdorf.firebasestorage.app",
+      messagingSenderId: "716762987891",
+      appId: "1:716762987891:web:6d95c768f38765eaf0d906"
+    };
+
+    let dbRef = null;
+    let isRemoteUpdate = false;
+
+    function updateSyncStatus(state, text) {
+      const dot = document.getElementById('syncDot');
+      const txt = document.getElementById('syncText');
+      if (!dot || !txt) return;
+      dot.className = 'sync-dot';
+      if (state === 'online') dot.classList.add('online');
+      else if (state === 'offline') dot.classList.add('offline');
+      txt.innerText = text;
+    }
+
+    const STORAGE_KEY = 'FF_CHRISTDORF_DATA_V14';
+    let appData = {
+      members: [
+        {
+          id: 'owf-1',
+          personalnummer: 1,
+          vorname: 'Max',
+          nachname: 'Mustermann',
+          dienstgrad: 'Brandmeister',
+          funktion: 'Ortswehrführer',
+          fuehrerschein: ['B', 'BE', 'C1', 'C1E', 'C', 'CE', 'T'],
+          lehrgaenge: ['TM 1', 'TM 2', 'TF Brand', 'TF TH', 'Funk', 'AGT', 'Maschinist', 'GF', 'Motorkettensäge'],
+          g26Ablauf: '2027-06-30',
+          streckeDatum: '2025-12-15',
+          csaDatum: '',
+          status: 'Aktiv'
+        }
+      ],
+      dienste: [],
+      lehrgangPlan: []
+    };
+
+    function normalizeData(parsed) {
+      appData.members = parsed.members || appData.members || [];
+      appData.dienste = parsed.dienste || [];
+      appData.lehrgangPlan = parsed.lehrgangPlan || [];
+      
+      appData.members.forEach((m, idx) => {
+        if (m.personalnummer === undefined || m.personalnummer === null || m.personalnummer === '') {
+          m.personalnummer = idx + 1;
+        } else {
+          m.personalnummer = parseInt(m.personalnummer) || (idx + 1);
+        }
+        if (!m.fuehrerschein) m.fuehrerschein = [];
+        if (!m.lehrgaenge) m.lehrgaenge = [];
+
+        if (m.lehrgaenge) {
+          if (m.lehrgaenge.includes('TF') && !m.lehrgaenge.includes('TF Brand')) {
+            m.lehrgaenge.push('TF Brand');
+          }
+          if ((m.lehrgaenge.includes('TH') || m.lehrgaenge.includes('TH-Basis')) && !m.lehrgaenge.includes('TF TH')) {
+            m.lehrgaenge.push('TF TH');
+          }
+          m.lehrgaenge = m.lehrgaenge.filter(k => k !== 'TF' && k !== 'TH' && k !== 'TH-Basis');
+        }
+      });
+
+      appData.dienste.forEach(d => {
+        if (!d.teilnehmer) d.teilnehmer = [];
+      });
+    }
+
+    function loadData() {
+      // 1. Zuerst lokalen Stand laden (damit sofort alles da ist)
+      const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('FF_CHRISTDORF_DATA_V13') || localStorage.getItem('FF_CHRISTDORF_DATA_V12') || localStorage.getItem('FF_CHRISTDORF_DATA_V11') || localStorage.getItem('FF_CHRISTDORF_DATA_V10') || localStorage.getItem('FF_CHRISTDORF_DATA_V9') || localStorage.getItem('FF_CHRISTDORF_DATA_V8') || localStorage.getItem('FF_CHRISTDORF_DATA_V7') || localStorage.getItem('FF_CHRISTDORF_DATA_V6') || localStorage.getItem('FF_CHRISTDORF_DATA_V5');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          normalizeData(parsed);
+        } catch (e) {
+          console.error("Lokale Daten konnten nicht gelesen werden", e);
+        }
+      }
+      sortMembers();
+      populateYearFilter();
+      renderApp();
+
+      // 2. Firebase: erst anmelden, danach Echtzeit-Verbindung starten
+      try {
+        firebase.initializeApp(firebaseConfig);
+        firebase.auth().onAuthStateChanged((user) => {
+          if (user) {
+            zeigeLogin(false);
+            startCloudSync();
+          } else {
+            stopCloudSync();
+            zeigeLogin(true, '');
+            updateSyncStatus('offline', 'Nicht angemeldet');
+          }
+        });
+      } catch (err) {
+        console.error("Firebase konnte nicht gestartet werden:", err);
+        updateSyncStatus('offline', 'Nur Lokal');
+        zeigeLogin(true, 'Keine Verbindung. Anmeldung ist nur mit Internet möglich.', true);
+      }
+    }
+
+    // Zugangs-E-Mail: Dieses Konto wird in der Firebase-Konsole (Authentication) angelegt, das Passwort steht NUR dort.
+    const LOGIN_EMAIL = 'dienstbuch@ff-christdorf.de';
+
+    function zeigeLogin(anzeigen, meldung, gesperrt) {
+      const ov = document.getElementById('loginOverlay');
+      if (!ov) return;
+      ov.style.display = anzeigen ? 'flex' : 'none';
+      const m = document.getElementById('loginMeldung');
+      if (m && meldung !== undefined) m.innerText = meldung;
+      const b = document.getElementById('loginButton');
+      if (b) b.disabled = !!gesperrt;
+      if (anzeigen) {
+        const pw = document.getElementById('loginPasswort');
+        if (pw) { pw.value = ''; if (!gesperrt) pw.focus(); }
+      }
+    }
+
+    function loginSubmit(e) {
+      e.preventDefault();
+      const pw = document.getElementById('loginPasswort').value;
+      if (!pw) return;
+      const btn = document.getElementById('loginButton');
+      btn.disabled = true;
+      document.getElementById('loginMeldung').innerText = 'Melde an...';
+      firebase.auth().signInWithEmailAndPassword(LOGIN_EMAIL, pw).catch((err) => {
+        const code = err && err.code;
+        let text = 'Anmeldung fehlgeschlagen.';
+        if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found' || code === 'auth/invalid-login-credentials') text = 'Passwort falsch.';
+        else if (code === 'auth/too-many-requests') text = 'Zu viele Versuche. Bitte später erneut probieren.';
+        else if (code === 'auth/network-request-failed') text = 'Keine Verbindung zum Server.';
+        document.getElementById('loginMeldung').innerText = text;
+        btn.disabled = false;
+      });
+    }
+
+    function logout() {
+      if (confirm('Von diesem Gerät abmelden?')) firebase.auth().signOut();
+    }
+
+    let cloudConnRef = null;
+    function startCloudSync() {
+      if (dbRef) return; // läuft bereits
+      const db = firebase.database();
+      dbRef = db.ref('dienstbuchData');
+
+      // Verbindungsstatus überwachen
+      cloudConnRef = db.ref('.info/connected');
+      cloudConnRef.on('value', (snap) => {
+        if (snap.val() === true) {
+          updateSyncStatus('online', 'Live-Sync aktiv');
+        } else {
+          updateSyncStatus('offline', 'Offline (Lokal)');
+        }
+      });
+
+      // Echtzeit-Listener für Änderungen von anderen Geräten (PC / Handy)
+      dbRef.on('value', (snapshot) => {
+        const cloudData = snapshot.val();
+        if (cloudData && cloudData.members) {
+          isRemoteUpdate = true;
+          normalizeData(cloudData);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+          sortMembers();
+          populateYearFilter();
+          renderApp();
+          isRemoteUpdate = false;
+          updateSyncStatus('online', 'Live-Sync aktiv');
+        } else {
+          // Falls die Cloud noch ganz leer ist (erster Start), lokalen Stand automatisch hochladen!
+          dbRef.set(JSON.parse(JSON.stringify(appData)));
+        }
+      }, (err) => {
+        console.error("Firebase Lesefehler:", err);
+        updateSyncStatus('offline', 'Sync-Fehler');
+      });
+    }
+
+    function stopCloudSync() {
+      if (dbRef) { dbRef.off(); dbRef = null; }
+      if (cloudConnRef) { cloudConnRef.off(); cloudConnRef = null; }
+    }
+
+    function saveData() {
+      // Immer sofort lokal sichern
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      renderApp();
+
+      // Und live an Firebase senden
+      if (dbRef && !isRemoteUpdate) {
+        updateSyncStatus('syncing', 'Synchronisiere...');
+        dbRef.set(JSON.parse(JSON.stringify(appData)))
+          .then(() => {
+            updateSyncStatus('online', 'Live-Sync aktiv');
+          })
+          .catch((err) => {
+            console.error("Fehler beim Cloud-Speichern:", err);
+            updateSyncStatus('offline', 'Speicherfehler');
+          });
+      }
+    }
+
+    function sortMembers() {
+      appData.members.sort((a, b) => {
+        const nrA = (a.personalnummer !== undefined && a.personalnummer !== null && a.personalnummer !== '') ? parseInt(a.personalnummer) : 9999;
+        const nrB = (b.personalnummer !== undefined && b.personalnummer !== null && b.personalnummer !== '') ? parseInt(b.personalnummer) : 9999;
+        if (nrA !== nrB) {
+          return nrA - nrB;
+        }
+        const nameA = a.nachname || '';
+        const nameB = b.nachname || '';
+        return nameA.localeCompare(nameB);
+      });
+    }
+
+    function populateYearFilter() {
+      const select = document.getElementById('filterYearSelect');
+      const currentSelected = select.value ? parseInt(select.value) : null;
+      const curYear = new Date().getFullYear();
+      let years = [curYear, curYear - 1];
+      
+      appData.dienste.forEach(d => {
+        const y = new Date(d.datumVon || d.datum).getFullYear();
+        if (!years.includes(y)) years.push(y);
+      });
+      (appData.lehrgangPlan || []).forEach(l => {
+        if (l.startDatum) {
+          const y = new Date(l.startDatum).getFullYear();
+          if (!years.includes(y)) years.push(y);
+        }
+      });
+      years.sort((a,b) => b - a);
+      const targetYear = (currentSelected && years.includes(currentSelected)) ? currentSelected : curYear;
+      select.innerHTML = years.map(y => `<option value="${y}" ${y === targetYear ? 'selected' : ''}>${y}</option>`).join('');
+    }
+
+    const DIENSTGRAD_W = {
+      'Feuerwehrmann-Anwärter': 'Feuerwehrfrau-Anwärterin',
+      'Feuerwehrmann': 'Feuerwehrfrau',
+      'Oberfeuerwehrmann': 'Oberfeuerwehrfrau',
+      'Hauptfeuerwehrmann': 'Hauptfeuerwehrfrau',
+      'Löschmeister': 'Löschmeisterin',
+      'Oberlöschmeister': 'Oberlöschmeisterin',
+      'Hauptlöschmeister': 'Hauptlöschmeisterin',
+      'Erster Hauptlöschmeister': 'Erste Hauptlöschmeisterin',
+      'Brandmeister': 'Brandmeisterin',
+      'Oberbrandmeister': 'Oberbrandmeisterin',
+      'Hauptbrandmeister': 'Hauptbrandmeisterin'
+    };
+    const FUNKTION_W = {
+      'Ortswehrführer': 'Ortswehrführerin',
+      'Stellv. Ortswehrführer': 'Stellv. Ortswehrführerin',
+      'Gerätewart': 'Gerätewartin',
+      'Sicherheitsbeauftragter': 'Sicherheitsbeauftragte',
+      'Schriftführer': 'Schriftführerin'
+    };
+
+    // Gespeichert wird immer die männliche Grundform (für die Logik), angezeigt wird je nach Geschlecht
+    // Höherwertige Führerscheinklasse schließt niedrigere ein; in der Anzeige wird nur die höhere gezeigt
+    const FS_ENTHAELT = {
+      'CE': ['C', 'C1E', 'C1', 'BE', 'B'],
+      'C': ['C1', 'B'],
+      'C1E': ['C1', 'BE', 'B'],
+      'C1': ['B'],
+      'BE': ['B']
+    };
+
+    function fuehrerscheinAnzeige(liste) {
+      const fs = liste || [];
+      return fs.filter(k => !fs.some(h => h !== k && (FS_ENTHAELT[h] || []).includes(k)));
+    }
+
+    function dienstgradAnzeige(m) {
+      const dg = m.dienstgrad || '';
+      return m.geschlecht === 'w' ? (DIENSTGRAD_W[dg] || dg) : dg;
+    }
+
+    function funktionAnzeige(m) {
+      const fk = m.funktion || '';
+      return m.geschlecht === 'w' ? (FUNKTION_W[fk] || fk) : fk;
+    }
+
+    function updateGeschlechtLabels() {
+      const weiblich = document.getElementById('memberGeschlecht').value === 'w';
+      document.querySelectorAll('#memberDienstgrad option').forEach(opt => {
+        opt.textContent = weiblich ? (DIENSTGRAD_W[opt.value] || opt.value) : opt.value;
+      });
+      document.querySelectorAll('#memberFunktion option').forEach(opt => {
+        if (!opt.dataset.base) opt.dataset.base = opt.textContent;
+        opt.textContent = (weiblich && FUNKTION_W[opt.value]) ? opt.dataset.base.replace(opt.value, FUNKTION_W[opt.value]) : opt.dataset.base;
+      });
+    }
+
+    function matchesDienstSuche(d) {
+      const val = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+      const chk = (id) => { const el = document.getElementById(id); return el ? el.checked : true; };
+      const dStart = d.datumVon || d.datum || '';
+      const dEnde = d.datumBis || d.datumVon || d.datum || '';
+
+      const q = val('dienstSuchText').trim().toLowerCase();
+      if (!q) return true;
+
+      const fmt = (iso) => iso ? new Date(iso).toLocaleDateString('de-DE') : '';
+      const felder = [];
+      if (chk('dienstSuchStatus')) felder.push(d.status || 'Durchgeführt');
+      if (chk('dienstSuchDatum')) felder.push(dStart, dEnde, fmt(dStart), fmt(dEnde));
+      if (chk('dienstSuchKategorie')) felder.push(d.typ || '');
+      if (chk('dienstSuchThema')) felder.push(d.thema || '');
+      return felder.some(f => String(f).toLowerCase().includes(q));
+    }
+
+    function matchesLehrgangSuche(l) {
+      const statusEl = document.getElementById('lehrgangSuchStatus');
+      const textEl = document.getElementById('lehrgangSuchText');
+      const statusFilter = statusEl ? statusEl.value : '';
+      const q = textEl ? textEl.value.trim().toLowerCase() : '';
+
+      if (statusFilter && l.status !== statusFilter) return false;
+      if (!q) return true;
+
+      const mem = appData.members.find(m => m.id === l.memberId);
+      const felder = [
+        mem ? `${mem.nachname || ''} ${mem.vorname || ''}` : 'Unbekannt',
+        mem ? `${mem.vorname || ''} ${mem.nachname || ''}` : '',
+        l.titel || '',
+        l.ort || '',
+        l.status || ''
+      ];
+      return felder.some(f => String(f).toLowerCase().includes(q));
+    }
+
+    function resetLehrgangSuche() {
+      const t = document.getElementById('lehrgangSuchText'); if (t) t.value = '';
+      const st = document.getElementById('lehrgangSuchStatus'); if (st) st.value = '';
+      renderApp();
+    }
+
+    function resetDienstSuche() {
+      const suchEl = document.getElementById('dienstSuchText'); if (suchEl) suchEl.value = '';
+      ['dienstSuchStatus', 'dienstSuchDatum', 'dienstSuchKategorie', 'dienstSuchThema'].forEach(id => { const el = document.getElementById(id); if (el) el.checked = true; });
+      renderApp();
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.mobile-btn').forEach(el => el.classList.remove('active'));
+
+      const sec = document.getElementById('view-' + tabId);
+      if (sec) sec.classList.add('active');
+
+      const tabs = Array.from(document.querySelectorAll('.nav-tab'));
+      const mobBtns = Array.from(document.querySelectorAll('.mobile-btn'));
+      const idx = ['dashboard', 'dienste', 'atemschutz', 'lehrgaenge', 'mitglieder'].indexOf(tabId);
+      if (idx !== -1) {
+        if (tabs[idx]) tabs[idx].classList.add('active');
+        if (mobBtns[idx]) mobBtns[idx].classList.add('active');
+      }
+    }
+
+    function handleDatumVonChange() {
+      const dVon = document.getElementById('dienstDatumVon').value;
+      const dBisInput = document.getElementById('dienstDatumBis');
+      const typ = document.getElementById('dienstTyp').value;
+
+      if (typ !== 'Lehrgang' || !dBisInput.value || dBisInput.value < dVon) {
+        dBisInput.value = dVon;
+      }
+      autoCalculateHours();
+    }
+
+    function autoCalculateHours() {
+      const typ = document.getElementById('dienstTyp').value;
+      const dVon = document.getElementById('dienstDatumVon').value;
+      let dBis = document.getElementById('dienstDatumBis').value;
+      const zVon = document.getElementById('dienstZeitVon').value;
+      const zBis = document.getElementById('dienstZeitBis').value;
+      const hint = document.getElementById('calcHint');
+      const dauerInput = document.getElementById('dienstDauer');
+
+      if (typ !== 'Lehrgang' || !dBis) {
+        dBis = dVon;
+        document.getElementById('dienstDatumBis').value = dVon;
+      }
+
+      if (!dVon || !zVon || !zBis) {
+        hint.innerText = "Datum und Zeiten von/bis eingeben";
+        return;
+      }
+
+      const start = new Date(`${dVon}T${zVon}:00`);
+      let end = new Date(`${dBis}T${zBis}:00`);
+
+      // Falls ein eintägiger Dienst (z. B. Einsatz) über Mitternacht geht
+      if (typ !== 'Lehrgang' && end < start) {
+        end.setDate(end.getDate() + 1);
+      }
+
+      if (end < start) {
+        hint.innerText = "⚠️ Ende liegt vor Beginn!";
+        return;
+      }
+
+      const diffMs = end - start;
+      const totalMinutes = Math.round(diffMs / 60000);
+      const hours = totalMinutes / 60;
+
+      dauerInput.value = (Math.round(hours * 100) / 100).toFixed(2);
+      
+      const daysDiff = Math.floor(totalMinutes / (24 * 60));
+      let dayText = daysDiff > 0 ? ` (${daysDiff} Tag(e))` : '';
+      hint.innerText = `Berechnet: ${totalMinutes} Minuten (${(Math.round(hours * 100) / 100).toFixed(2)} h)${dayText}`;
+    }
+
+    function handleDienstTypChange() {
+      const typ = document.getElementById('dienstTyp').value;
+      const uvvBox = document.getElementById('uvvHintBox');
+      const owfBox = document.getElementById('owfHintBox');
+      const themaInput = document.getElementById('dienstThema');
+      const groupDatumBis = document.getElementById('groupDatumBis');
+      const labelDatumVon = document.getElementById('labelDatumVon');
+      const zeitraumHeaderTitle = document.getElementById('zeitraumHeaderTitle');
+      const dVon = document.getElementById('dienstDatumVon').value;
+      const dBisInput = document.getElementById('dienstDatumBis');
+
+      uvvBox.style.display = (typ === 'UVV') ? 'block' : 'none';
+      owfBox.style.display = (typ === 'OWF-Versammlung') ? 'block' : 'none';
+
+      // Nur bei Lehrgängen ein Bis-Datum einblenden, alle anderen finden an einem Tag statt
+      if (typ === 'Lehrgang') {
+        groupDatumBis.style.display = 'block';
+        labelDatumVon.innerText = 'Datum Von';
+        zeitraumHeaderTitle.innerText = '⏱️ Zeitraum (auch mehrtägig):';
+      } else {
+        groupDatumBis.style.display = 'none';
+        labelDatumVon.innerText = 'Datum';
+        zeitraumHeaderTitle.innerText = '⏱️ Datum & Uhrzeit:';
+        if (dVon) dBisInput.value = dVon;
+      }
+
+      if (typ === 'UVV' && !themaInput.value) {
+        const curYear = new Date().getFullYear();
+        themaInput.value = `Jährliche Sicherheitsbelehrung / UVV ${curYear}`;
+      } else if (typ === 'OWF-Versammlung' && !themaInput.value) {
+        themaInput.value = `Dienstberatung Ortswehrführer (Stadt Wittstock/Dosse)`;
+      }
+      autoCalculateHours();
+    }
+
+    function syncAusbilderChoice(source) {
+      if (source === 'select') {
+        const val = document.getElementById('dienstAusbilderSelect').value;
+        if (val) document.getElementById('dienstAusbilderCustom').value = '';
+      } else if (source === 'custom') {
+        const text = document.getElementById('dienstAusbilderCustom').value;
+        if (text) document.getElementById('dienstAusbilderSelect').value = '';
+      }
+    }
+
+    function handleLehrgangSelectChange() {
+      const sel = document.getElementById('lehrgangSelect');
+      const customBox = document.getElementById('lehrgangCustomBox');
+      const customInput = document.getElementById('lehrgangTitelCustom');
+      const ortSelect = document.getElementById('lehrgangOrt');
+      const stundenInput = document.getElementById('lehrgangStunden');
+
+      const opt = sel.options[sel.selectedIndex];
+      if (sel.value === 'Sonstiges') {
+        customBox.style.display = 'block';
+        customInput.required = true;
+      } else {
+        customBox.style.display = 'none';
+        customInput.required = false;
+        if (opt && opt.dataset.hours) stundenInput.value = opt.dataset.hours;
+        if (opt && opt.dataset.ort) ortSelect.value = opt.dataset.ort;
+      }
+    }
+
+    function toggleLehrgangFields() {
+      const status = document.getElementById('lehrgangStatus').value;
+      const section = document.getElementById('lehrgangDateHoursSection');
+      const startInp = document.getElementById('lehrgangStartDatum');
+      const endeInp = document.getElementById('lehrgangEndeDatum');
+      const hInp = document.getElementById('lehrgangStunden');
+
+      if (status === 'Beworben') {
+        section.style.display = 'none';
+        startInp.required = false;
+        endeInp.required = false;
+        hInp.required = false;
+      } else {
+        section.style.display = 'block';
+        startInp.required = true;
+        endeInp.required = true;
+        hInp.required = true;
+      }
+    }
+
+    function checkUvvValidityForMember(memberId, year) {
+      for (let i = 0; i < appData.dienste.length; i++) {
+        const d = appData.dienste[i];
+        const dStatus = d.status || 'Durchgeführt';
+        if (dStatus !== 'Durchgeführt') continue;
+
+        const dYear = new Date(d.datumVon || d.datum).getFullYear();
+        if (dYear === year) {
+          const isUvvService = (d.typ === 'UVV') || (d.thema && (d.thema.toLowerCase().includes('uvv') || d.thema.toLowerCase().includes('sicherheitsbelehrung') || d.thema.toLowerCase().includes('sicherheitsunterweisung')));
+          if (isUvvService && d.teilnehmer && d.teilnehmer.includes(memberId)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function checkOneYearValidity(dateString) {
+      if (!dateString) return { status: 'danger', label: 'Fehlt / Keine', daysLeft: -999 };
+      const eventDate = new Date(dateString);
+      const validUntil = new Date(eventDate);
+      validUntil.setDate(validUntil.getDate() + 365);
+
+      const now = new Date();
+      const diffTime = validUntil - now;
+      const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const fDate = validUntil.toLocaleDateString('de-DE');
+
+      if (daysLeft < 0) return { status: 'danger', label: `Abgelaufen (${fDate})`, daysLeft };
+      else if (daysLeft <= 30) return { status: 'warning', label: `Bis ${fDate} (${daysLeft} T.)`, daysLeft };
+      else return { status: 'success', label: `Bis ${fDate} (${daysLeft} T.)`, daysLeft };
+    }
+
+    function checkG26Validity(dateString) {
+      if (!dateString) return { status: 'danger', label: 'Keine Angabe', daysLeft: -999 };
+      const exp = new Date(dateString);
+      const now = new Date();
+      const diffTime = exp - now;
+      const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const fDate = exp.toLocaleDateString('de-DE');
+
+      if (daysLeft < 0) return { status: 'danger', label: `Abgelaufen (${fDate})`, daysLeft };
+      else if (daysLeft <= 60) return { status: 'warning', label: `Gültig bis ${fDate} (${daysLeft} T.)`, daysLeft };
+      else return { status: 'success', label: `Gültig bis ${fDate}`, daysLeft };
+    }
+
+    function renderApp() {
+      try {
+        const curYear = parseInt(document.getElementById('filterYearSelect').value) || new Date().getFullYear();
+        
+        let totalHours = 0;
+        const memberHours = {};
+        appData.members.forEach(m => {
+          memberHours[m.id] = { ausbildung: 0, lehrgang: 0, einsatz: 0, gesamt: 0 };
+        });
+
+        appData.dienste.forEach(d => {
+          const dStatus = d.status || 'Durchgeführt';
+          if (dStatus !== 'Durchgeführt') return;
+
+          const dYear = new Date(d.datumVon || d.datum).getFullYear();
+          if (dYear === curYear) {
+            totalHours += (d.dauer * (d.teilnehmer ? d.teilnehmer.length : 0));
+            if (d.teilnehmer) {
+              d.teilnehmer.forEach(mId => {
+                if (memberHours[mId]) {
+                  if (d.typ === 'Einsatz') memberHours[mId].einsatz += d.dauer;
+                  else memberHours[mId].ausbildung += d.dauer;
+                  memberHours[mId].gesamt += d.dauer;
+                }
+              });
+            }
+          }
+        });
+
+        (appData.lehrgangPlan || []).forEach(l => {
+          if (l.startDatum) {
+            const lYear = new Date(l.startDatum).getFullYear();
+            if (lYear === curYear && (l.status === 'Bestanden' || l.status === 'Nicht bestanden')) {
+              if (memberHours[l.memberId]) {
+                memberHours[l.memberId].lehrgang += (parseFloat(l.stunden) || 0);
+                memberHours[l.memberId].gesamt += (parseFloat(l.stunden) || 0);
+                totalHours += (parseFloat(l.stunden) || 0);
+              }
+            }
+          }
+        });
+
+        const statTotalEl = document.getElementById('statTotalHours');
+        if (statTotalEl) statTotalEl.innerText = totalHours.toFixed(1) + ' h';
+        
+        const statYearEl = document.getElementById('statYearSub');
+        if (statYearEl) statYearEl.innerText = `Gesamt geleistet im Jahr ${curYear}`;
+        
+        const statMemEl = document.getElementById('statMembersCount');
+        if (statMemEl) statMemEl.innerText = appData.members.filter(m => m.status === 'Aktiv').length;
+
+        let agtReady = 0, agtTotal = 0, uvvOk = 0;
+        const activeMembers = appData.members.filter(m => m.status === 'Aktiv');
+        activeMembers.forEach(m => {
+          const isUvvOk = checkUvvValidityForMember(m.id, curYear);
+          if (isUvvOk) uvvOk++;
+
+          if (m.lehrgaenge && m.lehrgaenge.includes('AGT')) {
+            agtTotal++;
+            const g26 = checkG26Validity(m.g26Ablauf);
+            const str = checkOneYearValidity(m.streckeDatum);
+            if (g26.status !== 'danger' && str.status !== 'danger' && isUvvOk) agtReady++;
+          }
+        });
+
+        const statAgtEl = document.getElementById('statAgtCount');
+        if (statAgtEl) statAgtEl.innerText = `${agtReady} / ${agtTotal}`;
+        
+        const aktiveIds = new Set(activeMembers.map(m => m.id));
+        let bDienste = 0, bQuoteSumme = 0, bTeilnahmen = 0, bStundenIst = 0, bStundenSoll = 0;
+        if (activeMembers.length) {
+          appData.dienste.forEach(d => {
+            if ((d.status || 'Durchgeführt') !== 'Durchgeführt') return;
+            if (d.typ === 'Lehrgang' || d.typ === 'OWF-Versammlung') return;
+            if (new Date(d.datumVon || d.datum).getFullYear() !== curYear) return;
+            const anwesend = (d.teilnehmer || []).filter(id => aktiveIds.has(id)).length;
+            const dauer = parseFloat(d.dauer) || 0;
+            bDienste++;
+            bQuoteSumme += anwesend / activeMembers.length;
+            bTeilnahmen += anwesend;
+            bStundenIst += dauer * anwesend;
+            bStundenSoll += dauer * activeMembers.length;
+          });
+        }
+        const statBetEl = document.getElementById('statBeteiligung');
+        if (statBetEl) statBetEl.innerText = bDienste ? Math.round((bQuoteSumme / bDienste) * 100) + '%' : '0%';
+        const statBetSubEl = document.getElementById('statBeteiligungSub');
+        if (statBetSubEl) statBetSubEl.innerText = bDienste
+          ? `Ø ${(bTeilnahmen / bDienste).toFixed(1).replace('.', ',')} von ${activeMembers.length} Kameraden bei ${bDienste} Diensten`
+          : `Noch keine durchgeführten Dienste in ${curYear}`;
+        const statBetStdEl = document.getElementById('statBeteiligungStunden');
+        if (statBetStdEl) statBetStdEl.innerText = bStundenSoll
+          ? `${bStundenIst.toFixed(1).replace('.', ',')} h von ${bStundenSoll.toFixed(1).replace('.', ',')} h möglich (${Math.round((bStundenIst / bStundenSoll) * 100)}%)`
+          : '';
+
+        const statUvvEl = document.getElementById('statUvvCount');
+        if (statUvvEl) statUvvEl.innerText = activeMembers.length ? Math.round((uvvOk / activeMembers.length) * 100) + '%' : '0%';
+        
+        const statUvvSubEl = document.getElementById('statUvvSub');
+        if (statUvvSubEl) statUvvSubEl.innerText = `${uvvOk} von ${activeMembers.length} Aktiven im Jahr ${curYear}`;
+
+        const rankBody = document.getElementById('rankingTableBody');
+        if (rankBody) {
+          rankBody.innerHTML = '';
+          appData.members.forEach((m) => {
+            const h = memberHours[m.id] || { ausbildung: 0, lehrgang: 0, einsatz: 0, gesamt: 0 };
+            const isUvvOk = checkUvvValidityForMember(m.id, curYear);
+            const uvvBadge = isUvvOk ? `<span class="badge badge-success">✓ ${curYear}</span>` : `<span class="badge badge-danger">⚠️ Fällig</span>`;
+
+            rankBody.innerHTML += `
+              <tr>
+                <td><strong>${m.nachname || ''}</strong>, ${m.vorname || ''}</td>
+                <td>${funktionAnzeige(m)}</td>
+                <td>${uvvBadge}</td>
+                <td>${h.ausbildung.toFixed(1)} h</td>
+                <td><span style="color:#a78bfa; font-weight:600;">${h.lehrgang.toFixed(1)} h</span></td>
+                <td>${h.einsatz.toFixed(1)} h</td>
+                <td><strong style="color: #60a5fa;">${h.gesamt.toFixed(1)} h</strong></td>
+              </tr>
+            `;
+          });
+        }
+
+        const dBody = document.getElementById('diensteTableBody');
+        if (dBody) {
+          dBody.innerHTML = '';
+          const sortedDienste = [...appData.dienste].sort((a, b) => new Date(b.datumVon || b.datum) - new Date(a.datumVon || a.datum)).filter(matchesDienstSuche);
+          const trefferEl = document.getElementById('dienstSuchTreffer');
+          if (trefferEl) trefferEl.innerText = `${sortedDienste.length} von ${appData.dienste.length} Einträgen`;
+          if (sortedDienste.length === 0) {
+            dBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Keine Einträge gefunden.</td></tr>`;
+          }
+          sortedDienste.forEach(d => {
+            const dStatus = d.status || 'Durchgeführt';
+            let statusBadge = `<span class="badge badge-success">✓ Durchgeführt</span>`;
+            if (dStatus === 'Geplant') statusBadge = `<span class="badge badge-warning">⏳ Geplant</span>`;
+            else if (dStatus === 'Ausgefallen') statusBadge = `<span class="badge badge-danger">✕ Ausgefallen</span>`;
+
+            const tnCount = d.teilnehmer ? d.teilnehmer.length : 0;
+            const dStart = d.datumVon || d.datum;
+            const dEnde = d.datumBis || d.datumVon || d.datum;
+            let timeStr = `${new Date(dStart).toLocaleDateString('de-DE')} ${d.zeitVon || d.von || ''} - ${new Date(dEnde).toLocaleDateString('de-DE')} ${d.zeitBis || d.bis || ''} Uhr`;
+            if (dStart === dEnde || d.typ !== 'Lehrgang') {
+              timeStr = `${new Date(dStart).toLocaleDateString('de-DE')} (${d.zeitVon || d.von || ''} - ${d.zeitBis || d.bis || ''} Uhr)`;
+            }
+
+            let rollenBadges = [];
+            if (d.typ === 'OWF-Versammlung') {
+              rollenBadges.push(`<span class="badge badge-owf">🏛️ OWF-Dienstberatung</span>`);
+            }
+            if (d.ausbilder) {
+              const ab = appData.members.find(m => m.id === d.ausbilder);
+              rollenBadges.push(`<span class="badge badge-ausb">🎓 Ausb: ${ab ? ab.nachname : d.ausbilder}</span>`);
+            }
+            if (d.einheitsfuehrer) {
+              const ef = appData.members.find(m => m.id === d.einheitsfuehrer);
+              rollenBadges.push(`<span class="badge badge-gf">GF: ${ef ? ef.nachname : 'Unbekannt'}</span>`);
+            }
+            if (d.maschinist) {
+              const ma = appData.members.find(m => m.id === d.maschinist);
+              rollenBadges.push(`<span class="badge badge-masch">Ma: ${ma ? ma.nachname : 'Unbekannt'}</span>`);
+            }
+
+            dBody.innerHTML += `
+              <tr style="${dStatus === 'Geplant' ? 'opacity: 0.9; background: rgba(234, 179, 8, 0.04);' : ''}">
+                <td>${statusBadge}</td>
+                <td><strong>${timeStr}</strong></td>
+                <td><span class="badge badge-tag">${d.typ}</span></td>
+                <td><strong>${d.thema}</strong></td>
+                <td>${rollenBadges.length ? rollenBadges.join(' ') : '<span style="color:var(--text-muted);">-</span>'}</td>
+                <td><strong style="color:${dStatus === 'Geplant' ? 'var(--text-muted)' : '#60a5fa'};">${d.dauer.toFixed(2)} h ${dStatus === 'Geplant' ? '<small>(ausstehend)</small>' : ''}</strong></td>
+                <td>${tnCount} Kameraden</td>
+                <td>
+                  <button class="btn btn-secondary btn-sm" onclick="openDienstModal('${d.id}')" title="Bearbeiten">✏️ Bearbeiten</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteDienst('${d.id}')" title="Löschen">🗑️</button>
+                </td>
+              </tr>
+            `;
+          });
+        }
+
+        const lBody = document.getElementById('lehrgangTableBody');
+        if (lBody) {
+          lBody.innerHTML = '';
+          const sortedLehrgaenge = [...(appData.lehrgangPlan || [])].sort((a,b) => {
+            const dA = a.startDatum ? new Date(a.startDatum) : new Date('2099-01-01');
+            const dB = b.startDatum ? new Date(b.startDatum) : new Date('2099-01-01');
+            return dB - dA;
+          }).filter(matchesLehrgangSuche);
+
+          const lTrefferEl = document.getElementById('lehrgangSuchTreffer');
+          if (lTrefferEl) lTrefferEl.innerText = `${sortedLehrgaenge.length} von ${(appData.lehrgangPlan || []).length} Einträgen`;
+          if (sortedLehrgaenge.length === 0) {
+            lBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Keine Einträge gefunden.</td></tr>`;
+          }
+
+          sortedLehrgaenge.forEach(l => {
+            const mem = appData.members.find(m => m.id === l.memberId);
+            let sBadge = 'badge-tag';
+            if (l.status === 'Bestanden') sBadge = 'badge-success';
+            else if (l.status === 'Angemeldet') sBadge = 'badge-warning';
+            else if (l.status === 'Beworben') sBadge = 'badge-info';
+            else if (l.status === 'Nicht bestanden') sBadge = 'badge-danger';
+
+            let dateDisplay = '- (Vorgemerkt)';
+            if (l.startDatum && l.endeDatum) {
+              dateDisplay = `${new Date(l.startDatum).toLocaleDateString('de-DE')} - ${new Date(l.endeDatum).toLocaleDateString('de-DE')}`;
+            }
+
+            const stundenDisplay = l.stunden ? `${parseFloat(l.stunden).toFixed(1)} h` : '-';
+
+            lBody.innerHTML += `
+              <tr>
+                <td><strong>${mem ? mem.nachname + ', ' + mem.vorname : 'Unbekannt'}</strong></td>
+                <td><strong>${l.titel}</strong></td>
+                <td>${l.ort}</td>
+                <td>${dateDisplay}</td>
+                <td><strong style="color:#a78bfa;">${stundenDisplay}</strong></td>
+                <td><span class="badge ${sBadge}">${l.status}</span></td>
+                <td>
+                  <button class="btn btn-secondary btn-sm" onclick="openLehrgangModal('${l.id}')">✏️ Bearbeiten</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteLehrgang('${l.id}')">🗑️</button>
+                </td>
+              </tr>
+            `;
+          });
+        }
+
+        const agtBody = document.getElementById('agtTableBody');
+        if (agtBody) {
+          agtBody.innerHTML = '';
+          appData.members.filter(m => m.lehrgaenge && m.lehrgaenge.includes('AGT')).forEach(m => {
+            const g26 = checkG26Validity(m.g26Ablauf);
+            const str = checkOneYearValidity(m.streckeDatum);
+            const csa = checkOneYearValidity(m.csaDatum);
+            
+            const isUvvOk = checkUvvValidityForMember(m.id, curYear);
+            const isReady = (g26.status !== 'danger') && (str.status !== 'danger') && isUvvOk;
+
+            agtBody.innerHTML += `
+              <tr>
+                <td><strong>${m.nachname}</strong>, ${m.vorname}</td>
+                <td><span class="badge badge-${g26.status}">${g26.label}</span></td>
+                <td><span class="badge badge-${str.status}">${str.label}</span></td>
+                <td><span class="badge badge-${csa.status}">${csa.label}</span></td>
+                <td>${isUvvOk ? '<span class="badge badge-success">✓ OK</span>' : '<span class="badge badge-danger">⚠️ Fällig</span>'}</td>
+                <td>${isReady ? '<span class="badge badge-success">Einsatztauglich ✓</span>' : '<span class="badge badge-danger">Nicht tauglich ✕</span>'}</td>
+                <td>
+                  <button class="btn btn-secondary btn-sm" onclick="setStreckeToday('${m.id}')" title="Streckendurchgang auf heute setzen">+ Strecke heute</button>
+                </td>
+              </tr>
+            `;
+          });
+        }
+
+        const memBody = document.getElementById('membersTableBody');
+        if (memBody) {
+          memBody.innerHTML = '';
+          appData.members.forEach((m) => {
+            const fsBadges = fuehrerscheinAnzeige(m.fuehrerschein).map(f => `<span class="badge badge-fs">${f}</span>`).join('');
+            
+            const hasTm1 = m.lehrgaenge && m.lehrgaenge.includes('TM 1');
+            const hasTm2 = m.lehrgaenge && m.lehrgaenge.includes('TM 2');
+            const hasTfBrand = m.lehrgaenge && m.lehrgaenge.includes('TF Brand');
+            const hasTfTh = m.lehrgaenge && m.lehrgaenge.includes('TF TH');
+            const hasGf = m.lehrgaenge && m.lehrgaenge.includes('GF');
+            const hasZf = m.lehrgaenge && m.lehrgaenge.includes('ZF');
+            const hasVf = m.lehrgaenge && m.lehrgaenge.includes('VF');
+
+            // Höherwertige Führungsqualifikation ersetzt die darunterliegenden (FwDV 2): VF > ZF > GF > TF > TM 2 > TM 1
+            const hideZf = hasVf;
+            const hideGf = hasZf || hasVf;
+            const hideTf = hasGf || hasZf || hasVf;
+            const hideTm = hasGf || hasZf || hasVf || (hasTfBrand && hasTfTh);
+
+            let lgBadgesList = [];
+            let lgOtherList = [];
+
+            if (!hideTm) {
+              if (hasTm2) {
+                lgBadgesList.push(`<span class="badge badge-success" title="Truppmann Teil 2">⭐ TM 2</span>`);
+              } else if (hasTm1) {
+                lgBadgesList.push(`<span class="badge badge-success" title="Truppmann Teil 1">⭐ TM 1</span>`);
+              }
+            }
+
+            if (!hideTf) {
+              if (hasTfBrand && hasTfTh) {
+                lgBadgesList.push(`<span class="badge badge-success" title="Truppführer vollständig (Brand + TH)">⭐ TF komplett</span>`);
+              } else {
+                if (hasTfBrand) lgBadgesList.push(`<span class="badge badge-danger" title="Truppführer Brandbekämpfung">🔥 TF Brand</span>`);
+                if (hasTfTh) lgBadgesList.push(`<span class="badge badge-info" title="Truppführer Technische Hilfe">🚗 TF TH</span>`);
+              }
+            }
+
+            (m.lehrgaenge || []).forEach(l => {
+              if (l === 'TM 1' || l === 'TM 2' || l === 'TF Brand' || l === 'TF TH') return;
+              if (l === 'GF' && hideGf) return;
+              if (l === 'ZF' && hideZf) return;
+              if (l === 'VF') { lgBadgesList.push(`<span class="badge badge-success" title="Verbandsführer">⭐ VF</span>`); return; }
+              if (l === 'ZF') { lgBadgesList.push(`<span class="badge badge-success" title="Zugführer">⭐ ZF</span>`); return; }
+              if (l === 'GF') { lgBadgesList.push(`<span class="badge badge-success" title="Gruppenführer">⭐ GF</span>`); return; }
+              lgOtherList.push(`<span class="badge badge-tag">${l}</span>`);
+            });
+
+            // Führungs-/Truppqualifikation in der ersten Zeile, alle übrigen Qualifikationen darunter
+            let qualiCell = '-';
+            if (lgBadgesList.length || lgOtherList.length) {
+              qualiCell = '';
+              if (lgBadgesList.length) qualiCell += `<div>${lgBadgesList.join(' ')}</div>`;
+              if (lgOtherList.length) qualiCell += `<div style="margin-top:${lgBadgesList.length ? '0.35rem' : '0'};">${lgOtherList.join(' ')}</div>`;
+            }
+
+            let geburtsdatumDisplay = '-';
+            if (m.geburtsdatum && /^\d{4}-\d{2}-\d{2}$/.test(m.geburtsdatum)) {
+              const [gy, gm, gd] = m.geburtsdatum.split('-');
+              geburtsdatumDisplay = `${gd}.${gm}.${gy}`;
+            }
+
+
+            memBody.innerHTML += `
+              <tr>
+                <td><strong>${m.nachname || ''}</strong><br>${m.vorname || ''}</td>
+                <td>${dienstgradAnzeige(m)}</td>
+                <td>${funktionAnzeige(m)}</td>
+                <td>${geburtsdatumDisplay}</td>
+                <td>${qualiCell}</td>
+                <td><span class="badge ${m.status === 'Aktiv' ? 'badge-success' : 'badge-tag'}">${m.status || 'Aktiv'}</span></td>
+                <td>${fsBadges || '-'}</td>
+                <td>
+                  <button class="btn btn-secondary btn-sm" onclick="openMemberModal('${m.id}')">✏️ Bearbeiten</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">🗑️</button>
+                </td>
+              </tr>
+            `;
+          });
+        }
+      } catch (err) {
+        console.error("Fehler beim Rendern der Ansicht:", err);
+      }
+    }
+
+    function setStreckeToday(memberId) {
+      const m = appData.members.find(x => x.id === memberId);
+      if (m) {
+        const today = new Date().toISOString().split('T')[0];
+        m.streckeDatum = today;
+        saveData();
+        alert(`Atemschutzstrecke für ${m.vorname} ${m.nachname} auf ${today} gesetzt.`);
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    function openDienstModal(dienstId = null) {
+      document.getElementById('dienstForm').reset();
+      const container = document.getElementById('attendanceCheckboxes');
+      container.innerHTML = '';
+
+      const abSelect = document.getElementById('dienstAusbilderSelect');
+      const efSelect = document.getElementById('dienstEinheitsfuehrer');
+      const maSelect = document.getElementById('dienstMaschinist');
+      
+      abSelect.innerHTML = '<option value="">-- Kamerad aus Christdorf auswählen --</option>';
+      efSelect.innerHTML = '<option value="">-- Nicht festgelegt --</option>';
+      maSelect.innerHTML = '<option value="">-- Nicht festgelegt --</option>';
+
+      appData.members.forEach(m => {
+        abSelect.innerHTML += `<option value="${m.id}">${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})</option>`;
+        efSelect.innerHTML += `<option value="${m.id}">${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})</option>`;
+        maSelect.innerHTML += `<option value="${m.id}">${m.nachname}, ${m.vorname} (${fuehrerscheinAnzeige(m.fuehrerschein).join(',')})</option>`;
+      });
+
+      if (dienstId) {
+        const d = appData.dienste.find(x => x.id === dienstId);
+        if (d) {
+          document.getElementById('dienstId').value = d.id;
+          document.getElementById('dienstTyp').value = d.typ;
+          document.getElementById('dienstStatus').value = d.status || 'Durchgeführt';
+          document.getElementById('dienstDatumVon').value = d.datumVon || d.datum;
+          document.getElementById('dienstZeitVon').value = d.zeitVon || d.von || '19:00';
+          document.getElementById('dienstDatumBis').value = d.datumBis || d.datumVon || d.datum;
+          document.getElementById('dienstZeitBis').value = d.zeitBis || d.bis || '21:00';
+          document.getElementById('dienstThema').value = d.thema;
+          document.getElementById('dienstEinheitsfuehrer').value = d.einheitsfuehrer || '';
+          document.getElementById('dienstMaschinist').value = d.maschinist || '';
+
+          const isMemberId = appData.members.some(m => m.id === d.ausbilder);
+          if (isMemberId) {
+            document.getElementById('dienstAusbilderSelect').value = d.ausbilder;
+            document.getElementById('dienstAusbilderCustom').value = '';
+          } else {
+            document.getElementById('dienstAusbilderSelect').value = '';
+            document.getElementById('dienstAusbilderCustom').value = d.ausbilder || '';
+          }
+
+          document.getElementById('dienstModalTitle').innerText = '✏️ Dienst / Termin bearbeiten';
+          document.getElementById('dienstSubmitBtn').innerText = 'Änderungen speichern';
+          handleDienstTypChange();
+          document.getElementById('dienstDauer').value = d.dauer;
+
+          appData.members.forEach(m => {
+            const isChecked = d.teilnehmer && d.teilnehmer.includes(m.id);
+            container.innerHTML += `
+              <div class="attendance-row">
+                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:100%; color:#f1f5f9;">
+                  <input type="checkbox" name="attendance" value="${m.id}" ${isChecked ? 'checked' : ''}>
+                  <span><strong>${m.nachname}</strong>, ${m.vorname} (${dienstgradAnzeige(m)})</span>
+                </label>
+                ${(m.funktion === 'Ortswehrführer' || m.funktion === 'Stellv. Ortswehrführer') ? '<span class="badge badge-owf">Führung</span>' : ''}
+                ${m.lehrgaenge && m.lehrgaenge.includes('AGT') ? '<span class="badge badge-tag">AGT</span>' : ''}
+              </div>
+            `;
+          });
+        }
+      } else {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('dienstId').value = '';
+        document.getElementById('dienstStatus').value = 'Durchgeführt';
+        document.getElementById('dienstDatumVon').value = today;
+        document.getElementById('dienstDatumBis').value = today;
+        document.getElementById('dienstZeitVon').value = '19:00';
+        document.getElementById('dienstZeitBis').value = '21:00';
+        document.getElementById('dienstAusbilderCustom').value = '';
+        document.getElementById('dienstModalTitle').innerText = '+ Neuer Dienst / Termin erfassen';
+        document.getElementById('dienstSubmitBtn').innerText = 'Dienst speichern';
+        handleDienstTypChange();
+
+        appData.members.forEach(m => {
+          container.innerHTML += `
+            <div class="attendance-row">
+              <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:100%; color:#f1f5f9;">
+                <input type="checkbox" name="attendance" value="${m.id}" checked>
+                <span><strong>${m.nachname}</strong>, ${m.vorname} (${dienstgradAnzeige(m)})</span>
+              </label>
+              ${(m.funktion === 'Ortswehrführer' || m.funktion === 'Stellv. Ortswehrführer') ? '<span class="badge badge-owf">Führung</span>' : ''}
+              ${m.lehrgaenge && m.lehrgaenge.includes('AGT') ? '<span class="badge badge-tag">AGT</span>' : ''}
+            </div>
+          `;
+        });
+      }
+
+      document.getElementById('modalDienst').style.display = 'flex';
+    }
+
+    function selectAllAttendance(check) {
+      document.querySelectorAll('#attendanceCheckboxes input').forEach(c => c.checked = check);
+    }
+
+    function selectAgtAttendance() {
+      const agtIds = appData.members.filter(m => m.lehrgaenge && m.lehrgaenge.includes('AGT')).map(m => m.id);
+      document.querySelectorAll('#attendanceCheckboxes input').forEach(c => {
+        c.checked = agtIds.includes(c.value);
+      });
+    }
+
+    function selectWehrfuehrungAttendance() {
+      const fuehrungIds = appData.members.filter(m => m.funktion === 'Ortswehrführer' || m.funktion === 'Stellv. Ortswehrführer').map(m => m.id);
+      document.querySelectorAll('#attendanceCheckboxes input').forEach(c => {
+        c.checked = fuehrungIds.includes(c.value);
+      });
+    }
+
+    function saveDienst(e) {
+      e.preventDefault();
+      const id = document.getElementById('dienstId').value || 'd-' + Date.now();
+      const typ = document.getElementById('dienstTyp').value;
+      const status = document.getElementById('dienstStatus').value;
+      const datumVon = document.getElementById('dienstDatumVon').value;
+      const zeitVon = document.getElementById('dienstZeitVon').value;
+      const datumBis = (typ === 'Lehrgang' && document.getElementById('dienstDatumBis').value) ? document.getElementById('dienstDatumBis').value : datumVon;
+      const zeitBis = document.getElementById('dienstZeitBis').value;
+      const dauer = parseFloat(document.getElementById('dienstDauer').value);
+      const einheitsfuehrer = document.getElementById('dienstEinheitsfuehrer').value;
+      const maschinist = document.getElementById('dienstMaschinist').value;
+      
+      const selAusbilder = document.getElementById('dienstAusbilderSelect').value;
+      const custAusbilder = document.getElementById('dienstAusbilderCustom').value.trim();
+      const ausbilder = custAusbilder ? custAusbilder : selAusbilder;
+
+      const thema = document.getElementById('dienstThema').value.trim();
+      const teilnehmer = Array.from(document.querySelectorAll('#attendanceCheckboxes input:checked')).map(c => c.value);
+
+      if (einheitsfuehrer && !teilnehmer.includes(einheitsfuehrer)) teilnehmer.push(einheitsfuehrer);
+      if (maschinist && !teilnehmer.includes(maschinist)) teilnehmer.push(maschinist);
+      if (selAusbilder && !teilnehmer.includes(selAusbilder)) teilnehmer.push(selAusbilder);
+
+      const dObj = { id, typ, status, datumVon, zeitVon, datumBis, zeitBis, dauer, einheitsfuehrer, maschinist, ausbilder, thema, teilnehmer };
+
+      const existingIdx = appData.dienste.findIndex(x => x.id === id);
+      if (existingIdx !== -1) {
+        appData.dienste[existingIdx] = dObj;
+      } else {
+        appData.dienste.push(dObj);
+      }
+
+      if (status === 'Durchgeführt') {
+        teilnehmer.forEach(mId => {
+          const m = appData.members.find(x => x.id === mId);
+          if (m) {
+            if (typ === 'Strecke') m.streckeDatum = datumVon;
+            if (typ === 'CSA') m.csaDatum = datumVon;
+          }
+        });
+      }
+
+      saveData();
+      populateYearFilter();
+      closeModal('modalDienst');
+
+      const isUvvService = (typ === 'UVV') || (thema && (thema.toLowerCase().includes('uvv') || thema.toLowerCase().includes('sicherheitsbelehrung') || thema.toLowerCase().includes('sicherheitsunterweisung')));
+      if (isUvvService && status === 'Durchgeführt') {
+        const dYear = new Date(datumVon).getFullYear();
+        alert(`Dienst erfolgreich als durchgeführt gespeichert! Für alle ${teilnehmer.length} anwesenden Kameraden ist die UVV für ${dYear} nun als gültig hinterlegt.`);
+      }
+    }
+
+    function deleteDienst(id) {
+      if (confirm('Dienst wirklich löschen?')) {
+        appData.dienste = appData.dienste.filter(d => d.id !== id);
+        saveData();
+      }
+    }
+
+    function openLehrgangModal(lehrgangId = null) {
+      document.getElementById('lehrgangForm').reset();
+      const mSelect = document.getElementById('lehrgangMemberSelect');
+      mSelect.innerHTML = appData.members.map(m => `<option value="${m.id}">${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})</option>`).join('');
+
+      const sel = document.getElementById('lehrgangSelect');
+      const customBox = document.getElementById('lehrgangCustomBox');
+      const customInput = document.getElementById('lehrgangTitelCustom');
+
+      if (lehrgangId) {
+        const l = (appData.lehrgangPlan || []).find(x => x.id === lehrgangId);
+        if (l) {
+          document.getElementById('lehrgangId').value = l.id;
+          document.getElementById('lehrgangMemberSelect').value = l.memberId;
+          
+          let foundOption = false;
+          for (let i = 0; i < sel.options.length; i++) {
+            if (sel.options[i].value === l.titel) {
+              sel.selectedIndex = i;
+              foundOption = true;
+              break;
+            }
+          }
+
+          if (!foundOption) {
+            sel.value = 'Sonstiges';
+            customBox.style.display = 'block';
+            customInput.value = l.titel;
+          } else {
+            customBox.style.display = 'none';
+            customInput.value = '';
+          }
+
+          document.getElementById('lehrgangOrt').value = (l.ort === 'Kreisebene OPR' ? 'FTZ Kyritz' : l.ort) || 'FTZ Kyritz';
+          document.getElementById('lehrgangStatus').value = l.status || 'Beworben';
+          document.getElementById('lehrgangStartDatum').value = l.startDatum || '';
+          document.getElementById('lehrgangEndeDatum').value = l.endeDatum || '';
+          document.getElementById('lehrgangStunden').value = l.stunden || '';
+          document.getElementById('lehrgangModalTitle').innerText = '✏️ Lehrgang bearbeiten';
+        }
+      } else {
+        document.getElementById('lehrgangId').value = '';
+        sel.selectedIndex = 0;
+        customBox.style.display = 'none';
+        customInput.value = '';
+        document.getElementById('lehrgangStatus').value = 'Beworben';
+        document.getElementById('lehrgangStartDatum').value = '';
+        document.getElementById('lehrgangEndeDatum').value = '';
+        document.getElementById('lehrgangStunden').value = '';
+        document.getElementById('lehrgangModalTitle').innerText = '+ Lehrgang / Bewerbung erfassen';
+      }
+      
+      toggleLehrgangFields();
+      document.getElementById('modalLehrgang').style.display = 'flex';
+    }
+
+    function mapLehrgangToQualificationCode(lehrgangTitle, optElement) {
+      if (optElement && optElement.dataset && optElement.dataset.code) {
+        return optElement.dataset.code;
+      }
+      const t = lehrgangTitle.toLowerCase();
+      if (t.includes('tf brand') || t.includes('truppführer brand')) return 'TF Brand';
+      if (t.includes('tf th') || t.includes('truppführer th') || t.includes('truppführer technische hilfe')) return 'TF TH';
+      if (t.includes('funk') || t.includes('sprechfunk')) return 'Funk';
+      if (t.includes('atemschutz') || t.includes('agt')) return 'AGT';
+      if (t.includes('maschinist')) return 'Maschinist';
+      if (t.includes('truppmann 1') || t.includes('tm 1') || t.includes('tm1')) return 'TM 1';
+      if (t.includes('truppmann 2') || t.includes('tm 2') || t.includes('tm2')) return 'TM 2';
+      if (t.includes('gruppenführer') || t.includes('gf')) return 'GF';
+      if (t.includes('zugführer') || t.includes('zf')) return 'ZF';
+      if (t.includes('kettensäge') || t.includes('motorkettensäge')) return 'Motorkettensäge';
+      if (t.includes('csa')) return 'CSA';
+      return null;
+    }
+
+    function saveLehrgang(e) {
+      e.preventDefault();
+      const id = document.getElementById('lehrgangId').value || 'lg-' + Date.now();
+      const memberId = document.getElementById('lehrgangMemberSelect').value;
+      
+      const sel = document.getElementById('lehrgangSelect');
+      const opt = sel.options[sel.selectedIndex];
+      let titel = sel.value;
+      if (titel === 'Sonstiges') {
+        titel = document.getElementById('lehrgangTitelCustom').value.trim();
+      }
+
+      const ort = document.getElementById('lehrgangOrt').value;
+      const status = document.getElementById('lehrgangStatus').value;
+      
+      let startDatum = '';
+      let endeDatum = '';
+      let stunden = 0;
+
+      if (status !== 'Beworben') {
+        startDatum = document.getElementById('lehrgangStartDatum').value;
+        endeDatum = document.getElementById('lehrgangEndeDatum').value;
+        stunden = parseFloat(document.getElementById('lehrgangStunden').value) || 0;
+      }
+
+      if (!appData.lehrgangPlan) appData.lehrgangPlan = [];
+
+      const lObj = { id, memberId, titel, ort, startDatum, endeDatum, stunden, status };
+      const idx = appData.lehrgangPlan.findIndex(x => x.id === id);
+
+      if (idx !== -1) {
+        appData.lehrgangPlan[idx] = lObj;
+      } else {
+        appData.lehrgangPlan.push(lObj);
+      }
+
+      if (status === 'Bestanden') {
+        const m = appData.members.find(x => x.id === memberId);
+        if (m) {
+          if (!m.lehrgaenge) m.lehrgaenge = [];
+          
+          const qualCode = mapLehrgangToQualificationCode(titel, opt);
+          if (qualCode) {
+            if (!m.lehrgaenge.includes(qualCode)) {
+              m.lehrgaenge.push(qualCode);
+            }
+          }
+          if (!m.lehrgaenge.includes(titel) && !qualCode) {
+            m.lehrgaenge.push(titel);
+          }
+        }
+      }
+
+      saveData();
+      populateYearFilter();
+      closeModal('modalLehrgang');
+      alert(`Lehrgang gespeichert! ${status === 'Bestanden' ? 'Die Qualifikation wurde automatisch in der Mannschaftsverwaltung aktiviert.' : ''}`);
+    }
+
+    function deleteLehrgang(id) {
+      if (confirm('Lehrgangseintrag wirklich löschen?')) {
+        appData.lehrgangPlan = (appData.lehrgangPlan || []).filter(x => x.id !== id);
+        saveData();
+      }
+    }
+
+    function openMemberModal(memberId = null) {
+      document.getElementById('memberForm').reset();
+      updateGeschlechtLabels();
+      document.querySelectorAll('#fsCheckboxGrid input').forEach(c => c.checked = false);
+      document.querySelectorAll('#lehrgangGrid input').forEach(c => c.checked = false);
+
+      if (memberId) {
+        const m = appData.members.find(x => x.id === memberId);
+        if (m) {
+          document.getElementById('memberId').value = m.id;
+          document.getElementById('memberPersonalnummer').value = m.personalnummer !== undefined ? m.personalnummer : '';
+          document.getElementById('memberStatus').value = m.status || 'Aktiv';
+          document.getElementById('memberVorname').value = m.vorname || '';
+          document.getElementById('memberNachname').value = m.nachname || '';
+          document.getElementById('memberGeburtsdatum').value = m.geburtsdatum || '';
+          document.getElementById('memberGeschlecht').value = m.geschlecht === 'w' ? 'w' : 'm';
+          updateGeschlechtLabels();
+          document.getElementById('memberDienstgrad').value = m.dienstgrad;
+          document.getElementById('memberFunktion').value = m.funktion;
+          document.getElementById('memberG26').value = m.g26Ablauf || '';
+          document.getElementById('memberStrecke').value = m.streckeDatum || '';
+          document.getElementById('memberCsa').value = m.csaDatum || '';
+
+          (m.fuehrerschein || []).forEach(fs => {
+            const cb = document.querySelector(`#fsCheckboxGrid input[value="${fs}"]`);
+            if (cb) cb.checked = true;
+          });
+          
+          (m.lehrgaenge || []).forEach(lg => {
+            const cb = document.querySelector(`#lehrgangGrid input[value="${lg}"]`);
+            if (cb) cb.checked = true;
+          });
+          document.getElementById('memberModalTitle').innerText = 'Kamerad bearbeiten';
+        }
+      } else {
+        document.getElementById('memberId').value = '';
+        
+        let maxNr = 0;
+        appData.members.forEach(m => {
+          const nr = parseInt(m.personalnummer) || 0;
+          if (nr > maxNr) maxNr = nr;
+        });
+        document.getElementById('memberPersonalnummer').value = maxNr + 1;
+        document.getElementById('memberStatus').value = 'Aktiv';
+        document.getElementById('memberModalTitle').innerText = 'Neuen Kameraden aufnehmen';
+      }
+      document.getElementById('modalMember').style.display = 'flex';
+    }
+
+    function saveMember(e) {
+      e.preventDefault();
+      const id = document.getElementById('memberId').value || 'mem-' + Date.now();
+      const pnrInput = document.getElementById('memberPersonalnummer').value;
+      const personalnummer = pnrInput !== '' ? parseInt(pnrInput) : 9999;
+      const status = document.getElementById('memberStatus').value;
+      const vorname = document.getElementById('memberVorname').value.trim();
+      const nachname = document.getElementById('memberNachname').value.trim();
+      const geburtsdatum = document.getElementById('memberGeburtsdatum').value;
+      const geschlecht = document.getElementById('memberGeschlecht').value;
+      const dienstgrad = document.getElementById('memberDienstgrad').value;
+      const funktion = document.getElementById('memberFunktion').value;
+      const g26Ablauf = document.getElementById('memberG26').value;
+      const streckeDatum = document.getElementById('memberStrecke').value;
+      const csaDatum = document.getElementById('memberCsa').value;
+
+      const fuehrerschein = Array.from(document.querySelectorAll('#fsCheckboxGrid input:checked')).map(c => c.value);
+      const lehrgaenge = Array.from(document.querySelectorAll('#lehrgangGrid input:checked')).map(c => c.value);
+
+      const existingIdx = appData.members.findIndex(m => m.id === id);
+
+      const memberObj = {
+        id, personalnummer, status, vorname, nachname, geburtsdatum, geschlecht, dienstgrad, funktion, fuehrerschein, lehrgaenge,
+        g26Ablauf, streckeDatum, csaDatum
+      };
+
+      if (existingIdx !== -1) {
+        appData.members[existingIdx] = memberObj;
+      } else {
+        appData.members.push(memberObj);
+      }
+
+      sortMembers();
+      saveData();
+      closeModal('modalMember');
+    }
+
+    function deleteMember(id) {
+      if (confirm('Kamerad wirklich löschen?')) {
+        appData.members = appData.members.filter(m => m.id !== id);
+        saveData();
+      }
+    }
+
+    function exportDataJSON() {
+      const jsonStr = JSON.stringify(appData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `FF_Christdorf_Backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+    }
+
+    function importDataJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const imported = JSON.parse(event.target.result);
+          if (imported.members && imported.dienste) {
+            normalizeData(imported);
+            sortMembers();
+            saveData();
+            alert('Daten erfolgreich wiederhergestellt und live mit der Cloud synchronisiert!');
+          } else {
+            alert('Ungültiges Datenformat!');
+          }
+        } catch (err) {
+          alert('Fehler beim Lesen der Datei!');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    window.onload = loadData;
+  </script>
+  <script>
+    // Service Worker für Installation als App und Offline-Start
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+    }
+  </script>
+</body>
+</html>
