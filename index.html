@@ -116,6 +116,28 @@
       .mobile-btn.active { color: #f87171; }
       .mobile-btn span.icon { font-size: 1.25rem; }
     }
+
+    /* KALENDER */
+    .cal-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
+    .cal-year { font-size: 1.25rem; font-weight: 800; min-width: 4.5rem; text-align: center; }
+    .cal-legend { display: flex; flex-wrap: wrap; gap: 0.9rem; font-size: 0.8rem; color: var(--text-muted); margin-left: auto; align-items: center; }
+    .cal-legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .cal-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+    .cal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; padding: 1rem; }
+    .cal-month { background: var(--card-header); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; }
+    .cal-month-title { font-weight: 700; text-align: center; margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .cal-weekdays, .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .cal-weekdays span { text-align: center; font-size: 0.65rem; color: var(--text-muted); font-weight: 600; padding-bottom: 2px; }
+    .cal-day { aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; border-radius: 4px; color: var(--text); border: 1px solid transparent; }
+    .cal-day.has-event { color: #fff; font-weight: 700; cursor: pointer; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    .cal-day.has-event:hover { filter: brightness(1.15); }
+    .cal-day.planned { opacity: 0.6; border: 1px dashed rgba(255,255,255,0.8); }
+    .cal-day.today { outline: 2px solid #facc15; outline-offset: 1px; }
+    .cal-day.selected { outline: 2px solid #ffffff; outline-offset: 1px; }
+    .cal-detail { padding: 0 1rem 1rem; }
+    .cal-detail-box { background: var(--card-header); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.85rem; }
+    .cal-detail-item { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.35rem 0; border-top: 1px solid var(--border); }
+    .cal-detail-item:first-of-type { border-top: none; }
   </style>
 </head>
 <body>
@@ -183,6 +205,7 @@
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchTab('dashboard')">📊 Übersicht</button>
       <button class="nav-tab" onclick="switchTab('dienste')">📅 Dienstbuch</button>
+      <button class="nav-tab" onclick="switchTab('kalender')">📆 Kalender</button>
       <button class="nav-tab" onclick="switchTab('atemschutz')">🤿 Atemschutz & G26.3</button>
       <button class="nav-tab" onclick="switchTab('lehrgaenge')">🎓 Lehrgangsplanung</button>
       <button class="nav-tab" onclick="switchTab('mitglieder')">👨‍🚒 Mannschaftsliste</button>
@@ -266,6 +289,24 @@
             </table>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- TAB: KALENDER -->
+    <section id="view-kalender" class="view-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📆 Jahreskalender</div>
+        </div>
+        <div class="cal-toolbar">
+          <button class="btn btn-secondary btn-sm" onclick="kalenderJahrWechsel(-1)">◀</button>
+          <span class="cal-year" id="kalenderJahrAnzeige"></span>
+          <button class="btn btn-secondary btn-sm" onclick="kalenderJahrWechsel(1)">▶</button>
+          <button class="btn btn-secondary btn-sm" onclick="kalenderHeute()">Heute</button>
+          <div class="cal-legend" id="kalenderLegende"></div>
+        </div>
+        <div class="cal-grid" id="kalenderGrid"></div>
+        <div class="cal-detail" id="kalenderDetail"></div>
       </div>
     </section>
 
@@ -385,6 +426,7 @@
   <div class="mobile-nav">
     <button class="mobile-btn active" onclick="switchTab('dashboard')"><span class="icon">📊</span>Übersicht</button>
     <button class="mobile-btn" onclick="switchTab('dienste')"><span class="icon">📅</span>Dienste</button>
+    <button class="mobile-btn" onclick="switchTab('kalender')"><span class="icon">📆</span>Kalender</button>
     <button class="mobile-btn" onclick="switchTab('atemschutz')"><span class="icon">🤿</span>Atemschutz</button>
     <button class="mobile-btn" onclick="switchTab('lehrgaenge')"><span class="icon">🎓</span>Lehrgänge</button>
     <button class="mobile-btn" onclick="switchTab('mitglieder')"><span class="icon">👨‍🚒</span>Mannschaft</button>
@@ -1119,6 +1161,143 @@
       renderApp();
     }
 
+    // ===== KALENDER =====
+    const KAL_KATEGORIEN = {
+      einsatz:   { label: 'Einsatz',                  farbe: '#dc2626', prio: 1 },
+      lehrgang:  { label: 'Lehrgang',                 farbe: '#8b5cf6', prio: 2 },
+      ausbildung:{ label: 'Ausbildung / Übung',       farbe: '#3b82f6', prio: 3 },
+      sonstiges: { label: 'Versammlung / Arbeitsdienst', farbe: '#14b8a6', prio: 4 }
+    };
+    let kalenderJahr = new Date().getFullYear();
+    let kalenderAuswahl = null;
+
+    function kalIsoToDate(iso) {
+      const t = String(iso || '').split('-');
+      if (t.length < 3) return null;
+      const d = new Date(parseInt(t[0]), parseInt(t[1]) - 1, parseInt(t[2]));
+      return isNaN(d.getTime()) ? null : d;
+    }
+    function kalKey(d) {
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function kalDeDatum(key) {
+      const t = key.split('-');
+      return t[2] + '.' + t[1] + '.' + t[0];
+    }
+
+    function kalenderJahrWechsel(delta) { kalenderJahr += delta; kalenderAuswahl = null; renderKalender(); }
+    function kalenderHeute() { kalenderJahr = new Date().getFullYear(); kalenderAuswahl = kalKey(new Date()); renderKalender(); }
+    function kalenderTagWaehlen(key) { kalenderAuswahl = (kalenderAuswahl === key) ? null : key; renderKalender(); }
+
+    function kalenderSammleTermine() {
+      const tage = {}; // key -> [{kat, titel, info, geplant}]
+      const add = (von, bis, eintrag) => {
+        const a = kalIsoToDate(von);
+        if (!a) return;
+        let b = kalIsoToDate(bis) || a;
+        if (b < a) b = a;
+        let n = 0;
+        for (let d = new Date(a); d <= b && n < 400; d.setDate(d.getDate() + 1), n++) {
+          const k = kalKey(d);
+          (tage[k] = tage[k] || []).push(eintrag);
+        }
+      };
+
+      (appData.dienste || []).forEach(d => {
+        const status = d.status || 'Durchgeführt';
+        if (status === 'Ausgefallen') return;
+        let kat = 'ausbildung';
+        if (d.typ === 'Einsatz') kat = 'einsatz';
+        else if (d.typ === 'Lehrgang') kat = 'lehrgang';
+        else if (d.typ === 'Arbeitsdienst' || d.typ === 'Versammlung' || d.typ === 'OWF-Versammlung') kat = 'sonstiges';
+        const zeit = (d.zeitVon || d.von || '') ? `${d.zeitVon || d.von} - ${d.zeitBis || d.bis || ''} Uhr` : '';
+        const tn = d.teilnehmer ? d.teilnehmer.length : 0;
+        add(d.datumVon || d.datum, d.datumBis || d.datumVon || d.datum, {
+          kat, titel: d.thema || d.typ || 'Dienst',
+          info: [d.typ, zeit, tn ? tn + ' Teilnehmer' : ''].filter(Boolean).join(' · '),
+          geplant: status === 'Geplant'
+        });
+      });
+
+      (appData.lehrgangPlan || []).forEach(l => {
+        if (!l.startDatum) return; // Bewerbungen ohne Termin erscheinen nicht im Kalender
+        const mem = appData.members.find(m => m.id === l.memberId);
+        const name = mem ? `${mem.vorname || ''} ${mem.nachname || ''}`.trim() : 'Unbekannt';
+        add(l.startDatum, l.endeDatum || l.startDatum, {
+          kat: 'lehrgang', titel: `${l.titel || 'Lehrgang'}`,
+          info: [name, l.ort, l.status].filter(Boolean).join(' · '),
+          geplant: l.status === 'Angemeldet'
+        });
+      });
+      return tage;
+    }
+
+    function renderKalender() {
+      const grid = document.getElementById('kalenderGrid');
+      if (!grid) return;
+      document.getElementById('kalenderJahrAnzeige').innerText = kalenderJahr;
+
+      const tage = kalenderSammleTermine();
+      const heuteKey = kalKey(new Date());
+      const monate = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+      const zaehler = { einsatz: 0, lehrgang: 0, ausbildung: 0, sonstiges: 0 };
+
+      let html = '';
+      for (let m = 0; m < 12; m++) {
+        const erster = new Date(kalenderJahr, m, 1);
+        const anzahl = new Date(kalenderJahr, m + 1, 0).getDate();
+        const offset = (erster.getDay() + 6) % 7; // Woche beginnt am Montag
+        html += `<div class="cal-month"><div class="cal-month-title">${monate[m]}</div>`;
+        html += '<div class="cal-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div class="cal-days">';
+        for (let i = 0; i < offset; i++) html += '<div class="cal-day"></div>';
+        for (let tag = 1; tag <= anzahl; tag++) {
+          const key = kalKey(new Date(kalenderJahr, m, tag));
+          const ev = tage[key] || [];
+          const klassen = ['cal-day'];
+          let style = '';
+          let tip = '';
+          if (ev.length) {
+            klassen.push('has-event');
+            const kats = [...new Set(ev.map(e => e.kat))].sort((a, b) => KAL_KATEGORIEN[a].prio - KAL_KATEGORIEN[b].prio);
+            kats.forEach(k => zaehler[k]++);
+            if (kats.length === 1) {
+              style = `background:${KAL_KATEGORIEN[kats[0]].farbe};`;
+            } else {
+              const teil = 100 / kats.length;
+              const stops = kats.map((k, i) => `${KAL_KATEGORIEN[k].farbe} ${(i * teil).toFixed(1)}% ${((i + 1) * teil).toFixed(1)}%`).join(', ');
+              style = `background:linear-gradient(135deg, ${stops});`;
+            }
+            if (ev.every(e => e.geplant)) klassen.push('planned');
+            tip = ev.map(e => e.titel).join(' | ').replace(/"/g, '&quot;');
+          }
+          if (key === heuteKey) klassen.push('today');
+          if (key === kalenderAuswahl) klassen.push('selected');
+          html += `<div class="${klassen.join(' ')}" style="${style}" ${ev.length ? `title="${tip}" onclick="kalenderTagWaehlen('${key}')"` : ''}>${tag}</div>`;
+        }
+        html += '</div></div>';
+      }
+      grid.innerHTML = html;
+
+      const leg = document.getElementById('kalenderLegende');
+      if (leg) {
+        leg.innerHTML = Object.keys(KAL_KATEGORIEN).map(k =>
+          `<span class="cal-legend-item"><span class="cal-swatch" style="background:${KAL_KATEGORIEN[k].farbe};"></span>${KAL_KATEGORIEN[k].label} (${zaehler[k]} ${zaehler[k] === 1 ? 'Tag' : 'Tage'})</span>`
+        ).join('') + '<span class="cal-legend-item"><span class="cal-swatch" style="border:1px dashed #fff; opacity:0.6;"></span>geplant / angemeldet</span>';
+      }
+
+      const det = document.getElementById('kalenderDetail');
+      if (det) {
+        const ev = kalenderAuswahl ? (tage[kalenderAuswahl] || []) : [];
+        if (kalenderAuswahl && ev.length) {
+          det.innerHTML = `<div class="cal-detail-box"><strong>Termine am ${kalDeDatum(kalenderAuswahl)}</strong>` +
+            ev.map(e => `<div class="cal-detail-item"><span class="cal-swatch" style="background:${KAL_KATEGORIEN[e.kat].farbe}; margin-top:0.3rem; flex-shrink:0;"></span><div><div><strong>${e.titel}</strong>${e.geplant ? ' <span class="badge badge-warning">geplant</span>' : ''}</div><div style="color:var(--text-muted);">${e.info}</div></div></div>`).join('') +
+            '</div>';
+        } else {
+          det.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">Tippe auf einen farbigen Tag, um die Einzelheiten zu sehen.</div>';
+        }
+      }
+    }
+
     function switchTab(tabId) {
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
@@ -1129,7 +1308,7 @@
 
       const tabs = Array.from(document.querySelectorAll('.nav-tab'));
       const mobBtns = Array.from(document.querySelectorAll('.mobile-btn'));
-      const idx = ['dashboard', 'dienste', 'atemschutz', 'lehrgaenge', 'mitglieder'].indexOf(tabId);
+      const idx = ['dashboard', 'dienste', 'kalender', 'atemschutz', 'lehrgaenge', 'mitglieder'].indexOf(tabId);
       if (idx !== -1) {
         if (tabs[idx]) tabs[idx].classList.add('active');
         if (mobBtns[idx]) mobBtns[idx].classList.add('active');
@@ -1657,6 +1836,7 @@
             `;
           });
         }
+        renderKalender();
       } catch (err) {
         console.error("Fehler beim Rendern der Ansicht:", err);
       }
