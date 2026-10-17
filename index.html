@@ -117,6 +117,7 @@
       .mobile-btn span.icon { font-size: 1.25rem; }
     }
 
+    .std-pille { display: inline-block; min-width: 4.2rem; text-align: center; padding: 0.15rem 0.6rem; border-radius: 999px; font-weight: 700; font-size: 0.8rem; }
     /* KALENDER */
     .cal-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
     .cal-year { font-size: 1.25rem; font-weight: 800; min-width: 4.5rem; text-align: center; }
@@ -230,11 +231,11 @@
                   <th>Kamerad / Kameradin</th>
                   <th>Funktion</th>
                   <th>UVV</th>
-                  <th>Ausbildung</th>
-                  <th>Arbeitsdienst</th>
-                  <th>Lehrgänge</th>
-                  <th>Einsatz</th>
-                  <th>Gesamt</th>
+                  <th><span style="color:#e02424;">●</span> Einsatz</th>
+                  <th><span style="color:#1f8fff;">●</span> Ausbildung</th>
+                  <th><span style="color:#10a874;">●</span> Arbeitsdienst</th>
+                  <th><span style="color:#5b61ad;">●</span> Lehrgänge</th>
+                  <th><span style="color:#facc15;">●</span> Gesamt</th>
                 </tr>
               </thead>
               <tbody id="rankingTableBody">
@@ -1339,6 +1340,12 @@
     }
 
     // ===== EINSATZ-AUSWAHL: UVV-Pflicht & Einsatzfähigkeit =====
+    // Stunden-Anzeige als farbige Pille (Farben wie im Kalender)
+    function stdPille(stunden, farbe, textfarbe, fett) {
+      const leer = !stunden;
+      return `<span class="std-pille" style="background:${farbe}; color:${textfarbe || '#ffffff'}; ${fett ? 'font-size:0.9rem; box-shadow:0 0 0 2px rgba(250,204,21,0.35);' : ''} ${leer ? 'opacity:0.4;' : ''}">${stunden.toFixed(1)} h</span>`;
+    }
+
     function istUvvDienst(d) {
       const t = (d.thema || '').toLowerCase();
       return (d.typ === 'UVV') || t.includes('uvv') || t.includes('sicherheitsbelehrung') || t.includes('sicherheitsunterweisung');
@@ -1770,11 +1777,11 @@
                 <td><strong>${m.nachname || ''}</strong>, ${m.vorname || ''}</td>
                 <td>${funktionAnzeige(m)}</td>
                 <td>${uvvBadge}</td>
-                <td>${h.ausbildung.toFixed(1)} h</td>
-                <td><span style="color:#34d399; font-weight:600;">${h.nachbereitung.toFixed(1)} h</span></td>
-                <td><span style="color:#a78bfa; font-weight:600;">${h.lehrgang.toFixed(1)} h</span></td>
-                <td>${h.einsatz.toFixed(1)} h</td>
-                <td><strong style="color: #60a5fa;">${h.gesamt.toFixed(1)} h</strong></td>
+                <td>${stdPille(h.einsatz, '#e02424')}</td>
+                <td>${stdPille(h.ausbildung, '#1f8fff')}</td>
+                <td>${stdPille(h.nachbereitung, '#10a874')}</td>
+                <td>${stdPille(h.lehrgang, '#5b61ad')}</td>
+                <td>${stdPille(h.gesamt, '#facc15', '#1e293b', true)}</td>
               </tr>
             `;
           });
