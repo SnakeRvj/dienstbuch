@@ -190,12 +190,10 @@
       <div class="stat-card">
         <span class="stat-title">UVV-Sicherheitsunterweisung</span>
         <span class="stat-value" id="statUvvCount">0%</span>
-        <span class="stat-sub" id="statUvvSub">für laufendes Jahr absolviert</span>
       </div>
       <div class="stat-card">
         <span class="stat-title">Atemschutz (G26.3 & Strecke)</span>
         <span class="stat-value" id="statAgtCount">0</span>
-        <span class="stat-sub" id="statAgtSub">tauglich im 365-Tage-Fenster</span>
       </div>
       <div class="stat-card">
         <span class="stat-title">Mannschaftsstärke</span>
@@ -878,6 +876,8 @@
     }
 
     function loadData() {
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      window.scrollTo(0, 0);
       // 1. Zuerst lokalen Stand laden (damit sofort alles da ist)
       const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('FF_CHRISTDORF_DATA_V13') || localStorage.getItem('FF_CHRISTDORF_DATA_V12') || localStorage.getItem('FF_CHRISTDORF_DATA_V11') || localStorage.getItem('FF_CHRISTDORF_DATA_V10') || localStorage.getItem('FF_CHRISTDORF_DATA_V9') || localStorage.getItem('FF_CHRISTDORF_DATA_V8') || localStorage.getItem('FF_CHRISTDORF_DATA_V7') || localStorage.getItem('FF_CHRISTDORF_DATA_V6') || localStorage.getItem('FF_CHRISTDORF_DATA_V5');
       if (stored) {
@@ -899,7 +899,7 @@
           if (user) {
             zeigeLogin(false);
             startCloudSync();
-            setTimeout(kalenderZumAktuellenMonat, 200);
+            window.scrollTo(0, 0);
           } else {
             stopCloudSync();
             zeigeLogin(true, '');
@@ -1165,26 +1165,6 @@
     function kalDeDatum(key) {
       const t = key.split('-');
       return t[2] + '.' + t[1] + '.' + t[0];
-    }
-
-    // Beim Start den aktuellen Monat ins Bild holen, falls er nicht sichtbar ist
-    let kalenderStartScrollErledigt = false;
-    function kalenderZumAktuellenMonat() {
-      if (kalenderStartScrollErledigt) return;
-      kalenderStartScrollErledigt = true;
-      const el = document.getElementById('kal-monat-' + new Date().getMonth());
-      if (!el || kalenderJahr !== new Date().getFullYear()) return;
-      const r = el.getBoundingClientRect();
-      if (r.top < 0 || r.bottom > window.innerHeight) el.scrollIntoView({ block: 'center' });
-    }
-
-    // Namen ("Vorname Nachname") zu Mitglieds-IDs, alphabetisch nach Nachname
-    function kalNamen(ids) {
-      return (ids || [])
-        .map(id => appData.members.find(m => m.id === id))
-        .filter(Boolean)
-        .sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de') || (a.vorname || '').localeCompare(b.vorname || '', 'de'))
-        .map(m => `${m.vorname || ''} ${m.nachname || ''}`.trim());
     }
 
     function kalenderJahrWechsel(delta) { kalenderJahr += delta; kalenderAuswahl = null; renderKalender(); }
@@ -1761,9 +1741,6 @@
         const statUvvEl = document.getElementById('statUvvCount');
         if (statUvvEl) statUvvEl.innerText = activeMembers.length ? Math.round((uvvOk / activeMembers.length) * 100) + '%' : '0%';
         
-        const statUvvSubEl = document.getElementById('statUvvSub');
-        if (statUvvSubEl) statUvvSubEl.innerText = `${uvvOk} von ${activeMembers.length} Aktiven im Jahr ${curYear}`;
-
         const rankBody = document.getElementById('rankingTableBody');
         if (rankBody) {
           rankBody.innerHTML = '';
