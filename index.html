@@ -1167,6 +1167,15 @@
       return t[2] + '.' + t[1] + '.' + t[0];
     }
 
+    // Namen ("Vorname Nachname") zu Mitglieds-IDs, alphabetisch nach Nachname
+    function kalNamen(ids) {
+      return (ids || [])
+        .map(id => appData.members.find(m => m.id === id))
+        .filter(Boolean)
+        .sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de') || (a.vorname || '').localeCompare(b.vorname || '', 'de'))
+        .map(m => `${m.vorname || ''} ${m.nachname || ''}`.trim());
+    }
+
     function kalenderJahrWechsel(delta) { kalenderJahr += delta; kalenderAuswahl = null; renderKalender(); }
     function kalenderHeute() { kalenderJahr = new Date().getFullYear(); kalenderAuswahl = kalKey(new Date()); renderKalender(); }
     function kalenderTagWaehlen(key) { kalenderAuswahl = (kalenderAuswahl === key) ? null : key; renderKalender(); }
