@@ -231,6 +231,7 @@
                   <th>Funktion</th>
                   <th>UVV</th>
                   <th>Ausbildung</th>
+                  <th>Vor- & Nachbereitung</th>
                   <th>Lehrgänge</th>
                   <th>Einsatz</th>
                   <th>Gesamt</th>
@@ -1647,12 +1648,13 @@
         let totalHours = 0;
         const memberHours = {};
         appData.members.forEach(m => {
-          memberHours[m.id] = { ausbildung: 0, lehrgang: 0, einsatz: 0, gesamt: 0 };
+          memberHours[m.id] = { ausbildung: 0, nachbereitung: 0, lehrgang: 0, einsatz: 0, gesamt: 0 };
         });
 
         appData.dienste.forEach(d => {
           const dStatus = d.status || 'Durchgeführt';
           if (dStatus !== 'Durchgeführt') return;
+          if (d.typ === 'OWF-Versammlung') return; // Ortswehrführer-Versammlung zählt nicht zu den Stunden
 
           const dYear = new Date(d.datumVon || d.datum).getFullYear();
           if (dYear === curYear) {
@@ -1661,6 +1663,7 @@
               d.teilnehmer.forEach(mId => {
                 if (memberHours[mId]) {
                   if (d.typ === 'Einsatz') memberHours[mId].einsatz += d.dauer;
+                  else if (d.typ === 'Arbeitsdienst') memberHours[mId].nachbereitung += d.dauer;
                   else memberHours[mId].ausbildung += d.dauer;
                   memberHours[mId].gesamt += d.dauer;
                 }
@@ -1745,7 +1748,7 @@
         if (rankBody) {
           rankBody.innerHTML = '';
           appData.members.forEach((m) => {
-            const h = memberHours[m.id] || { ausbildung: 0, lehrgang: 0, einsatz: 0, gesamt: 0 };
+            const h = memberHours[m.id] || { ausbildung: 0, nachbereitung: 0, lehrgang: 0, einsatz: 0, gesamt: 0 };
             const isUvvOk = checkUvvValidityForMember(m.id, curYear);
             const uvvBadge = isUvvOk ? `<span class="badge badge-success">✓ ${curYear}</span>` : `<span class="badge badge-danger">⚠️ Fällig</span>`;
 
@@ -1755,6 +1758,7 @@
                 <td>${funktionAnzeige(m)}</td>
                 <td>${uvvBadge}</td>
                 <td>${h.ausbildung.toFixed(1)} h</td>
+                <td><span style="color:#34d399; font-weight:600;">${h.nachbereitung.toFixed(1)} h</span></td>
                 <td><span style="color:#a78bfa; font-weight:600;">${h.lehrgang.toFixed(1)} h</span></td>
                 <td>${h.einsatz.toFixed(1)} h</td>
                 <td><strong style="color: #60a5fa;">${h.gesamt.toFixed(1)} h</strong></td>
