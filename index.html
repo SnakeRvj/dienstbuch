@@ -231,7 +231,7 @@
                   <th>Funktion</th>
                   <th>UVV</th>
                   <th>Ausbildung</th>
-                  <th>Vor- & Nachbereitung</th>
+                  <th>Arbeitsdienst</th>
                   <th>Lehrgänge</th>
                   <th>Einsatz</th>
                   <th>Gesamt</th>
@@ -1692,7 +1692,15 @@
         if (statYearEl) statYearEl.innerText = `Gesamt geleistet im Jahr ${curYear}`;
         
         const statMemEl = document.getElementById('statMembersCount');
-        if (statMemEl) statMemEl.innerText = appData.members.filter(m => m.status === 'Aktiv').length;
+        if (statMemEl) {
+          // grün: einsatzbereit (Status Aktiv, einsatzfähig, UVV-Pflicht erfüllt) / rot: alle übrigen Kameraden
+          const heuteKey = kalKey(new Date());
+          const bereit = appData.members.filter(m => m.status === 'Aktiv' && !einsatzGesperrtGrund(m, heuteKey)).length;
+          const nichtBereit = appData.members.length - bereit;
+          statMemEl.innerHTML = `<span style="color:#22c55e;">${bereit}</span> / <span style="color:${nichtBereit > 0 ? '#ef4444' : 'var(--text-muted)'};">${nichtBereit}</span>`;
+          const statMemSubEl = document.getElementById('statMembersSub');
+          if (statMemSubEl) statMemSubEl.innerText = 'einsatzbereit / nicht einsatzbereit';
+        }
 
         let agtReady = 0, agtTotal = 0, uvvOk = 0;
         const activeMembers = appData.members.filter(m => m.status === 'Aktiv');
@@ -1728,7 +1736,12 @@
           });
         }
         const statBetEl = document.getElementById('statBeteiligung');
-        if (statBetEl) statBetEl.innerText = bDienste ? Math.round((bQuoteSumme / bDienste) * 100) + '%' : '0%';
+        if (statBetEl) {
+          const betProzent = bDienste ? Math.round((bQuoteSumme / bDienste) * 100) : 0;
+          statBetEl.innerText = betProzent + '%';
+          // unter 30 % rot, 30 bis unter 55 % gelb, ab 55 % grün (ohne Dienste neutral)
+          statBetEl.style.color = !bDienste ? '' : (betProzent < 30 ? '#ef4444' : (betProzent < 55 ? '#facc15' : '#22c55e'));
+        }
         const statBetSubEl = document.getElementById('statBeteiligungSub');
         if (statBetSubEl) statBetSubEl.innerText = bDienste
           ? `Ø ${(bTeilnahmen / bDienste).toFixed(1).replace('.', ',')} von ${activeMembers.length} Kameraden bei ${bDienste} Diensten`
