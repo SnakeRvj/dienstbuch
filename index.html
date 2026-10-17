@@ -448,13 +448,12 @@
               <label class="form-label">Kategorie des Dienstes</label>
               <select id="dienstTyp" class="form-control" onchange="handleDienstTypChange()" required>
                 <option value="Ausbildung">🚒 Ausbildung / Übungsdienst</option>
-                <option value="Lehrgang">🎓 Lehrgangs-Dienst (Standort/Stadt/Kreis)</option>
-                <option value="UVV">🛡️ UVV-Unterweisung / Sicherheitsbelehrung (Setzt Jahres-UVV auf Gültig)</option>
-                <option value="OWF-Versammlung">🏛️ Ortswehrführer-Versammlung / Beratung (Wehrführung)</option>
                 <option value="Einsatz">🚨 Einsatz (Brand / TH)</option>
+                <option value="Arbeitsdienst">🔧 Arbeits- & Pflegedienst</option>
+                <option value="UVV">🛡️ UVV-Unterweisung / Sicherheitsbelehrung (Setzt Jahres-UVV auf Gültig)</option>
                 <option value="Strecke">🤿 AGT-Übungsstrecke (Belastungsübung)</option>
                 <option value="CSA">🧪 CSA-Übungslauf (Gefahrgut)</option>
-                <option value="Arbeitsdienst">🔧 Arbeits- & Pflegedienst</option>
+                <option value="OWF-Versammlung">🏛️ Ortswehrführer-Versammlung / Beratung (Wehrführung)</option>
                 <option value="Versammlung">📋 Jahreshaupt- / Dienstversammlung</option>
               </select>
             </div>
@@ -1227,7 +1226,7 @@
         const namen = (kat === 'lehrgang') ? kalNamen(d.teilnehmer || []) : [];
         add(d.datumVon || d.datum, d.datumBis || d.datumVon || d.datum, {
           kat, titel: d.thema || d.typ || 'Dienst', namen,
-          info: [d.typ, zeit, tn ? tn + ' Teilnehmer' : ''].filter(Boolean).join(' · '),
+          info: [d.typ, zeit, tn ? tn + (tn === 1 ? ' Kamerad' : ' Kameraden') : ''].filter(Boolean).join(' · '),
           geplant: status === 'Geplant'
         });
       });
@@ -1246,7 +1245,7 @@
         const namen = kalNamen(ids);
         add(l.startDatum, l.endeDatum || l.startDatum, {
           kat: 'lehrgang', titel: `${l.titel || 'Lehrgang'}`, namen,
-          info: [namen.length ? (namen.length > 1 ? 'Teilnehmer: ' : '') + namen.join(', ') : 'Unbekannt', l.ort, l.status].filter(Boolean).join(' · '),
+          info: [namen.length ? (namen.length > 1 ? 'Kameraden: ' : '') + namen.join(', ') : 'Unbekannt', l.ort, l.status].filter(Boolean).join(' · '),
           geplant: l.status === 'Angemeldet'
         }, kyritz);
       });
@@ -1998,6 +1997,7 @@
 
     function openDienstModal(dienstId = null) {
       document.getElementById('dienstForm').reset();
+      document.querySelectorAll('#dienstTyp option[data-alt]').forEach(o => o.remove());
       const container = document.getElementById('attendanceCheckboxes');
       container.innerHTML = '';
 
@@ -2020,7 +2020,16 @@
         const d = appData.dienste.find(x => x.id === dienstId);
         if (d) {
           document.getElementById('dienstId').value = d.id;
-          document.getElementById('dienstTyp').value = d.typ;
+          // Alte Einträge mit einer entfernten Kategorie (z. B. Lehrgangs-Dienst) bleiben bearbeitbar
+          const typSelect = document.getElementById('dienstTyp');
+          if (!Array.from(typSelect.options).some(o => o.value === d.typ)) {
+            const alt = document.createElement('option');
+            alt.value = d.typ;
+            alt.textContent = (d.typ === 'Lehrgang' ? '🎓 Lehrgangs-Dienst' : d.typ) + ' (bisheriger Eintrag)';
+            alt.setAttribute('data-alt', '1');
+            typSelect.appendChild(alt);
+          }
+          typSelect.value = d.typ;
           document.getElementById('dienstStatus').value = d.status || 'Durchgeführt';
           document.getElementById('dienstDatumVon').value = d.datumVon || d.datum;
           document.getElementById('dienstZeitVon').value = d.zeitVon || d.von || '19:00';
