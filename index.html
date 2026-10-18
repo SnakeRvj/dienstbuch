@@ -511,13 +511,13 @@
             <div class="form-row">
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Ausbilder auswählen (Christdorf)</label>
-                <select id="dienstAusbilderSelect" class="form-control" onchange="syncAusbilderChoice('select')">
+                <select id="dienstAusbilderSelect" class="form-control" onchange="syncAusbilderChoice('select'); rolleGewaehlt('dienstAusbilderSelect')">
                   <option value="">-- Kamerad aus Christdorf auswählen --</option>
                 </select>
               </div>
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Oder: Externer Ausbilder / Gastdozent</label>
-                <input type="text" id="dienstAusbilderCustom" class="form-control" placeholder="z. B. KBM Schmidt, FTZ-Ausbilder, Polizei..." oninput="syncAusbilderChoice('custom')">
+                <input type="text" id="dienstAusbilderCustom" class="form-control" placeholder="z. B. KBM Schmidt, FTZ-Ausbilder, Polizei..." oninput="syncAusbilderChoice('custom'); rolleGewaehlt('dienstAusbilderSelect')">
               </div>
             </div>
           </div>
@@ -527,13 +527,13 @@
             <div class="form-row">
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Einheitsführer</label>
-                <select id="dienstEinheitsfuehrer" class="form-control">
+                <select id="dienstEinheitsfuehrer" class="form-control" onchange="rolleGewaehlt('dienstEinheitsfuehrer')">
                   <option value="">-- Nicht festgelegt --</option>
                 </select>
               </div>
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Maschinist (Fahrer)</label>
-                <select id="dienstMaschinist" class="form-control">
+                <select id="dienstMaschinist" class="form-control" onchange="rolleGewaehlt('dienstMaschinist')">
                   <option value="">-- Nicht festgelegt --</option>
                 </select>
               </div>
@@ -1416,25 +1416,52 @@
       aktualisiereEinsatzAuswahl();
     }
 
-    // Neue Dienste in der Zukunft: automatisch "Geplant" und noch kein Kamerad ausgewählt
+    // Neue Dienste in der Zukunft: automatisch "Geplant" (Kameraden werden grundsätzlich manuell angewählt)
     let dienstAutoGeplant = false;
     function dienstZukunftRegel() {
       if (document.getElementById('dienstId').value) return; // nur beim Neuanlegen
       const von = document.getElementById('dienstDatumVon').value;
       if (!von) return;
-      const heute = kalKey(new Date());
       const statusEl = document.getElementById('dienstStatus');
-      const boxen = document.querySelectorAll('#attendanceCheckboxes input[name="attendance"]');
-      if (von > heute) {
-        if (statusEl.value === 'Durchgeführt' || dienstAutoGeplant) {
+      if (von > kalKey(new Date())) {
+        if (statusEl.value === 'Durchgeführt') {
           statusEl.value = 'Geplant';
-          boxen.forEach(c => c.checked = false);
           dienstAutoGeplant = true;
         }
       } else if (dienstAutoGeplant) {
         statusEl.value = 'Durchgeführt';
-        boxen.forEach(c => c.checked = true);
         dienstAutoGeplant = false;
+      }
+    }
+
+    // Ausbilder, Einheitsführer und Maschinist werden automatisch als Kamerad angehakt
+    let rollenAuswahl = {};      // Rolle -> zuletzt gewählter Kamerad
+    let rollenAutoGesetzt = new Set(); // Kameraden, die nur wegen einer Rolle angehakt wurden
+    function rolleGewaehlt(selId) {
+      const rollen = ['dienstAusbilderSelect', 'dienstEinheitsfuehrer', 'dienstMaschinist'];
+      const cbFuer = id => id ? document.querySelector(`#attendanceCheckboxes input[name="attendance"][value="${id}"]`) : null;
+      const neu = document.getElementById(selId).value;
+      const alt = rollenAuswahl[selId];
+      if (alt === neu || (!alt && !neu)) return;
+
+      rollenAuswahl[selId] = neu;
+
+      // Bisherigen Kameraden wieder abwählen, wenn er nur wegen einer Rolle angehakt war und keine andere Rolle ihn hält
+      if (alt) {
+        const gehalten = rollen.some(r => r !== selId && rollenAuswahl[r] === alt);
+        const cbAlt = cbFuer(alt);
+        if (cbAlt && !gehalten && rollenAutoGesetzt.has(alt)) {
+          cbAlt.checked = false;
+          rollenAutoGesetzt.delete(alt);
+        }
+      }
+      // Neuen Kameraden automatisch anhaken
+      if (neu) {
+        const cb = cbFuer(neu);
+        if (cb && !cb.disabled && !cb.checked) {
+          cb.checked = true;
+          rollenAutoGesetzt.add(neu);
+        }
       }
     }
 
@@ -1502,6 +1529,18 @@
       // Einheitsführer & Maschinist werden nur bei Einsätzen benötigt
       const rollenBox = document.getElementById('einsatzRollenBox');
       if (rollenBox) rollenBox.style.display = (typ === 'Einsatz') ? 'block' : 'none';
+
+      // Nicht mehr sichtbare Rollen zurücksetzen (inkl. automatisch gesetztem Häkchen)
+      if (typ === 'Einsatz') {
+        document.getElementById('dienstAusbilderSelect').value = '';
+        document.getElementById('dienstAusbilderCustom').value = '';
+        rolleGewaehlt('dienstAusbilderSelect');
+      } else {
+        ['dienstEinheitsfuehrer', 'dienstMaschinist'].forEach(id => {
+          document.getElementById(id).value = '';
+          rolleGewaehlt(id);
+        });
+      }
 
       // Nur bei Lehrgängen ein Bis-Datum einblenden, alle anderen finden an einem Tag statt
       if (typ === 'Lehrgang') {
@@ -2017,6 +2056,8 @@
       
       abSelect.innerHTML = '<option value="">-- Kamerad aus Christdorf auswählen --</option>';
       dienstAutoGeplant = false;
+      rollenAuswahl = {};
+      rollenAutoGesetzt = new Set();
       efSelect.innerHTML = '<option value="">-- Nicht festgelegt --</option>';
       maSelect.innerHTML = '<option value="">-- Nicht festgelegt --</option>';
 
@@ -2094,7 +2135,7 @@
           container.innerHTML += `
             <div class="attendance-row">
               <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:100%; color:#f1f5f9;">
-                <input type="checkbox" name="attendance" value="${m.id}" checked>
+                <input type="checkbox" name="attendance" value="${m.id}">
                 <span><strong>${m.nachname}</strong>, ${m.vorname} (${dienstgradAnzeige(m)})</span>
               </label>
               ${(m.funktion === 'Ortswehrführer' || m.funktion === 'Stellv. Ortswehrführer') ? '<span class="badge badge-owf">Führung</span>' : ''}
