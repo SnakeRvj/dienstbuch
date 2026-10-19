@@ -1787,20 +1787,22 @@
       uvvBox.style.display = (typ === 'UVV') ? 'block' : 'none';
       owfBox.style.display = (typ === 'OWF-Versammlung') ? 'block' : 'none';
 
-      // Ausbilder wird bei Einsätzen nicht benötigt
+      // Ausbilder wird bei Einsätzen und Veranstaltungen nicht benötigt
+      const ohneAusbilder = (typ === 'Einsatz' || typ === 'Veranstaltung');
       const ausbilderBox = document.getElementById('ausbilderBox');
-      if (ausbilderBox) ausbilderBox.style.display = (typ === 'Einsatz') ? 'none' : 'block';
+      if (ausbilderBox) ausbilderBox.style.display = ohneAusbilder ? 'none' : 'block';
 
       // Einheitsführer & Maschinist werden nur bei Einsätzen benötigt
       const rollenBox = document.getElementById('einsatzRollenBox');
       if (rollenBox) rollenBox.style.display = (typ === 'Einsatz') ? 'block' : 'none';
 
       // Nicht mehr sichtbare Rollen zurücksetzen (inkl. automatisch gesetztem Häkchen)
-      if (typ === 'Einsatz') {
+      if (ohneAusbilder) {
         document.getElementById('dienstAusbilderSelect').value = '';
         document.getElementById('dienstAusbilderCustom').value = '';
         rolleGewaehlt('dienstAusbilderSelect');
-      } else {
+      }
+      if (typ !== 'Einsatz') {
         ['dienstEinheitsfuehrer', 'dienstMaschinist'].forEach(id => {
           document.getElementById(id).value = '';
           rolleGewaehlt(id);
@@ -1954,7 +1956,7 @@
         appData.dienste.forEach(d => {
           const dStatus = d.status || 'Durchgeführt';
           if (dStatus !== 'Durchgeführt') return;
-          if (d.typ === 'OWF-Versammlung' || d.typ === 'Veranstaltung') return; // zählen nicht zu den Stunden
+          if (d.typ === 'OWF-Versammlung') return; // Ortswehrführer-Versammlung zählt nicht zu den Stunden
 
           const dYear = new Date(d.datumVon || d.datum).getFullYear();
           if (dYear === curYear) {
@@ -1963,7 +1965,7 @@
               d.teilnehmer.forEach(mId => {
                 if (memberHours[mId]) {
                   if (d.typ === 'Einsatz') memberHours[mId].einsatz += d.dauer;
-                  else if (d.typ === 'Arbeitsdienst') memberHours[mId].nachbereitung += d.dauer;
+                  else if (d.typ === 'Arbeitsdienst' || d.typ === 'Veranstaltung') memberHours[mId].nachbereitung += d.dauer; // Veranstaltungen zählen als Arbeitsdienst (Vor-/Nachbereitung)
                   else memberHours[mId].ausbildung += d.dauer;
                   memberHours[mId].gesamt += d.dauer;
                 }
@@ -2449,9 +2451,10 @@
       const einheitsfuehrer = (typ === 'Einsatz') ? document.getElementById('dienstEinheitsfuehrer').value : '';
       const maschinist = (typ === 'Einsatz') ? document.getElementById('dienstMaschinist').value : '';
       
-      // Ausbilder nur bei Nicht-Einsätzen speichern
-      const selAusbilder = (typ === 'Einsatz') ? '' : document.getElementById('dienstAusbilderSelect').value;
-      const custAusbilder = (typ === 'Einsatz') ? '' : document.getElementById('dienstAusbilderCustom').value.trim();
+      // Ausbilder nur bei Diensten speichern (nicht bei Einsätzen und Veranstaltungen)
+      const ohneAusbilder = (typ === 'Einsatz' || typ === 'Veranstaltung');
+      const selAusbilder = ohneAusbilder ? '' : document.getElementById('dienstAusbilderSelect').value;
+      const custAusbilder = ohneAusbilder ? '' : document.getElementById('dienstAusbilderCustom').value.trim();
       const ausbilder = custAusbilder ? custAusbilder : selAusbilder;
 
       const thema = document.getElementById('dienstThema').value.trim();
