@@ -338,19 +338,58 @@
         </div>
         <div class="card-body" style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);">
           <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:flex-end;">
-            <div style="flex:1 1 240px; min-width:200px;">
-              <label class="form-label" style="margin-bottom:0.25rem;">🔍 Suche</label>
-              <input type="text" id="dienstSuchText" class="form-control" placeholder="Suchbegriff eingeben..." oninput="renderApp()">
+            <div style="flex:1 1 130px;">
+              <label class="form-label" style="margin-bottom:0.25rem;">Status</label>
+              <select id="dienstFilterStatus" class="form-control" onchange="renderApp()">
+                <option value="">Alle</option>
+                <option value="Geplant">Geplant</option>
+                <option value="Durchgeführt">Durchgeführt</option>
+                <option value="Ausgefallen">Ausgefallen</option>
+              </select>
+            </div>
+            <div style="flex:1 1 100px;">
+              <label class="form-label" style="margin-bottom:0.25rem;">Jahr</label>
+              <select id="dienstFilterJahr" class="form-control" onchange="renderApp()">
+                <option value="">Alle</option>
+              </select>
+            </div>
+            <div style="flex:1 1 130px;">
+              <label class="form-label" style="margin-bottom:0.25rem;">Monat</label>
+              <select id="dienstFilterMonat" class="form-control" onchange="renderApp()">
+                <option value="">Alle</option>
+                <option value="01">Januar</option>
+                <option value="02">Februar</option>
+                <option value="03">März</option>
+                <option value="04">April</option>
+                <option value="05">Mai</option>
+                <option value="06">Juni</option>
+                <option value="07">Juli</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">Oktober</option>
+                <option value="11">November</option>
+                <option value="12">Dezember</option>
+              </select>
+            </div>
+            <div style="flex:1 1 180px;">
+              <label class="form-label" style="margin-bottom:0.25rem;">Kategorie</label>
+              <select id="dienstFilterKategorie" class="form-control" onchange="renderApp()">
+                <option value="">Alle</option>
+                <option value="Ausbildung">Ausbildung / Übungsdienst</option>
+                <option value="Einsatz">Einsatz</option>
+                <option value="Arbeitsdienst">Arbeits- & Pflegedienst</option>
+                <option value="UVV">UVV-Unterweisung</option>
+                <option value="Strecke">AGT-Übungsstrecke</option>
+                <option value="CSA">CSA-Übungslauf</option>
+                <option value="Veranstaltung">Veranstaltung / Öffentlichkeit</option>
+                <option value="OWF-Versammlung">Ortswehrführer-Versammlung</option>
+                <option value="Versammlung">Jahreshaupt- / Dienstversammlung</option>
+              </select>
             </div>
             <button class="btn btn-secondary btn-sm" onclick="resetDienstSuche()">✕ Zurücksetzen</button>
           </div>
-          <div style="display:flex; flex-wrap:wrap; gap:1rem; margin-top:0.6rem; align-items:center; font-size:0.85rem;">
-            <span style="color:var(--text-muted);">Suchen in:</span>
-            <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="dienstSuchStatus" checked onchange="renderApp()"> Status</label>
-            <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="dienstSuchDatum" checked onchange="renderApp()"> Datum / Zeitraum</label>
-            <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="dienstSuchKategorie" checked onchange="renderApp()"> Kategorie</label>
-            <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="dienstSuchThema" checked onchange="renderApp()"> Thema / Einsatzstichwort</label>
-            <span id="dienstSuchTreffer" style="margin-left:auto; color:var(--text-muted);"></span>
+          <div style="margin-top:0.6rem; font-size:0.85rem; text-align:right;">
+            <span id="dienstSuchTreffer" style="color:var(--text-muted);"></span>
           </div>
         </div>
         <div class="card-body" style="padding:0;">
@@ -1181,22 +1220,34 @@
       });
     }
 
+    // Dienstbuch-Filter (Dropdowns)
+    function dienstFilterJahreAktualisieren() {
+      const selJ = document.getElementById('dienstFilterJahr');
+      const selK = document.getElementById('dienstFilterKategorie');
+      if (!selJ) return;
+      const jahre = [...new Set((appData.dienste || []).map(d => (d.datumVon || d.datum || '').slice(0, 4)).filter(j => /^\d{4}$/.test(j)))].sort();
+      const aktuell = selJ.value;
+      selJ.innerHTML = '<option value="">Alle</option>' + jahre.map(j => `<option value="${j}">${j}</option>`).join('');
+      selJ.value = jahre.includes(aktuell) ? aktuell : '';
+      // Alte Einträge mit entfernter Kategorie (Lehrgangs-Dienst) bleiben filterbar
+      if (selK && (appData.dienste || []).some(d => d.typ === 'Lehrgang') && !Array.from(selK.options).some(o => o.value === 'Lehrgang')) {
+        selK.insertAdjacentHTML('beforeend', '<option value="Lehrgang">Lehrgangs-Dienst (alt)</option>');
+      }
+    }
+
     function matchesDienstSuche(d) {
       const val = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
-      const chk = (id) => { const el = document.getElementById(id); return el ? el.checked : true; };
+      const status = val('dienstFilterStatus');
+      const jahr = val('dienstFilterJahr');
+      const monat = val('dienstFilterMonat');
+      const kategorie = val('dienstFilterKategorie');
       const dStart = d.datumVon || d.datum || '';
-      const dEnde = d.datumBis || d.datumVon || d.datum || '';
 
-      const q = val('dienstSuchText').trim().toLowerCase();
-      if (!q) return true;
-
-      const fmt = (iso) => iso ? new Date(iso).toLocaleDateString('de-DE') : '';
-      const felder = [];
-      if (chk('dienstSuchStatus')) felder.push(d.status || 'Durchgeführt');
-      if (chk('dienstSuchDatum')) felder.push(dStart, dEnde, fmt(dStart), fmt(dEnde));
-      if (chk('dienstSuchKategorie')) felder.push(d.typ || '');
-      if (chk('dienstSuchThema')) felder.push(d.thema || '');
-      return felder.some(f => String(f).toLowerCase().includes(q));
+      if (status && (d.status || 'Durchgeführt') !== status) return false;
+      if (jahr && dStart.slice(0, 4) !== jahr) return false;
+      if (monat && dStart.slice(5, 7) !== monat) return false;
+      if (kategorie && d.typ !== kategorie) return false;
+      return true;
     }
 
     function matchesLehrgangSuche(l) {
@@ -1226,8 +1277,7 @@
     }
 
     function resetDienstSuche() {
-      const suchEl = document.getElementById('dienstSuchText'); if (suchEl) suchEl.value = '';
-      ['dienstSuchStatus', 'dienstSuchDatum', 'dienstSuchKategorie', 'dienstSuchThema'].forEach(id => { const el = document.getElementById(id); if (el) el.checked = true; });
+      ['dienstFilterStatus', 'dienstFilterJahr', 'dienstFilterMonat', 'dienstFilterKategorie'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
       renderApp();
     }
 
@@ -2030,6 +2080,7 @@
         const dBody = document.getElementById('diensteTableBody');
         if (dBody) {
           dBody.innerHTML = '';
+          dienstFilterJahreAktualisieren();
           const sortedDienste = [...appData.dienste].sort((a, b) => new Date(b.datumVon || b.datum) - new Date(a.datumVon || a.datum)).filter(matchesDienstSuche);
           const trefferEl = document.getElementById('dienstSuchTreffer');
           if (trefferEl) trefferEl.innerText = `${sortedDienste.length} von ${appData.dienste.length} Einträgen`;
