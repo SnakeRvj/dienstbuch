@@ -332,6 +332,7 @@
         <div class="card-header">
           <div class="card-title">📅 Durchgeführte & Geplante Dienste / Einsätze</div>
           <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-success btn-sm" id="btnJahresplanImport" onclick="importJahresplan2027()" style="display:none;">📥 Jahresplan 2027 importieren</button>
             <button class="btn btn-primary btn-sm" onclick="openDienstModal()">+ Neuer Dienst / Termin</button>
           </div>
         </div>
@@ -541,6 +542,7 @@
                 <option value="UVV">🛡️ UVV-Unterweisung / Sicherheitsbelehrung (Setzt Jahres-UVV auf Gültig)</option>
                 <option value="Strecke">🤿 AGT-Übungsstrecke (Belastungsübung)</option>
                 <option value="CSA">🧪 CSA-Übungslauf (Gefahrgut)</option>
+                <option value="Veranstaltung">🎆 Veranstaltung / Öffentlichkeit (Osterfeuer, Fackelumzug)</option>
                 <option value="OWF-Versammlung">🏛️ Ortswehrführer-Versammlung / Beratung (Wehrführung)</option>
                 <option value="Versammlung">📋 Jahreshaupt- / Dienstversammlung</option>
               </select>
@@ -1235,7 +1237,8 @@
       strecke:       { label: 'AGT-Übungsstrecke / CSA-Übungslauf', farbe: '#ff8a00', prio: 2 }, // Leuchtorange
       ausbildung:    { label: 'Ausbildung / Übung',               farbe: '#1f8fff', prio: 4 }, // Azurblau
       arbeitsdienst: { label: 'Arbeitsdienst',                    farbe: '#10a874', prio: 5 }, // Smaragdgrün
-      versammlung:   { label: 'Versammlung',                      farbe: '#0e8a8f', prio: 6 }, // Petrol / Türkis
+      veranstaltung: { label: 'Veranstaltung',                    farbe: '#d6409f', prio: 6 }, // Magenta
+      versammlung:   { label: 'Versammlung',                      farbe: '#0e8a8f', prio: 7 }, // Petrol / Türkis
       lehrgang:      { label: 'Lehrgang',                         farbe: '#5b61ad', prio: 3 }  // Mattes Indigo
     };
     let kalenderJahr = new Date().getFullYear();
@@ -1307,6 +1310,7 @@
         else if (d.typ === 'Lehrgang') kat = 'lehrgang';
         else if (d.typ === 'Strecke' || d.typ === 'CSA') kat = 'strecke';
         else if (d.typ === 'Arbeitsdienst') kat = 'arbeitsdienst';
+        else if (d.typ === 'Veranstaltung') kat = 'veranstaltung';
         else if (d.typ === 'Versammlung' || d.typ === 'OWF-Versammlung') kat = 'versammlung';
         const zeit = (d.zeitVon || d.von || '') ? `${d.zeitVon || d.von} - ${d.zeitBis || d.bis || ''} Uhr` : '';
         const tn = d.teilnehmer ? d.teilnehmer.length : 0;
@@ -1465,6 +1469,86 @@
       if (mobilMQ.addEventListener) mobilMQ.addEventListener('change', mobilWechsel);
       else if (mobilMQ.addListener) mobilMQ.addListener(mobilWechsel);
     } catch (e) {}
+
+    // ===== JAHRESPLAN 2027 (einmaliger Import aus dem Fortbildungsplan) =====
+    const JAHRESPLAN_2027 = [
+      {"datum": "2027-01-04", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Jährliche Unterweisung nach DGUV Vorschrift 1 und DGUV Vorschrift 49 (Feuerwehren)", "typ": "UVV", "wer": "Sicherheitsbeauftragter"},
+      {"datum": "2027-01-18", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Eisrettung – Gefahren, Rettungsgeräte und Eigensicherung", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-02-01", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Stationsausbildung: FwDV 1 Grundtätigkeiten, Knoten und Stiche, tragbare Leitern", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-02-15", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Fahrzeugkunde allgemein: Feuerwehrfahrzeuge im Überblick und Normung (TSF, LF, TLF, DLK, RW)", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-03-01", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Vegetations- und Waldbrandbekämpfung (Taktik und Eigenschutz)", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-03-15", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Sprechfunkbetrieb und Lagemeldung", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-03-25", "von": "", "bis": "", "dauer": 0, "thema": "Osterfeuer", "typ": "Veranstaltung", "wer": ""},
+      {"datum": "2027-03-29", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "FwDV 3 Einheiten im Lösch- und Hilfeleistungseinsatz", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-04-12", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Abpumpen der Flachspiegelbrunnen (Frühjahr) Wasserentnahme in der Ortslage", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-04-26", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Löschangriff nach FwDV 3 – Praxis", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-05-10", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "AGT-Unterstützung: Atemschutzüberwachung und Sicherheitstrupp", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-05-24", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Absperren und Absichern einer Unfallstelle", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-05-29", "von": "", "bis": "", "dauer": 0, "thema": "Leistungsnachweis TH Neuruppin", "typ": "Veranstaltung", "wer": ""},
+      {"datum": "2027-06-07", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Brände von E-Fahrzeugen und Akkus (Gefahren und Löschtaktik)", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-06-21", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Ersteintreffende Einheit – Erkunden, Lagemeldung, Einweisen", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-07-05", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Wasserentnahme aus offenen Gewässern", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-07-19", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Unwetter und Sturmschäden / Kettensägenkunde", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-08-02", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Lange Wegstrecke und Wasserförderung", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-08-16", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Reinigung und Sichtung der Unterflurhydranten", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-08-30", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Begehung Sonderobjekt Fretzdorf (BMA)", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-09-13", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Abpumpen der Flachspiegelbrunnen (Herbst)", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-09-27", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Kleinlöschgeräte in der Praxis (Feuerlöscher, Kübelspritze, Löschdecke)", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-10-02", "von": "", "bis": "", "dauer": 0, "thema": "Fackelumzug", "typ": "Veranstaltung", "wer": ""},
+      {"datum": "2027-10-11", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Gebäudebrand mit Photovoltaikanlage – Gefahren durch Strom", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-10-25", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Beleuchtungsgeräte und Verkehrssicherung bei Dunkelheit", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-11-08", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Erste Hilfe (Termin wird noch abgestimmt)", "typ": "Ausbildung", "wer": "Sanitäterin"},
+      {"datum": "2027-11-22", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Gefahren an der Einsatzstelle (Gefahrenmatrix) und Einsatzstellenhygiene", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-12-06", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Planspiel „Einsatz in Christdorf“ und Rückblick Einsätze 2027", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2027-12-20", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Jahresausklang", "typ": "Ausbildung", "wer": "Einheitsführer"},
+      {"datum": "2028-01-03", "von": "19:00", "bis": "21:00", "dauer": 2.0, "thema": "Jährliche Unterweisung nach DGUV Vorschrift 1 und DGUV Vorschrift 49 (Feuerwehren)", "typ": "UVV", "wer": "Sicherheitsbeauftragter"}
+    ];
+
+    function jahresplanOffen() {
+      return JAHRESPLAN_2027.filter(e => !appData.dienste.some(d =>
+        d.id === 'plan2027-' + e.datum || ((d.datumVon || d.datum) === e.datum && d.thema === e.thema)));
+    }
+
+    function jahresplanButtonAktualisieren() {
+      const b = document.getElementById('btnJahresplanImport');
+      if (!b) return;
+      const n = jahresplanOffen().length;
+      b.style.display = n ? '' : 'none';
+      b.innerText = `📥 Jahresplan 2027 importieren (${n})`;
+    }
+
+    function findeEinheitsfuehrer() {
+      const kand = appData.members.filter(m => ['jürgens', 'juergens'].includes((m.nachname || '').trim().toLowerCase()));
+      return kand.find(m => (m.vorname || '').toLowerCase().startsWith('mat')) || kand[0] || null;
+    }
+
+    function importJahresplan2027() {
+      const offen = jahresplanOffen();
+      if (!offen.length) { alert('Alle Termine des Jahresplans sind bereits eingetragen.'); return; }
+      const ef = findeEinheitsfuehrer();
+      const nVer = offen.filter(e => e.typ === 'Veranstaltung').length;
+      let text = `Jahresplan importieren?\n\n${offen.length} Termine werden als "Geplant" angelegt (${offen.length - nVer} Ausbildung/Unterweisung, ${nVer} Veranstaltungen).\n\n`;
+      text += ef
+        ? `Ausbilder und einziger eingetragener Kamerad bei den Ausbildungsterminen: ${ef.vorname} ${ef.nachname}.`
+        : 'ACHTUNG: Ein Kamerad mit dem Nachnamen "Jürgens" wurde in der Mannschaftsliste nicht gefunden. Die Termine werden ohne Ausbilder angelegt.';
+      if (!confirm(text)) return;
+
+      offen.forEach(e => {
+        const veranstaltung = e.typ === 'Veranstaltung';
+        appData.dienste.push({
+          id: 'plan2027-' + e.datum, typ: e.typ, status: 'Geplant',
+          datumVon: e.datum, zeitVon: e.von, datumBis: e.datum, zeitBis: e.bis, dauer: e.dauer,
+          einheitsfuehrer: '', maschinist: '',
+          ausbilder: (!veranstaltung && ef) ? ef.id : '',
+          thema: e.thema,
+          teilnehmer: (!veranstaltung && ef) ? [ef.id] : []
+        });
+      });
+      saveData();
+      populateYearFilter();
+      renderApp();
+      alert(`${offen.length} Termine wurden eingetragen. Du findest sie im Kalender (Jahr 2027) und im Dienstbuch.`);
+    }
 
     function istUvvDienst(d) {
       const t = (d.thema || '').toLowerCase();
@@ -1820,7 +1904,7 @@
         appData.dienste.forEach(d => {
           const dStatus = d.status || 'Durchgeführt';
           if (dStatus !== 'Durchgeführt') return;
-          if (d.typ === 'OWF-Versammlung') return; // Ortswehrführer-Versammlung zählt nicht zu den Stunden
+          if (d.typ === 'OWF-Versammlung' || d.typ === 'Veranstaltung') return; // zählen nicht zu den Stunden
 
           const dYear = new Date(d.datumVon || d.datum).getFullYear();
           if (dYear === curYear) {
@@ -1890,7 +1974,7 @@
         if (activeMembers.length) {
           appData.dienste.forEach(d => {
             if ((d.status || 'Durchgeführt') !== 'Durchgeführt') return;
-            if (d.typ === 'Lehrgang' || d.typ === 'OWF-Versammlung') return;
+            if (d.typ === 'Lehrgang' || d.typ === 'OWF-Versammlung' || d.typ === 'Veranstaltung') return;
             if (new Date(d.datumVon || d.datum).getFullYear() !== curYear) return;
             const anwesend = (d.teilnehmer || []).filter(id => aktiveIds.has(id)).length;
             const dauer = parseFloat(d.dauer) || 0;
@@ -1963,7 +2047,7 @@
             const dEnde = d.datumBis || d.datumVon || d.datum;
             let timeStr = `${new Date(dStart).toLocaleDateString('de-DE')} ${d.zeitVon || d.von || ''} - ${new Date(dEnde).toLocaleDateString('de-DE')} ${d.zeitBis || d.bis || ''} Uhr`;
             if (dStart === dEnde || d.typ !== 'Lehrgang') {
-              timeStr = `${new Date(dStart).toLocaleDateString('de-DE')} (${d.zeitVon || d.von || ''} - ${d.zeitBis || d.bis || ''} Uhr)`;
+              timeStr = `${new Date(dStart).toLocaleDateString('de-DE')}` + ((d.zeitVon || d.von) ? ` (${d.zeitVon || d.von} - ${d.zeitBis || d.bis || ''} Uhr)` : '');
             }
 
             let rollenBadges = [];
@@ -2156,6 +2240,7 @@
           });
         }
         renderKalender();
+        jahresplanButtonAktualisieren();
         mobileTabellenBeschriften();
       } catch (err) {
         console.error("Fehler beim Rendern der Ansicht:", err);
