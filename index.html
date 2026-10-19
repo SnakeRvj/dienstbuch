@@ -262,6 +262,7 @@
         <span class="stat-title">Geleistete Stunden Aktive</span>
         <span class="stat-value" id="statTotalHours">0,0 h</span>
         <span class="stat-sub" id="statYearSub">Laufendes Dienstjahr (durchgeführte Dienste & Lehrgänge)</span>
+        <span class="stat-sub" id="statPlannedSub" style="color:#facc15; font-weight:600; margin-top:0.15rem;"></span>
       </div>
       <div class="stat-card">
         <span class="stat-title">Beteiligung Aktive</span>
@@ -297,11 +298,8 @@
     <section id="view-dashboard" class="view-section">
       <div class="card">
         <div class="card-header">
-          <div class="card-title">📊 Jahresstunden-Übersicht</div>
-          <div style="display: flex; gap: 0.5rem;">
-            <select id="filterYearSelect" class="form-control" style="width: auto; padding: 0.3rem 0.6rem;" onchange="renderApp()">
-            </select>
-          </div>
+          <div class="card-title" id="uebersichtTitel">📊 Jahresstunden-Übersicht</div>
+          <span style="color:var(--text-muted); font-size:0.8rem;">Jahr: im Kalender wählen</span>
         </div>
         <div class="card-body" style="padding:0;">
           <div class="table-responsive">
@@ -496,7 +494,7 @@
     <section id="view-atemschutz" class="view-section">
       <div class="card">
         <div class="card-header">
-          <div class="card-title">🤿 Atemschutzüberwachung (365-Tage-Regelung nach FwDV 7)</div>
+          <div class="card-title" id="atemschutzTitel">🤿 Atemschutzüberwachung (365-Tage-Regelung nach FwDV 7)</div>
         </div>
         <div class="card-body" style="padding:0;">
           <div class="table-responsive">
@@ -1156,26 +1154,8 @@
       });
     }
 
-    function populateYearFilter() {
-      const select = document.getElementById('filterYearSelect');
-      const currentSelected = select.value ? parseInt(select.value) : null;
-      const curYear = new Date().getFullYear();
-      let years = [curYear, curYear - 1];
-      
-      appData.dienste.forEach(d => {
-        const y = new Date(d.datumVon || d.datum).getFullYear();
-        if (!years.includes(y)) years.push(y);
-      });
-      (appData.lehrgangPlan || []).forEach(l => {
-        if (l.startDatum) {
-          const y = new Date(l.startDatum).getFullYear();
-          if (!years.includes(y)) years.push(y);
-        }
-      });
-      years.sort((a,b) => b - a);
-      const targetYear = (currentSelected && years.includes(currentSelected)) ? currentSelected : curYear;
-      select.innerHTML = years.map(y => `<option value="${y}" ${y === targetYear ? 'selected' : ''}>${y}</option>`).join('');
-    }
+    // Das Hauptjahr wird im Jahreskalender gewählt (kalenderJahr); die frühere Jahresauswahl der Übersicht entfällt.
+    function populateYearFilter() {}
 
     const DIENSTGRAD_W = {
       'Feuerwehrmann-Anwärter': 'Feuerwehrfrau-Anwärterin',
@@ -1318,14 +1298,14 @@
         .map(m => `${m.vorname || ''} ${m.nachname || ''}`.trim());
     }
 
-    function kalenderJahrWechsel(delta) { kalenderJahr += delta; kalenderAuswahl = null; renderKalender(); }
-    function kalenderHeute() { kalenderJahr = new Date().getFullYear(); kalenderMonat = new Date().getMonth(); kalenderAuswahl = kalKey(new Date()); renderKalender(); }
+    function kalenderJahrWechsel(delta) { kalenderJahr += delta; kalenderAuswahl = null; renderApp(); }
+    function kalenderHeute() { kalenderJahr = new Date().getFullYear(); kalenderMonat = new Date().getMonth(); kalenderAuswahl = kalKey(new Date()); renderApp(); }
     function kalenderMonatWechsel(delta) {
       kalenderMonat += delta;
       if (kalenderMonat < 0) { kalenderMonat = 11; kalenderJahr--; }
       else if (kalenderMonat > 11) { kalenderMonat = 0; kalenderJahr++; }
       kalenderAuswahl = null;
-      renderKalender();
+      renderApp();
     }
     function kalenderTagWaehlen(key) { kalenderAuswahl = (kalenderAuswahl === key) ? null : key; renderKalender(); }
 
@@ -1945,8 +1925,8 @@
 
     function renderApp() {
       try {
-        const curYear = parseInt(document.getElementById('filterYearSelect').value) || new Date().getFullYear();
-        
+        const curYear = kalenderJahr; // Das im Kalender gewählte Jahr gilt für Übersicht, Kacheln und Atemschutz
+
         let totalHours = 0;
         const memberHours = {};
         appData.members.forEach(m => {
@@ -1992,6 +1972,30 @@
         
         const statYearEl = document.getElementById('statYearSub');
         if (statYearEl) statYearEl.innerText = `Gesamt geleistet im Jahr ${curYear}`;
+        const uebersichtTitel = document.getElementById('uebersichtTitel');
+        if (uebersichtTitel) uebersichtTitel.innerText = `📊 Jahresstunden-Übersicht ${curYear}`;
+        const atemschutzTitel = document.getElementById('atemschutzTitel');
+        if (atemschutzTitel) atemschutzTitel.innerText = `🤿 Atemschutzüberwachung ${curYear} (365-Tage-Regelung nach FwDV 7)`;
+
+        // Geplante Stunden des Jahres: Dienststunden aller geplanten Termine + angemeldete Lehrgänge (je Lehrgang einmal)
+        let geplanteStunden = 0;
+        appData.dienste.forEach(d => {
+          if ((d.status || 'Durchgeführt') !== 'Geplant') return;
+          if (d.typ === 'OWF-Versammlung') return;
+          if (new Date(d.datumVon || d.datum).getFullYear() !== curYear) return;
+          geplanteStunden += parseFloat(d.dauer) || 0;
+        });
+        const gezaehlteLehrgaenge = new Set();
+        (appData.lehrgangPlan || []).forEach(l => {
+          if (l.status !== 'Angemeldet' || !l.startDatum) return;
+          if (new Date(l.startDatum).getFullYear() !== curYear) return;
+          const schluessel = [l.titel, l.ort, l.startDatum, l.endeDatum || l.startDatum].join('|');
+          if (gezaehlteLehrgaenge.has(schluessel)) return;
+          gezaehlteLehrgaenge.add(schluessel);
+          geplanteStunden += parseFloat(l.stunden) || 0;
+        });
+        const statPlannedEl = document.getElementById('statPlannedSub');
+        if (statPlannedEl) statPlannedEl.innerText = `Geplant: ${geplanteStunden.toFixed(1).replace('.', ',')} h`;
         
         const statMemEl = document.getElementById('statMembersCount');
         if (statMemEl) {
