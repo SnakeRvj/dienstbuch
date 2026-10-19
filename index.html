@@ -140,6 +140,88 @@
     .cal-detail-box { background: var(--card-header); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.85rem; }
     .cal-detail-item { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.35rem 0; border-top: 1px solid var(--border); }
     .cal-detail-item:first-of-type { border-top: none; }
+
+    /* ===== MOBILE ANSICHT (Handy / schmale Fenster) ===== */
+    .cal-mobile-nav { display: none; }
+    .cal-legend-mobil { display: none; }
+    @media (max-width: 768px) {
+      body { font-size: 15px; }
+      header { padding: 0.6rem 0.8rem; }
+      .header-text p { display: none; }
+      .header-text h1 { font-size: 1rem; }
+      .header-logo { font-size: 1.5rem; }
+      .sync-badge { font-size: 0.68rem; padding: 0.25rem 0.5rem; }
+      .header-actions .btn-light { padding: 0.3rem 0.55rem; font-size: 0.72rem; }
+      .container { margin: 0.6rem auto; padding: 0 0.5rem; }
+
+      /* Kacheln oben: zwei nebeneinander */
+      .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 0.75rem; }
+      .stats-grid .stat-card:last-child { grid-column: span 2; }
+      .stat-card { padding: 0.65rem 0.75rem; }
+      .stat-title { font-size: 0.65rem; margin-bottom: 0.2rem; }
+      .stat-value { font-size: 1.35rem; }
+      .stat-sub { font-size: 0.65rem; margin-top: 0.2rem; }
+
+      .card-header { padding: 0.7rem 0.8rem; gap: 0.5rem; }
+      .card-title { font-size: 0.95rem; }
+      .card-body { padding: 0.8rem; }
+
+      /* Tabellen werden zu Karten */
+      .table-responsive { overflow: visible; }
+      table, tbody { display: block; width: 100%; }
+      thead { display: none; }
+      tbody tr { display: flex; flex-direction: column; margin: 0.6rem; padding: 0.5rem 0.8rem; background: var(--card-header); border: 1px solid var(--border); border-radius: 10px; }
+      tbody tr:hover td { background-color: transparent; }
+      tbody td { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; padding: 0.35rem 0; border-bottom: 1px dashed rgba(148, 163, 184, 0.18); font-size: 0.85rem; }
+      tbody td::before { content: attr(data-label); flex: 0 0 34%; text-align: left; font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+      tbody td > .td-inhalt { flex: 1; text-align: right; min-width: 0; overflow-wrap: anywhere; }
+      tbody td:first-child { display: block; font-size: 1rem; padding-bottom: 0.45rem; margin-bottom: 0.15rem; border-bottom: 1px solid var(--border); }
+      tbody td:first-child::before { display: none; }
+      tbody td:last-child { border-bottom: none; }
+      tbody td[colspan] { display: block; text-align: center; }
+      tbody td[colspan]::before { display: none; }
+      /* Dienstbuch: Datum als Überschrift der Karte, Status als normale Zeile */
+      table.mobil-datum-titel tbody td:nth-child(2) { order: -1; display: block; font-size: 1rem; font-weight: 700; padding-bottom: 0.45rem; margin-bottom: 0.15rem; border-bottom: 1px solid var(--border); }
+      table.mobil-datum-titel tbody td:nth-child(2)::before { display: none; }
+      table.mobil-datum-titel tbody td:nth-child(2) > .td-inhalt { text-align: left; }
+      table.mobil-datum-titel tbody td:first-child { display: flex; font-size: 0.85rem; padding-bottom: 0.35rem; margin-bottom: 0; border-bottom: 1px dashed rgba(148, 163, 184, 0.18); }
+      table.mobil-datum-titel tbody td:first-child::before { display: block; }
+      tbody td.mobil-aktionen { justify-content: flex-end; padding-top: 0.55rem; }
+      tbody td.mobil-aktionen::before { display: none; }
+      tbody td.mobil-aktionen > .td-inhalt { display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap; }
+      tbody td.mobil-aktionen .btn { padding: 0.5rem 0.9rem; font-size: 0.85rem; }
+
+      /* Formulare & Bedienung */
+      .btn { min-height: 40px; }
+      .btn-sm { min-height: 36px; font-size: 0.8rem; }
+      .form-control, select, input, textarea { font-size: 16px; }
+      .form-row { grid-template-columns: 1fr; gap: 0.6rem; }
+      .modal-overlay { padding: 0; align-items: stretch; }
+      .modal { max-width: 100%; max-height: 100%; height: 100%; border-radius: 0; border: none; }
+      .modal-header { position: sticky; top: 0; z-index: 2; padding: 0.85rem 1rem; }
+      .modal-body { padding: 1rem; }
+      .modal-footer { position: sticky; bottom: 0; padding: 0.7rem 1rem; }
+      .attendance-row { padding: 0.65rem 0.6rem; }
+      .attendance-row input { width: 20px; height: 20px; }
+
+      /* Kalender: ein Monat auf einmal */
+      .cal-toolbar { padding: 0.6rem 0.7rem; gap: 0.5rem; }
+      .cal-jahr-nav { display: none; }
+      .cal-mobile-nav { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex: 1 1 100%; order: -1; }
+      .cal-mobile-nav .cal-monat-titel { font-size: 1.1rem; font-weight: 800; text-align: center; flex: 1; }
+      .cal-mobile-nav .btn { min-width: 48px; }
+      .cal-toolbar .cal-legend { display: none; }
+      .cal-legend-mobil { display: flex; margin: 0; padding: 0.2rem 0.8rem 0.6rem; font-size: 0.72rem; gap: 0.4rem 0.9rem; }
+      .cal-toolbar > button[onclick="kalenderHeute()"] { margin: 0 auto; }
+      .cal-grid { grid-template-columns: 1fr; padding: 0.6rem; }
+      .cal-month { display: none; padding: 0.5rem; }
+      .cal-month.mobil-aktiv { display: block; }
+      .cal-month-title { display: none; }
+      .cal-weekdays span { font-size: 0.75rem; }
+      .cal-days, .cal-weekdays { gap: 4px; }
+      .cal-day { font-size: 1rem; border-radius: 8px; }
+      .cal-detail { padding: 0 0.6rem 0.8rem; }
+    }
   </style>
 </head>
 <body>
@@ -300,13 +382,19 @@
           <div class="card-title">📆 Jahreskalender</div>
         </div>
         <div class="cal-toolbar">
-          <button class="btn btn-secondary btn-sm" onclick="kalenderJahrWechsel(-1)">◀</button>
-          <span class="cal-year" id="kalenderJahrAnzeige"></span>
-          <button class="btn btn-secondary btn-sm" onclick="kalenderJahrWechsel(1)">▶</button>
+          <div class="cal-mobile-nav">
+            <button class="btn btn-secondary" onclick="kalenderMonatWechsel(-1)">◀</button>
+            <span class="cal-monat-titel" id="kalenderMonatAnzeige"></span>
+            <button class="btn btn-secondary" onclick="kalenderMonatWechsel(1)">▶</button>
+          </div>
+          <button class="btn btn-secondary btn-sm cal-jahr-nav" onclick="kalenderJahrWechsel(-1)">◀</button>
+          <span class="cal-year cal-jahr-nav" id="kalenderJahrAnzeige"></span>
+          <button class="btn btn-secondary btn-sm cal-jahr-nav" onclick="kalenderJahrWechsel(1)">▶</button>
           <button class="btn btn-secondary btn-sm" onclick="kalenderHeute()">Heute</button>
           <div class="cal-legend" id="kalenderLegende"></div>
         </div>
         <div class="cal-grid" id="kalenderGrid"></div>
+        <div class="cal-legend cal-legend-mobil" id="kalenderLegendeMobil"></div>
         <div class="cal-detail" id="kalenderDetail"></div>
       </div>
     </section>
@@ -1152,6 +1240,7 @@
     };
     let kalenderJahr = new Date().getFullYear();
     let kalenderAuswahl = null;
+    let kalenderMonat = new Date().getMonth(); // nur für die Handy-Ansicht (ein Monat auf einmal)
 
     function kalIsoToDate(iso) {
       const t = String(iso || '').split('-');
@@ -1177,7 +1266,14 @@
     }
 
     function kalenderJahrWechsel(delta) { kalenderJahr += delta; kalenderAuswahl = null; renderKalender(); }
-    function kalenderHeute() { kalenderJahr = new Date().getFullYear(); kalenderAuswahl = kalKey(new Date()); renderKalender(); }
+    function kalenderHeute() { kalenderJahr = new Date().getFullYear(); kalenderMonat = new Date().getMonth(); kalenderAuswahl = kalKey(new Date()); renderKalender(); }
+    function kalenderMonatWechsel(delta) {
+      kalenderMonat += delta;
+      if (kalenderMonat < 0) { kalenderMonat = 11; kalenderJahr--; }
+      else if (kalenderMonat > 11) { kalenderMonat = 0; kalenderJahr++; }
+      kalenderAuswahl = null;
+      renderKalender();
+    }
     function kalenderTagWaehlen(key) { kalenderAuswahl = (kalenderAuswahl === key) ? null : key; renderKalender(); }
 
     function kalenderSammleTermine() {
@@ -1247,6 +1343,9 @@
       const grid = document.getElementById('kalenderGrid');
       if (!grid) return;
       document.getElementById('kalenderJahrAnzeige').innerText = kalenderJahr;
+      const monatsnamen = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+      const monatAnzeige = document.getElementById('kalenderMonatAnzeige');
+      if (monatAnzeige) monatAnzeige.innerText = monatsnamen[kalenderMonat] + ' ' + kalenderJahr;
 
       const tage = kalenderSammleTermine();
       const heuteKey = kalKey(new Date());
@@ -1260,7 +1359,7 @@
         const anzahl = new Date(kalenderJahr, m + 1, 0).getDate();
         const offset = (erster.getDay() + 6) % 7; // Woche beginnt am Montag
         const aktuell = (kalenderJahr === new Date().getFullYear() && m === new Date().getMonth());
-        html += `<div class="cal-month${aktuell ? ' current' : ''}" id="kal-monat-${m}"><div class="cal-month-title">${monate[m]}</div>`;
+        html += `<div class="cal-month${aktuell ? ' current' : ''}${m === kalenderMonat ? ' mobil-aktiv' : ''}" id="kal-monat-${m}"><div class="cal-month-title">${monate[m]}</div>`;
         html += '<div class="cal-weekdays"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div class="cal-days">';
         for (let i = 0; i < offset; i++) html += '<div class="cal-day"></div>';
         for (let tag = 1; tag <= anzahl; tag++) {
@@ -1292,10 +1391,13 @@
       grid.innerHTML = html;
 
       const leg = document.getElementById('kalenderLegende');
+      const legMobil = document.getElementById('kalenderLegendeMobil');
       if (leg) {
-        leg.innerHTML = Object.keys(KAL_KATEGORIEN).map(k =>
+        const legHtml = Object.keys(KAL_KATEGORIEN).map(k =>
           `<span class="cal-legend-item"><span class="cal-swatch" style="background:${KAL_KATEGORIEN[k].farbe};"></span>${KAL_KATEGORIEN[k].label} (${zaehler[k]} ${zaehler[k] === 1 ? 'Tag' : 'Tage'})</span>`
         ).join('') + '<span class="cal-legend-item"><span class="cal-swatch" style="border:1px dashed #fff; opacity:0.6;"></span>geplant / angemeldet</span>';
+        leg.innerHTML = legHtml;
+        if (legMobil) legMobil.innerHTML = legHtml;
       }
 
       const det = document.getElementById('kalenderDetail');
@@ -1334,6 +1436,35 @@
       const leer = !stunden;
       return `<span class="std-pille" style="background:${farbe}; color:${textfarbe || '#ffffff'}; ${fett ? 'font-size:0.9rem; box-shadow:0 0 0 2px rgba(250,204,21,0.35);' : ''} ${leer ? 'opacity:0.4;' : ''}">${stunden.toFixed(1)} h</span>`;
     }
+
+    // ===== MOBILE ANSICHT: Tabellen als Karten beschriften =====
+    function mobileTabellenBeschriften() {
+      if (!window.matchMedia('(max-width: 768px)').matches) return;
+      document.querySelectorAll('table').forEach(tabelle => {
+        const kopf = Array.from(tabelle.querySelectorAll('thead th')).map(th => th.textContent.replace('●', '').trim());
+        // Dienstbuch: Datum (2. Spalte) wird die Überschrift der Karte
+        const titelIndex = (kopf[0] === 'Status' && (kopf[1] || '').startsWith('Datum')) ? 1 : 0;
+        tabelle.classList.toggle('mobil-datum-titel', titelIndex === 1);
+        tabelle.querySelectorAll('tbody tr').forEach(zeile => {
+          Array.from(zeile.children).forEach((td, i) => {
+            if (td.tagName !== 'TD' || td.colSpan > 1) return;
+            const label = kopf[i] || '';
+            td.setAttribute('data-label', label);
+            if (label === 'Aktionen' || label === 'Schnellaktion') td.classList.add('mobil-aktionen');
+            if (i === titelIndex) return; // diese Zelle ist die Überschrift der Karte
+            if (!(td.children.length === 1 && td.firstElementChild.classList.contains('td-inhalt'))) {
+              td.innerHTML = '<div class="td-inhalt">' + td.innerHTML + '</div>';
+            }
+          });
+        });
+      });
+    }
+    try {
+      const mobilMQ = window.matchMedia('(max-width: 768px)');
+      const mobilWechsel = () => { try { renderApp(); } catch (e) {} };
+      if (mobilMQ.addEventListener) mobilMQ.addEventListener('change', mobilWechsel);
+      else if (mobilMQ.addListener) mobilMQ.addListener(mobilWechsel);
+    } catch (e) {}
 
     function istUvvDienst(d) {
       const t = (d.thema || '').toLowerCase();
@@ -2025,6 +2156,7 @@
           });
         }
         renderKalender();
+        mobileTabellenBeschriften();
       } catch (err) {
         console.error("Fehler beim Rendern der Ansicht:", err);
       }
