@@ -252,6 +252,7 @@
         <span class="sync-dot" id="syncDot"></span>
         <span id="syncText">Verbinde Cloud...</span>
       </div>
+      <button class="btn btn-light btn-sm" onclick="openBerichtModal()" title="Jahresbericht für die Jahreshauptversammlung erstellen">📄 Jahresbericht</button>
       <button class="btn btn-light btn-sm" onclick="logout()" title="Von diesem Gerät abmelden">🔒 Abmelden</button>
     </div>
   </header>
@@ -918,6 +919,47 @@
             <button type="submit" class="btn btn-primary">Speichern</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: JAHRESBERICHT EXPORT -->
+  <div id="modalBericht" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">📄 Jahresbericht erstellen</div>
+        <button class="btn btn-sm btn-secondary" onclick="closeModal('modalBericht')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Berichtsjahr</label>
+            <select id="berichtJahr" class="form-control"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dateiformat</label>
+            <select id="berichtFormat" class="form-control">
+              <option value="word">📝 Word-Datei (.doc)</option>
+              <option value="excel">📊 Excel-Datei (.xlsx)</option>
+            </select>
+          </div>
+        </div>
+        <label class="form-label">Was soll in den Bericht?</label>
+        <div style="display:grid; gap:0.4rem; margin-top:0.4rem;">
+          <label class="checkbox-item"><input type="checkbox" id="bxGesamt" checked> Gesamtstunden aller Bereiche</label>
+          <label class="checkbox-item"><input type="checkbox" id="bxAusbildung" checked> Ausbildungsdienste: Anzahl, Stunden und Beteiligung</label>
+          <label class="checkbox-item"><input type="checkbox" id="bxAusbildungListe"> Liste der Ausbildungsdienste (Datum, Thema, Teilnehmerzahl)</label>
+          <label class="checkbox-item"><input type="checkbox" id="bxEinsatz" checked> Einsätze: Anzahl und Einsatzstunden</label>
+          <label class="checkbox-item"><input type="checkbox" id="bxEinsatzListe"> Liste der Einsätze (Datum, Stichwort, Kräfte, Dauer)</label>
+          <label class="checkbox-item"><input type="checkbox" id="bxArbeit"> Arbeits- und Pflegedienste</label>
+          <label class="checkbox-item"><input type="checkbox" id="bxLehrgang" checked> Besuchte Lehrgänge</label>
+          <label class="checkbox-item"><input type="checkbox" id="bxVeranstaltung" checked> Veranstaltungen (mit Platz zum selbst Ergänzen)</label>
+        </div>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.8rem;">Der Bericht enthält keine Namen, nur Zahlen und Themen. Gezählt werden nur Dienste mit Status „Durchgeführt“ und abgeschlossene Lehrgänge.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalBericht')">Abbrechen</button>
+        <button type="button" class="btn btn-primary" id="berichtButton" onclick="berichtErstellen()">Bericht herunterladen</button>
       </div>
     </div>
   </div>
@@ -1936,7 +1978,7 @@
         appData.dienste.forEach(d => {
           const dStatus = d.status || 'Durchgeführt';
           if (dStatus !== 'Durchgeführt') return;
-          if (d.typ === 'OWF-Versammlung') return; // Ortswehrführer-Versammlung zählt nicht zu den Stunden
+          if (d.typ === 'OWF-Versammlung' || d.typ === 'Veranstaltung') return; // Ortswehrführer-Versammlung und Veranstaltungen zählen nicht zu den Stunden
 
           const dYear = new Date(d.datumVon || d.datum).getFullYear();
           if (dYear === curYear) {
@@ -1945,7 +1987,7 @@
               d.teilnehmer.forEach(mId => {
                 if (memberHours[mId]) {
                   if (d.typ === 'Einsatz') memberHours[mId].einsatz += d.dauer;
-                  else if (d.typ === 'Arbeitsdienst' || d.typ === 'Veranstaltung') memberHours[mId].nachbereitung += d.dauer; // Veranstaltungen zählen als Arbeitsdienst (Vor-/Nachbereitung)
+                  else if (d.typ === 'Arbeitsdienst') memberHours[mId].nachbereitung += d.dauer;
                   else memberHours[mId].ausbildung += d.dauer;
                   memberHours[mId].gesamt += d.dauer;
                 }
@@ -1981,7 +2023,7 @@
         let geplanteStunden = 0;
         appData.dienste.forEach(d => {
           if ((d.status || 'Durchgeführt') !== 'Geplant') return;
-          if (d.typ === 'OWF-Versammlung') return;
+          if (d.typ === 'OWF-Versammlung' || d.typ === 'Veranstaltung') return;
           if (new Date(d.datumVon || d.datum).getFullYear() !== curYear) return;
           geplanteStunden += parseFloat(d.dauer) || 0;
         });
@@ -2740,6 +2782,200 @@
       if (confirm('Kamerad wirklich löschen?')) {
         appData.members = appData.members.filter(m => m.id !== id);
         saveData();
+      }
+    }
+
+    // ===== JAHRESBERICHT FÜR DIE JAHRESHAUPTVERSAMMLUNG (ohne Namen) =====
+    function openBerichtModal() {
+      const sel = document.getElementById('berichtJahr');
+      const jetzt = new Date().getFullYear();
+      const jahre = new Set([jetzt, jetzt - 1]);
+      (appData.dienste || []).forEach(d => { const j = parseInt((d.datumVon || d.datum || '').slice(0, 4)); if (j) jahre.add(j); });
+      (appData.lehrgangPlan || []).forEach(l => { const j = parseInt((l.startDatum || '').slice(0, 4)); if (j) jahre.add(j); });
+      const liste = [...jahre].sort((a, b) => b - a);
+      sel.innerHTML = liste.map(j => `<option value="${j}" ${j === jetzt - 1 ? 'selected' : ''}>${j}</option>`).join('');
+      document.getElementById('modalBericht').style.display = 'flex';
+    }
+
+    function berichtZahl(v) { return (Math.round((v || 0) * 10) / 10).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+    function berichtDatum(iso) { const t = String(iso || '').slice(0, 10).split('-'); return t.length === 3 ? `${t[2]}.${t[1]}.${t[0]}` : ''; }
+    function berichtEsc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    function berichtDaten(jahr) {
+      const J = String(jahr);
+      const aktive = appData.members.filter(m => m.status === 'Aktiv');
+      const aktiveIds = new Set(aktive.map(m => m.id));
+      const dienste = (appData.dienste || [])
+        .filter(d => (d.status || 'Durchgeführt') === 'Durchgeführt' && (d.datumVon || d.datum || '').slice(0, 4) === J)
+        .sort((a, b) => (a.datumVon || a.datum || '').localeCompare(b.datumVon || b.datum || ''));
+      const gruppe = (typen) => {
+        const liste = dienste.filter(d => typen.includes(d.typ));
+        let dienstStd = 0, personenStd = 0, teilnahmen = 0, quote = 0;
+        liste.forEach(d => {
+          const dauer = parseFloat(d.dauer) || 0;
+          const tn = (d.teilnehmer || []).length;
+          dienstStd += dauer; personenStd += dauer * tn; teilnahmen += tn;
+          if (aktive.length) quote += (d.teilnehmer || []).filter(id => aktiveIds.has(id)).length / aktive.length;
+        });
+        return { liste, anzahl: liste.length, dienstStd, personenStd, teilnahmen,
+                 schnitt: liste.length ? teilnahmen / liste.length : 0,
+                 beteiligung: liste.length ? Math.round(quote / liste.length * 100) : 0 };
+      };
+      const ausbildung = gruppe(['Ausbildung', 'UVV', 'Strecke', 'CSA', 'Lehrgang']);
+      const einsatz = gruppe(['Einsatz']);
+      const arbeit = gruppe(['Arbeitsdienst']);
+      const versammlung = gruppe(['Versammlung']);
+      const veranstaltungen = dienste.filter(d => d.typ === 'Veranstaltung');
+
+      const lgMap = {};
+      (appData.lehrgangPlan || []).forEach(l => {
+        if (!l.startDatum || l.startDatum.slice(0, 4) !== J) return;
+        if (l.status !== 'Bestanden' && l.status !== 'Nicht bestanden') return;
+        const key = (l.titel || 'Lehrgang') + '|' + (l.ort || '');
+        if (!lgMap[key]) lgMap[key] = { titel: l.titel || 'Lehrgang', ort: l.ort || '', teilnehmer: 0, bestanden: 0, stunden: 0 };
+        lgMap[key].teilnehmer++;
+        if (l.status === 'Bestanden') lgMap[key].bestanden++;
+        lgMap[key].stunden += parseFloat(l.stunden) || 0;
+      });
+      const lehrgaenge = Object.values(lgMap).sort((a, b) => a.titel.localeCompare(b.titel, 'de'));
+      const lehrgangStd = lehrgaenge.reduce((s, l) => s + l.stunden, 0);
+      const gesamt = ausbildung.personenStd + einsatz.personenStd + arbeit.personenStd + versammlung.personenStd + lehrgangStd;
+      return { jahr, aktive: aktive.length, ausbildung, einsatz, arbeit, versammlung, veranstaltungen, lehrgaenge, lehrgangStd, gesamt };
+    }
+
+    // Baut den Bericht als Abschnitte; Word und Excel nutzen dieselben Inhalte
+    function berichtAbschnitte(D, opt) {
+      const A = [];
+      const z = berichtZahl;
+      if (opt.gesamt) A.push({ titel: 'Gesamtstunden', kopf: ['Bereich', 'Personenstunden'], zeilen: [
+        ['Ausbildungsdienste', z(D.ausbildung.personenStd)],
+        ['Einsätze', z(D.einsatz.personenStd)],
+        ['Arbeits- und Pflegedienste', z(D.arbeit.personenStd)],
+        ['Versammlungen', z(D.versammlung.personenStd)],
+        ['Lehrgänge', z(D.lehrgangStd)],
+        ['Gesamt', z(D.gesamt)]
+      ], fett: true });
+      if (opt.ausbildung) A.push({ titel: 'Ausbildungsdienste', kopf: ['Kennzahl', 'Wert'], zeilen: [
+        ['Anzahl Ausbildungsdienste', String(D.ausbildung.anzahl)],
+        ['Ausbildungszeit (Dauer der Dienste)', z(D.ausbildung.dienstStd) + ' h'],
+        ['Ausbildungsstunden (alle Teilnehmer)', z(D.ausbildung.personenStd) + ' h'],
+        ['Ø Teilnehmer je Dienst', z(D.ausbildung.schnitt)],
+        ['Beteiligung der Aktiven', D.ausbildung.beteiligung + ' %']
+      ], hinweis: `Beteiligung bezogen auf derzeit ${D.aktive} aktive Kameraden.` });
+      if (opt.ausbildungListe) A.push({ titel: 'Übersicht der Ausbildungsdienste', kopf: ['Datum', 'Thema', 'Teilnehmer', 'Dauer (h)'],
+        zeilen: D.ausbildung.liste.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || d.typ, String((d.teilnehmer || []).length), z(parseFloat(d.dauer) || 0)]),
+        leer: 'Keine Ausbildungsdienste erfasst.' });
+      if (opt.einsatz) A.push({ titel: 'Einsätze', kopf: ['Kennzahl', 'Wert'], zeilen: [
+        ['Anzahl Einsätze', String(D.einsatz.anzahl)],
+        ['Einsatzdauer gesamt', z(D.einsatz.dienstStd) + ' h'],
+        ['Einsatzstunden (alle Kräfte)', z(D.einsatz.personenStd) + ' h'],
+        ['Ø Einsatzkräfte je Einsatz', z(D.einsatz.schnitt)]
+      ] });
+      if (opt.einsatzListe) A.push({ titel: 'Übersicht der Einsätze', kopf: ['Datum', 'Stichwort', 'Kräfte', 'Dauer (h)'],
+        zeilen: D.einsatz.liste.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || 'Einsatz', String((d.teilnehmer || []).length), z(parseFloat(d.dauer) || 0)]),
+        leer: 'Keine Einsätze erfasst.' });
+      if (opt.arbeit) A.push({ titel: 'Arbeits- und Pflegedienste', kopf: ['Kennzahl', 'Wert'], zeilen: [
+        ['Anzahl Arbeitsdienste', String(D.arbeit.anzahl)],
+        ['Stunden (alle Teilnehmer)', z(D.arbeit.personenStd) + ' h']
+      ] });
+      if (opt.lehrgang) A.push({ titel: 'Besuchte Lehrgänge', kopf: ['Lehrgang', 'Ausbildungsstätte', 'Teilnehmer', 'davon bestanden', 'Stunden'],
+        zeilen: D.lehrgaenge.map(l => [l.titel, l.ort, String(l.teilnehmer), String(l.bestanden), z(l.stunden)]),
+        leer: 'Keine abgeschlossenen Lehrgänge erfasst.' });
+      if (opt.veranstaltung) {
+        const zeilen = D.veranstaltungen.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || 'Veranstaltung', '']);
+        for (let i = 0; i < 3; i++) zeilen.push(['', '', '']);
+        A.push({ titel: 'Veranstaltungen', kopf: ['Datum', 'Veranstaltung', 'Bemerkung'], zeilen, hoch: true });
+      }
+      return A;
+    }
+
+    function berichtDownload(blob, name) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }
+
+    function berichtWord(D, A) {
+      const heute = berichtDatum(new Date().toISOString());
+      let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Jahresbericht ${D.jahr}</title>
+        <style>body{font-family:Arial,sans-serif;font-size:11pt;color:#000}h1{font-size:18pt;color:#b91c1c;margin-bottom:2pt}h2{font-size:13pt;color:#b91c1c;margin-top:16pt;margin-bottom:4pt;border-bottom:1pt solid #b91c1c}
+        table{border-collapse:collapse;width:100%}th{background:#f3d4d4;text-align:left;border:1pt solid #999;padding:4pt}td{border:1pt solid #999;padding:4pt}td.r,th.r{text-align:right}.sub{color:#555;font-size:10pt}.hinweis{color:#555;font-size:9pt;margin-top:3pt}</style></head><body>
+        <h1>Freiwillige Feuerwehr Christdorf</h1>
+        <p class="sub">Jahresbericht ${D.jahr} für die Jahreshauptversammlung · erstellt am ${heute}</p>`;
+      A.forEach(a => {
+        html += `<h2>${berichtEsc(a.titel)}</h2>`;
+        if (!a.zeilen.length) { html += `<p>${berichtEsc(a.leer || '–')}</p>`; return; }
+        html += '<table><tr>' + a.kopf.map((k, i) => `<th${i > 0 && !a.hoch && !/Thema|Stichwort|Veranstaltung|Ausbildungsstätte|Bemerkung/.test(k) ? ' class="r"' : ''}>${berichtEsc(k)}</th>`).join('') + '</tr>';
+        a.zeilen.forEach((z, zi) => {
+          const fett = a.fett && zi === a.zeilen.length - 1;
+          html += '<tr>' + z.map((c, i) => {
+            const rechts = i > 0 && !a.hoch && !/Thema|Stichwort|Veranstaltung|Ausbildungsstätte|Bemerkung/.test(a.kopf[i]);
+            return `<td${rechts ? ' class="r"' : ''}${a.hoch ? ' style="height:20pt"' : ''}>${fett ? '<b>' : ''}${berichtEsc(c) || '&nbsp;'}${fett ? '</b>' : ''}</td>`;
+          }).join('') + '</tr>';
+        });
+        html += '</table>';
+        if (a.hinweis) html += `<p class="hinweis">${berichtEsc(a.hinweis)}</p>`;
+      });
+      html += '</body></html>';
+      berichtDownload(new Blob(['\ufeff', html], { type: 'application/msword' }), `Jahresbericht_${D.jahr}_FF_Christdorf.doc`);
+    }
+
+    function berichtLadeSheetJS() {
+      if (window.XLSX) return Promise.resolve();
+      return new Promise((ok, fehler) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload = ok; s.onerror = fehler;
+        document.head.appendChild(s);
+      });
+    }
+
+    function berichtExcel(D, A) {
+      const aoa = [['Freiwillige Feuerwehr Christdorf'], [`Jahresbericht ${D.jahr} für die Jahreshauptversammlung`], [`Erstellt am ${berichtDatum(new Date().toISOString())}`], []];
+      const alsZahl = (c) => /^-?\d+(\.\d{3})*(,\d+)?$/.test(String(c)) ? parseFloat(String(c).replace(/\./g, '').replace(',', '.')) : c;
+      A.forEach(a => {
+        aoa.push([a.titel]);
+        if (!a.zeilen.length) { aoa.push([a.leer || '–']); aoa.push([]); return; }
+        aoa.push(a.kopf);
+        a.zeilen.forEach(z => aoa.push(z.map((c, i) => i === 0 ? c : alsZahl(c))));
+        if (a.hinweis) aoa.push([a.hinweis]);
+        aoa.push([]);
+      });
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = [{ wch: 42 }, { wch: 40 }, { wch: 14 }, { wch: 16 }, { wch: 10 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `Jahresbericht ${D.jahr}`);
+      const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      berichtDownload(new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `Jahresbericht_${D.jahr}_FF_Christdorf.xlsx`);
+    }
+
+    async function berichtErstellen() {
+      const jahr = parseInt(document.getElementById('berichtJahr').value);
+      const opt = {
+        gesamt: bxGesamt.checked, ausbildung: bxAusbildung.checked, ausbildungListe: bxAusbildungListe.checked,
+        einsatz: bxEinsatz.checked, einsatzListe: bxEinsatzListe.checked, arbeit: bxArbeit.checked,
+        lehrgang: bxLehrgang.checked, veranstaltung: bxVeranstaltung.checked
+      };
+      if (!Object.values(opt).some(Boolean)) { alert('Bitte mindestens einen Bereich für den Bericht anhaken.'); return; }
+      const D = berichtDaten(jahr);
+      const A = berichtAbschnitte(D, opt);
+      const btn = document.getElementById('berichtButton');
+      try {
+        if (document.getElementById('berichtFormat').value === 'excel') {
+          btn.disabled = true; btn.innerText = 'Wird erstellt...';
+          await berichtLadeSheetJS();
+          berichtExcel(D, A);
+        } else {
+          berichtWord(D, A);
+        }
+        closeModal('modalBericht');
+      } catch (err) {
+        console.error(err);
+        alert('Die Excel-Datei konnte nicht erstellt werden, weil gerade keine Internetverbindung besteht. Wähle Word oder versuche es mit Verbindung erneut.');
+      } finally {
+        btn.disabled = false; btn.innerText = 'Bericht herunterladen';
       }
     }
 
