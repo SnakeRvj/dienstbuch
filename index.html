@@ -628,7 +628,7 @@
             <div class="form-row" style="margin-top: 0.4rem;">
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Berechnete Gesamtdauer (h)</label>
-                <input type="number" step="0.05" min="0.1" id="dienstDauer" class="form-control" required placeholder="z. B. 2.0">
+                <input type="number" step="any" min="0.01" id="dienstDauer" class="form-control" required placeholder="z. B. 0.5 für 30 Minuten" oninput="dauerHinweis()">
                 <span id="calcHint" class="calc-hint">Wird minutengenau errechnet</span>
               </div>
             </div>
@@ -1506,9 +1506,21 @@
 
     // ===== EINSATZ-AUSWAHL: UVV-Pflicht & Einsatzfähigkeit =====
     // Stunden-Anzeige als farbige Pille (Farben wie im Kalender)
+    // Stunden als Std:Min anzeigen (z. B. 0,5 h -> 0:30 h); gespeichert wird weiterhin als Dezimalzahl
+    function fmtStd(h) {
+      const min = Math.round((parseFloat(h) || 0) * 60);
+      return `${Math.floor(min / 60).toLocaleString('de-DE')}:${String(min % 60).padStart(2, '0')} h`;
+    }
+
+    function dauerHinweis() {
+      const v = parseFloat(String(document.getElementById('dienstDauer').value).replace(',', '.'));
+      const hint = document.getElementById('calcHint');
+      if (hint && v > 0) hint.innerText = `Entspricht ${fmtStd(v)} (${Math.round(v * 60)} Minuten)`;
+    }
+
     function stdPille(stunden, farbe, textfarbe, fett) {
       const leer = !stunden;
-      return `<span class="std-pille" style="background:${farbe}; color:${textfarbe || '#ffffff'}; ${fett ? 'font-size:0.9rem; box-shadow:0 0 0 2px rgba(250,204,21,0.35);' : ''} ${leer ? 'opacity:0.4;' : ''}">${stunden.toFixed(1)} h</span>`;
+      return `<span class="std-pille" style="background:${farbe}; color:${textfarbe || '#ffffff'}; ${fett ? 'font-size:0.9rem; box-shadow:0 0 0 2px rgba(250,204,21,0.35);' : ''} ${leer ? 'opacity:0.4;' : ''}">${fmtStd(stunden)}</span>`;
     }
 
     // ===== MOBILE ANSICHT: Tabellen als Karten beschriften =====
@@ -1790,7 +1802,7 @@
       
       const daysDiff = Math.floor(totalMinutes / (24 * 60));
       let dayText = daysDiff > 0 ? ` (${daysDiff} Tag(e))` : '';
-      hint.innerText = `Berechnet: ${totalMinutes} Minuten (${(Math.round(hours * 100) / 100).toFixed(2)} h)${dayText}`;
+      hint.innerText = `Berechnet: ${fmtStd(hours)} (${totalMinutes} Minuten)${dayText}`;
     }
 
     function handleDienstTypChange() {
@@ -2008,7 +2020,7 @@
         });
 
         const statTotalEl = document.getElementById('statTotalHours');
-        if (statTotalEl) statTotalEl.innerText = totalHours.toFixed(1) + ' h';
+        if (statTotalEl) statTotalEl.innerText = fmtStd(totalHours);
         
         const statYearEl = document.getElementById('statYearSub');
         if (statYearEl) statYearEl.innerText = `Gesamt geleistet im Jahr ${curYear}`;
@@ -2035,7 +2047,7 @@
           geplanteStunden += parseFloat(l.stunden) || 0;
         });
         const statPlannedEl = document.getElementById('statPlannedSub');
-        if (statPlannedEl) statPlannedEl.innerText = `Geplant: ${geplanteStunden.toFixed(1).replace('.', ',')} h`;
+        if (statPlannedEl) statPlannedEl.innerText = `Geplant: ${fmtStd(geplanteStunden)}`;
         
         const statMemEl = document.getElementById('statMembersCount');
         if (statMemEl) {
@@ -2094,7 +2106,7 @@
           : `Noch keine durchgeführten Dienste in ${curYear}`;
         const statBetStdEl = document.getElementById('statBeteiligungStunden');
         if (statBetStdEl) statBetStdEl.innerText = bStundenSoll
-          ? `${bStundenIst.toFixed(1).replace('.', ',')} h von ${bStundenSoll.toFixed(1).replace('.', ',')} h möglich (${Math.round((bStundenIst / bStundenSoll) * 100)}%)`
+          ? `${fmtStd(bStundenIst)} von ${fmtStd(bStundenSoll)} möglich (${Math.round((bStundenIst / bStundenSoll) * 100)}%)`
           : '';
 
         const statUvvEl = document.getElementById('statUvvCount');
@@ -2171,7 +2183,7 @@
                 <td><span class="badge badge-tag">${d.typ}</span></td>
                 <td><strong>${d.thema}</strong></td>
                 <td>${rollenBadges.length ? rollenBadges.join(' ') : '<span style="color:var(--text-muted);">-</span>'}</td>
-                <td><strong style="color:${dStatus === 'Geplant' ? 'var(--text-muted)' : '#60a5fa'};">${d.dauer.toFixed(2)} h ${dStatus === 'Geplant' ? '<small>(ausstehend)</small>' : ''}</strong></td>
+                <td><strong style="color:${dStatus === 'Geplant' ? 'var(--text-muted)' : '#60a5fa'};">${fmtStd(d.dauer)} ${dStatus === 'Geplant' ? '<small>(ausstehend)</small>' : ''}</strong></td>
                 <td>${tnCount} Kameraden</td>
                 <td>
                   <button class="btn btn-secondary btn-sm" onclick="openDienstModal('${d.id}')" title="Bearbeiten">✏️ Bearbeiten</button>
@@ -2210,7 +2222,7 @@
               dateDisplay = `${new Date(l.startDatum).toLocaleDateString('de-DE')} - ${new Date(l.endeDatum).toLocaleDateString('de-DE')}`;
             }
 
-            const stundenDisplay = l.stunden ? `${parseFloat(l.stunden).toFixed(1)} h` : '-';
+            const stundenDisplay = l.stunden ? fmtStd(l.stunden) : '-';
 
             lBody.innerHTML += `
               <tr>
@@ -2848,25 +2860,25 @@
       const z = berichtZahl;
       if (opt.ausbildung) A.push({ titel: 'Ausbildungsdienste', kopf: ['Kennzahl', 'Wert'], zeilen: [
         ['Anzahl Ausbildungstage', D.ausbildung.tage + (D.ausbildung.tage === 1 ? ' Tag' : ' Tage')],
-        ['Ausbildungszeit (Dauer der Dienste)', z(D.ausbildung.dienstStd) + ' h'],
-        ['Gesamtausbildungsstunden aller Teilnehmer', z(D.ausbildung.personenStd) + ' h'],
+        ['Ausbildungszeit (Dauer der Dienste)', fmtStd(D.ausbildung.dienstStd)],
+        ['Gesamtausbildungsstunden aller Teilnehmer', fmtStd(D.ausbildung.personenStd)],
         ['Ø Teilnehmer je Dienst', z(D.ausbildung.schnitt)],
         ['Beteiligung der Aktiven', D.ausbildung.beteiligung + ' %']
       ], hinweis: `Inklusive Arbeits- und Pflegedienste. Beteiligung bezogen auf derzeit ${D.aktive} aktive Kameraden.` });
-      if (opt.ausbildungListe) A.push({ titel: 'Übersicht der Ausbildungsdienste', kopf: ['Datum', 'Thema', 'Teilnehmer', 'Dauer (h)'],
-        zeilen: D.ausbildung.liste.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || d.typ, String((d.teilnehmer || []).length), z(parseFloat(d.dauer) || 0)]),
+      if (opt.ausbildungListe) A.push({ titel: 'Übersicht der Ausbildungsdienste', kopf: ['Datum', 'Thema', 'Teilnehmer', 'Dauer'],
+        zeilen: D.ausbildung.liste.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || d.typ, String((d.teilnehmer || []).length), fmtStd(d.dauer)]),
         leer: 'Keine Ausbildungsdienste erfasst.' });
       if (opt.einsatz) A.push({ titel: 'Einsätze', kopf: ['Kennzahl', 'Wert'], zeilen: [
         ['Anzahl Einsätze', String(D.einsatz.anzahl)],
-        ['Einsatzdauer gesamt', z(D.einsatz.dienstStd) + ' h'],
-        ['Einsatzstunden (alle Kräfte)', z(D.einsatz.personenStd) + ' h'],
+        ['Einsatzdauer gesamt', fmtStd(D.einsatz.dienstStd)],
+        ['Einsatzstunden (alle Kräfte)', fmtStd(D.einsatz.personenStd)],
         ['Ø Einsatzkräfte je Einsatz', z(D.einsatz.schnitt)]
       ] });
-      if (opt.einsatzListe) A.push({ titel: 'Übersicht der Einsätze', kopf: ['Datum', 'Stichwort', 'Kräfte', 'Dauer (h)'],
-        zeilen: D.einsatz.liste.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || 'Einsatz', String((d.teilnehmer || []).length), z(parseFloat(d.dauer) || 0)]),
+      if (opt.einsatzListe) A.push({ titel: 'Übersicht der Einsätze', kopf: ['Datum', 'Stichwort', 'Kräfte', 'Dauer'],
+        zeilen: D.einsatz.liste.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || 'Einsatz', String((d.teilnehmer || []).length), fmtStd(d.dauer)]),
         leer: 'Keine Einsätze erfasst.' });
       if (opt.lehrgang) A.push({ titel: 'Besuchte Lehrgänge', kopf: ['Lehrgang', 'Ausbildungsstätte', 'Teilnehmer', 'davon bestanden', 'Stunden gesamt'],
-        zeilen: D.lehrgaenge.map(l => [l.titel, l.ort, String(l.teilnehmer), String(l.bestanden), z(l.stunden)]),
+        zeilen: D.lehrgaenge.map(l => [l.titel, l.ort, String(l.teilnehmer), String(l.bestanden), fmtStd(l.stunden)]),
         leer: 'Keine abgeschlossenen Lehrgänge erfasst.' });
       if (opt.veranstaltung) {
         const zeilen = D.veranstaltungen.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || 'Veranstaltung', '']);
