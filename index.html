@@ -946,12 +946,10 @@
         </div>
         <label class="form-label">Was soll in den Bericht?</label>
         <div style="display:grid; gap:0.4rem; margin-top:0.4rem;">
-          <label class="checkbox-item"><input type="checkbox" id="bxGesamt" checked> Gesamtstunden aller Bereiche</label>
-          <label class="checkbox-item"><input type="checkbox" id="bxAusbildung" checked> Ausbildungsdienste: Anzahl, Stunden und Beteiligung</label>
+          <label class="checkbox-item"><input type="checkbox" id="bxAusbildung" checked> Ausbildungsdienste inkl. Arbeits- und Pflegedienste: Anzahl, Stunden und Beteiligung</label>
           <label class="checkbox-item"><input type="checkbox" id="bxAusbildungListe"> Liste der Ausbildungsdienste (Datum, Thema, Teilnehmerzahl)</label>
           <label class="checkbox-item"><input type="checkbox" id="bxEinsatz" checked> Einsätze: Anzahl und Einsatzstunden</label>
           <label class="checkbox-item"><input type="checkbox" id="bxEinsatzListe"> Liste der Einsätze (Datum, Stichwort, Kräfte, Dauer)</label>
-          <label class="checkbox-item"><input type="checkbox" id="bxArbeit"> Arbeits- und Pflegedienste</label>
           <label class="checkbox-item"><input type="checkbox" id="bxLehrgang" checked> Besuchte Lehrgänge</label>
           <label class="checkbox-item"><input type="checkbox" id="bxVeranstaltung" checked> Veranstaltungen (mit Platz zum selbst Ergänzen)</label>
         </div>
@@ -2821,7 +2819,8 @@
                  schnitt: liste.length ? teilnahmen / liste.length : 0,
                  beteiligung: liste.length ? Math.round(quote / liste.length * 100) : 0 };
       };
-      const ausbildung = gruppe(['Ausbildung', 'UVV', 'Strecke', 'CSA', 'Lehrgang']);
+      const ausbildung = gruppe(['Ausbildung', 'UVV', 'Strecke', 'CSA', 'Lehrgang', 'Arbeitsdienst']);
+      ausbildung.tage = new Set(ausbildung.liste.map(d => (d.datumVon || d.datum || '').slice(0, 10))).size;
       const einsatz = gruppe(['Einsatz']);
       const arbeit = gruppe(['Arbeitsdienst']);
       const versammlung = gruppe(['Versammlung']);
@@ -2847,21 +2846,13 @@
     function berichtAbschnitte(D, opt) {
       const A = [];
       const z = berichtZahl;
-      if (opt.gesamt) A.push({ titel: 'Gesamtstunden', kopf: ['Bereich', 'Personenstunden'], zeilen: [
-        ['Ausbildungsdienste', z(D.ausbildung.personenStd)],
-        ['Einsätze', z(D.einsatz.personenStd)],
-        ['Arbeits- und Pflegedienste', z(D.arbeit.personenStd)],
-        ['Versammlungen', z(D.versammlung.personenStd)],
-        ['Lehrgänge', z(D.lehrgangStd)],
-        ['Gesamt', z(D.gesamt)]
-      ], fett: true });
       if (opt.ausbildung) A.push({ titel: 'Ausbildungsdienste', kopf: ['Kennzahl', 'Wert'], zeilen: [
-        ['Anzahl Ausbildungsdienste', String(D.ausbildung.anzahl)],
+        ['Anzahl Ausbildungstage', D.ausbildung.tage + (D.ausbildung.tage === 1 ? ' Tag' : ' Tage')],
         ['Ausbildungszeit (Dauer der Dienste)', z(D.ausbildung.dienstStd) + ' h'],
-        ['Ausbildungsstunden (alle Teilnehmer)', z(D.ausbildung.personenStd) + ' h'],
+        ['Gesamtausbildungsstunden aller Teilnehmer', z(D.ausbildung.personenStd) + ' h'],
         ['Ø Teilnehmer je Dienst', z(D.ausbildung.schnitt)],
         ['Beteiligung der Aktiven', D.ausbildung.beteiligung + ' %']
-      ], hinweis: `Beteiligung bezogen auf derzeit ${D.aktive} aktive Kameraden.` });
+      ], hinweis: `Inklusive Arbeits- und Pflegedienste. Beteiligung bezogen auf derzeit ${D.aktive} aktive Kameraden.` });
       if (opt.ausbildungListe) A.push({ titel: 'Übersicht der Ausbildungsdienste', kopf: ['Datum', 'Thema', 'Teilnehmer', 'Dauer (h)'],
         zeilen: D.ausbildung.liste.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || d.typ, String((d.teilnehmer || []).length), z(parseFloat(d.dauer) || 0)]),
         leer: 'Keine Ausbildungsdienste erfasst.' });
@@ -2874,11 +2865,7 @@
       if (opt.einsatzListe) A.push({ titel: 'Übersicht der Einsätze', kopf: ['Datum', 'Stichwort', 'Kräfte', 'Dauer (h)'],
         zeilen: D.einsatz.liste.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || 'Einsatz', String((d.teilnehmer || []).length), z(parseFloat(d.dauer) || 0)]),
         leer: 'Keine Einsätze erfasst.' });
-      if (opt.arbeit) A.push({ titel: 'Arbeits- und Pflegedienste', kopf: ['Kennzahl', 'Wert'], zeilen: [
-        ['Anzahl Arbeitsdienste', String(D.arbeit.anzahl)],
-        ['Stunden (alle Teilnehmer)', z(D.arbeit.personenStd) + ' h']
-      ] });
-      if (opt.lehrgang) A.push({ titel: 'Besuchte Lehrgänge', kopf: ['Lehrgang', 'Ausbildungsstätte', 'Teilnehmer', 'davon bestanden', 'Stunden'],
+      if (opt.lehrgang) A.push({ titel: 'Besuchte Lehrgänge', kopf: ['Lehrgang', 'Ausbildungsstätte', 'Teilnehmer', 'davon bestanden', 'Stunden gesamt'],
         zeilen: D.lehrgaenge.map(l => [l.titel, l.ort, String(l.teilnehmer), String(l.bestanden), z(l.stunden)]),
         leer: 'Keine abgeschlossenen Lehrgänge erfasst.' });
       if (opt.veranstaltung) {
@@ -2954,8 +2941,8 @@
     async function berichtErstellen() {
       const jahr = parseInt(document.getElementById('berichtJahr').value);
       const opt = {
-        gesamt: bxGesamt.checked, ausbildung: bxAusbildung.checked, ausbildungListe: bxAusbildungListe.checked,
-        einsatz: bxEinsatz.checked, einsatzListe: bxEinsatzListe.checked, arbeit: bxArbeit.checked,
+        ausbildung: bxAusbildung.checked, ausbildungListe: bxAusbildungListe.checked,
+        einsatz: bxEinsatz.checked, einsatzListe: bxEinsatzListe.checked,
         lehrgang: bxLehrgang.checked, veranstaltung: bxVeranstaltung.checked
       };
       if (!Object.values(opt).some(Boolean)) { alert('Bitte mindestens einen Bereich für den Bericht anhaken.'); return; }
