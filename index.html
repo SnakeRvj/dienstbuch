@@ -272,12 +272,15 @@
         <span class="stat-sub" id="statBeteiligungStunden" style="margin-top:0.15rem;"></span>
       </div>
       <div class="stat-card">
-        <span class="stat-title">UVV-Sicherheitsunterweisung</span>
-        <span class="stat-value" id="statUvvCount">0%</span>
+        <span class="stat-title">Einsätze</span>
+        <span class="stat-value" id="statEinsatzAnzahl">0</span>
+        <span class="stat-sub" id="statEinsatzStunden"></span>
+        <span class="stat-sub" id="statEinsatzKraefte" style="margin-top:0.15rem;"></span>
       </div>
       <div class="stat-card">
         <span class="stat-title">Atemschutz (G26.3 & Strecke)</span>
         <span class="stat-value" id="statAgtCount">0</span>
+        <span class="stat-sub" id="statAgtHinweis"></span>
       </div>
       <div class="stat-card">
         <span class="stat-title">Mannschaftsstärke</span>
@@ -2100,6 +2103,37 @@
 
         const statAgtEl = document.getElementById('statAgtCount');
         if (statAgtEl) statAgtEl.innerText = `${agtReady} / ${agtTotal}`;
+
+        // Hinweis unter der Atemschutz-Kachel: bald ablaufende (gelb) oder abgelaufene (rot) Nachweise
+        const agtHinweisEl = document.getElementById('statAgtHinweis');
+        if (agtHinweisEl) {
+          const bald = [], weg = [];
+          appData.members.filter(m => m.status === 'Aktiv' && m.lehrgaenge && m.lehrgaenge.includes('AGT')).forEach(m => {
+            const pruefe = (art, erg) => {
+              const eintrag = `${art} ${m.nachname}` + (erg.daysLeft > -999 && erg.daysLeft >= 0 ? ` (${erg.daysLeft} T.)` : '');
+              if (erg.status === 'warning') bald.push(eintrag);
+              else if (erg.status === 'danger') weg.push(eintrag);
+            };
+            pruefe('G26.3', checkG26Validity(m.g26Ablauf));
+            pruefe('Strecke', checkOneYearValidity(m.streckeDatum));
+            if (m.csaDatum) pruefe('CSA', checkOneYearValidity(m.csaDatum));
+          });
+          let txt = '';
+          if (weg.length) txt += `<span style="color:#ef4444; font-weight:700; display:block;">⛔ Abgelaufen: ${weg.join(', ')}</span>`;
+          if (bald.length) txt += `<span style="color:#facc15; font-weight:700; display:block;">⚠️ Läuft bald ab: ${bald.join(', ')}</span>`;
+          agtHinweisEl.innerHTML = txt || '<span style="color:#22c55e;">Alle Nachweise gültig</span>';
+        }
+
+        // Einsatz-Kachel: Einsätze im gewählten Jahr
+        const einsaetzeJahr = appData.dienste.filter(d => (d.status || 'Durchgeführt') === 'Durchgeführt' && d.typ === 'Einsatz' && new Date(d.datumVon || d.datum).getFullYear() === curYear);
+        const einsatzStd = einsaetzeJahr.reduce((sum, d) => sum + (parseFloat(d.dauer) || 0), 0);
+        const einsatzKraefte = einsaetzeJahr.reduce((sum, d) => sum + (d.teilnehmer || []).length, 0);
+        const eAnzEl = document.getElementById('statEinsatzAnzahl');
+        if (eAnzEl) eAnzEl.innerText = einsaetzeJahr.length;
+        const eStdEl = document.getElementById('statEinsatzStunden');
+        if (eStdEl) eStdEl.innerText = einsaetzeJahr.length ? `Gesamtdauer: ${fmtStd(einsatzStd)}` : `Keine Einsätze in ${curYear}`;
+        const eKrEl = document.getElementById('statEinsatzKraefte');
+        if (eKrEl) eKrEl.innerText = einsaetzeJahr.length ? `Ø ${(einsatzKraefte / einsaetzeJahr.length).toFixed(1).replace('.', ',')} Kameraden je Einsatz` : '';
         
         const aktiveIds = new Set(activeMembers.map(m => m.id));
         let bDienste = 0, bQuoteSumme = 0, bTeilnahmen = 0, bStundenIst = 0, bStundenSoll = 0;
