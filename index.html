@@ -627,8 +627,8 @@
             </div>
             <div class="form-row" style="margin-top: 0.4rem;">
               <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Berechnete Gesamtdauer (h)</label>
-                <input type="number" step="any" min="0.01" id="dienstDauer" class="form-control" required placeholder="z. B. 0.5 für 30 Minuten" oninput="dauerHinweis()">
+                <label class="form-label">Berechnete Gesamtdauer (Std:Min)</label>
+                <input type="text" inputmode="numeric" id="dienstDauer" class="form-control" required placeholder="z. B. 0:30" oninput="dauerHinweis()" onblur="dauerFeldFormatieren()">
                 <span id="calcHint" class="calc-hint">Wird minutengenau errechnet</span>
               </div>
             </div>
@@ -1512,10 +1512,34 @@
       return `${Math.floor(min / 60).toLocaleString('de-DE')}:${String(min % 60).padStart(2, '0')} h`;
     }
 
+    // Std:Min für das Eingabefeld (ohne „h“), z. B. 0,55 h -> 0:33
+    function stdFeld(h) {
+      const min = Math.round((parseFloat(h) || 0) * 60);
+      return `${Math.floor(min / 60)}:${String(min % 60).padStart(2, '0')}`;
+    }
+
+    // Liest „1:30“, „0:25“, „90 min“ oder alte Dezimalwerte wie „1,5“ und liefert Stunden als Dezimalzahl
+    function dauerAusFeld(text) {
+      const t = String(text || '').trim().toLowerCase().replace(/\s*(h|std\.?|stunden)$/, '');
+      let m = t.match(/^(\d+):(\d{1,2})$/);
+      if (m) return parseInt(m[1]) + parseInt(m[2]) / 60;
+      m = t.match(/^(\d+)\s*(min|minuten)$/);
+      if (m) return parseInt(m[1]) / 60;
+      const v = parseFloat(t.replace(',', '.'));
+      return isNaN(v) ? NaN : v;
+    }
+
     function dauerHinweis() {
-      const v = parseFloat(String(document.getElementById('dienstDauer').value).replace(',', '.'));
+      const v = dauerAusFeld(document.getElementById('dienstDauer').value);
       const hint = document.getElementById('calcHint');
-      if (hint && v > 0) hint.innerText = `Entspricht ${fmtStd(v)} (${Math.round(v * 60)} Minuten)`;
+      if (!hint) return;
+      hint.innerText = v > 0 ? `${Math.round(v * 60)} Minuten` : 'Dauer als Std:Min eingeben, z. B. 0:30 oder 2:15';
+    }
+
+    function dauerFeldFormatieren() {
+      const el = document.getElementById('dienstDauer');
+      const v = dauerAusFeld(el.value);
+      if (v > 0) el.value = stdFeld(v);
     }
 
     function stdPille(stunden, farbe, textfarbe, fett) {
@@ -1798,11 +1822,11 @@
       const totalMinutes = Math.round(diffMs / 60000);
       const hours = totalMinutes / 60;
 
-      dauerInput.value = (Math.round(hours * 100) / 100).toFixed(2);
+      dauerInput.value = stdFeld(hours);
       
       const daysDiff = Math.floor(totalMinutes / (24 * 60));
       let dayText = daysDiff > 0 ? ` (${daysDiff} Tag(e))` : '';
-      hint.innerText = `Berechnet: ${fmtStd(hours)} (${totalMinutes} Minuten)${dayText}`;
+      hint.innerText = `Automatisch berechnet: ${totalMinutes} Minuten${dayText}`;
     }
 
     function handleDienstTypChange() {
@@ -2428,7 +2452,7 @@
           document.getElementById('dienstModalTitle').innerText = '✏️ Dienst / Termin bearbeiten';
           document.getElementById('dienstSubmitBtn').innerText = 'Änderungen speichern';
           handleDienstTypChange();
-          document.getElementById('dienstDauer').value = d.dauer;
+          document.getElementById('dienstDauer').value = stdFeld(d.dauer);
 
           appData.members.forEach(m => {
             const isChecked = d.teilnehmer && d.teilnehmer.includes(m.id);
@@ -2502,7 +2526,8 @@
       const zeitVon = document.getElementById('dienstZeitVon').value;
       const datumBis = (typ === 'Lehrgang' && document.getElementById('dienstDatumBis').value) ? document.getElementById('dienstDatumBis').value : datumVon;
       const zeitBis = document.getElementById('dienstZeitBis').value;
-      const dauer = parseFloat(document.getElementById('dienstDauer').value);
+      const dauer = Math.round(dauerAusFeld(document.getElementById('dienstDauer').value) * 10000) / 10000;
+      if (!(dauer > 0)) { alert('Bitte eine gültige Dauer eingeben, z. B. 0:30 oder 2:15.'); return; }
       // Rollen nur bei Einsätzen speichern
       const einheitsfuehrer = (typ === 'Einsatz') ? document.getElementById('dienstEinheitsfuehrer').value : '';
       const maschinist = (typ === 'Einsatz') ? document.getElementById('dienstMaschinist').value : '';
