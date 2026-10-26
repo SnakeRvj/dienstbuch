@@ -141,6 +141,15 @@
     .cal-detail-item { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.35rem 0; border-top: 1px solid var(--border); }
     .cal-detail-item:first-of-type { border-top: none; }
 
+    /* Dienstbuch-Filter (dezent) */
+    .dienst-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-bottom: 1px solid var(--border); }
+    .dienst-filter select { width: auto; max-width: 100%; padding: 0.2rem 0.45rem; font-size: 0.78rem; background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: 6px; outline: none; cursor: pointer; }
+    .dienst-filter select option { background: var(--input-bg); color: var(--text); }
+    .dienst-filter select:hover, .dienst-filter select:focus { border-color: var(--text-muted); }
+    .dienst-filter select.aktiv { color: var(--text); border-color: var(--primary); }
+    .filter-reset { background: none; border: none; color: var(--text-muted); font-size: 0.75rem; cursor: pointer; padding: 0.2rem 0.3rem; }
+    .filter-reset:hover { color: var(--text); text-decoration: underline; }
+    .filter-treffer { margin-left: auto; font-size: 0.72rem; color: var(--text-muted); }
     /* ===== MOBILE ANSICHT (Handy / schmale Fenster) ===== */
     .cal-mobile-nav { display: none; }
     .cal-legend-mobil { display: none; }
@@ -247,6 +256,12 @@
       .bericht-seite h2 { margin-top: 1rem; }
       .b-zeile, .b-liste-zeile { padding: 0.2rem 0; }
       @page { margin: 15mm; }
+    }
+    @media (max-width: 768px) {
+      .dienst-filter { padding: 0.5rem 0.7rem; }
+      .dienst-filter { gap: 0.35rem; }
+      .dienst-filter select { flex: 1 1 calc(50% - 0.35rem); min-width: 0; font-size: 16px; padding: 0.2rem 0.4rem; text-overflow: ellipsis; }
+      .filter-treffer { flex: 1; text-align: right; }
     }
   </style>
 </head>
@@ -369,61 +384,45 @@
             <button class="btn btn-primary btn-sm" onclick="openDienstModal()">+ Neuer Dienst / Termin</button>
           </div>
         </div>
-        <div class="card-body" style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);">
-          <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:flex-end;">
-            <div style="flex:1 1 130px;">
-              <label class="form-label" style="margin-bottom:0.25rem;">Status</label>
-              <select id="dienstFilterStatus" class="form-control" onchange="renderApp()">
-                <option value="">Alle</option>
-                <option value="Geplant">Geplant</option>
-                <option value="Durchgeführt">Durchgeführt</option>
-                <option value="Ausgefallen">Ausgefallen</option>
-              </select>
-            </div>
-            <div style="flex:1 1 100px;">
-              <label class="form-label" style="margin-bottom:0.25rem;">Jahr</label>
-              <select id="dienstFilterJahr" class="form-control" onchange="renderApp()">
-                <option value="">Alle</option>
-              </select>
-            </div>
-            <div style="flex:1 1 130px;">
-              <label class="form-label" style="margin-bottom:0.25rem;">Monat</label>
-              <select id="dienstFilterMonat" class="form-control" onchange="renderApp()">
-                <option value="">Alle</option>
-                <option value="01">Januar</option>
-                <option value="02">Februar</option>
-                <option value="03">März</option>
-                <option value="04">April</option>
-                <option value="05">Mai</option>
-                <option value="06">Juni</option>
-                <option value="07">Juli</option>
-                <option value="08">August</option>
-                <option value="09">September</option>
-                <option value="10">Oktober</option>
-                <option value="11">November</option>
-                <option value="12">Dezember</option>
-              </select>
-            </div>
-            <div style="flex:1 1 180px;">
-              <label class="form-label" style="margin-bottom:0.25rem;">Kategorie</label>
-              <select id="dienstFilterKategorie" class="form-control" onchange="renderApp()">
-                <option value="">Alle</option>
-                <option value="Ausbildung">Ausbildung / Übungsdienst</option>
-                <option value="Einsatz">Einsatz</option>
-                <option value="Arbeitsdienst">Arbeits- & Pflegedienst</option>
-                <option value="UVV">UVV-Unterweisung</option>
-                <option value="Strecke">AGT-Übungsstrecke</option>
-                <option value="CSA">CSA-Übungslauf</option>
-                <option value="Veranstaltung">Veranstaltung / Öffentlichkeit</option>
-                <option value="OWF-Versammlung">Ortswehrführer-Versammlung</option>
-                <option value="Versammlung">Jahreshaupt- / Dienstversammlung</option>
-              </select>
-            </div>
-            <button class="btn btn-secondary btn-sm" onclick="resetDienstSuche()">✕ Zurücksetzen</button>
-          </div>
-          <div style="margin-top:0.6rem; font-size:0.85rem; text-align:right;">
-            <span id="dienstSuchTreffer" style="color:var(--text-muted);"></span>
-          </div>
+        <div class="dienst-filter">
+          <select id="dienstFilterStatus" onchange="renderApp()" title="Status">
+            <option value="">Alle Status</option>
+            <option value="Geplant">Geplant</option>
+            <option value="Durchgeführt">Durchgeführt</option>
+            <option value="Ausgefallen">Ausgefallen</option>
+          </select>
+          <select id="dienstFilterJahr" onchange="renderApp()" title="Jahr">
+            <option value="">Alle Jahre</option>
+          </select>
+          <select id="dienstFilterMonat" onchange="renderApp()" title="Monat">
+            <option value="">Alle Monate</option>
+            <option value="01">Januar</option>
+            <option value="02">Februar</option>
+            <option value="03">März</option>
+            <option value="04">April</option>
+            <option value="05">Mai</option>
+            <option value="06">Juni</option>
+            <option value="07">Juli</option>
+            <option value="08">August</option>
+            <option value="09">September</option>
+            <option value="10">Oktober</option>
+            <option value="11">November</option>
+            <option value="12">Dezember</option>
+          </select>
+          <select id="dienstFilterKategorie" onchange="renderApp()" title="Kategorie">
+            <option value="">Alle Kategorien</option>
+            <option value="Ausbildung">Ausbildung / Übungsdienst</option>
+            <option value="Einsatz">Einsatz</option>
+            <option value="Arbeitsdienst">Arbeits- & Pflegedienst</option>
+            <option value="UVV">UVV-Unterweisung</option>
+            <option value="Strecke">AGT-Übungsstrecke</option>
+            <option value="CSA">CSA-Übungslauf</option>
+            <option value="Veranstaltung">Veranstaltung / Öffentlichkeit</option>
+            <option value="OWF-Versammlung">Ortswehrführer-Versammlung</option>
+            <option value="Versammlung">Jahreshaupt- / Dienstversammlung</option>
+          </select>
+          <button type="button" id="dienstFilterReset" class="filter-reset" onclick="resetDienstSuche()" style="display:none;">✕ zurücksetzen</button>
+          <span id="dienstSuchTreffer" class="filter-treffer"></span>
         </div>
         <div class="card-body" style="padding:0;">
           <div class="table-responsive">
@@ -1267,7 +1266,7 @@
       if (!selJ) return;
       const jahre = [...new Set((appData.dienste || []).map(d => (d.datumVon || d.datum || '').slice(0, 4)).filter(j => /^\d{4}$/.test(j)))].sort();
       const aktuell = selJ.value;
-      selJ.innerHTML = '<option value="">Alle</option>' + jahre.map(j => `<option value="${j}">${j}</option>`).join('');
+      selJ.innerHTML = '<option value="">Alle Jahre</option>' + jahre.map(j => `<option value="${j}">${j}</option>`).join('');
       selJ.value = jahre.includes(aktuell) ? aktuell : '';
       // Alte Einträge mit entfernter Kategorie (Lehrgangs-Dienst) bleiben filterbar
       if (selK && (appData.dienste || []).some(d => d.typ === 'Lehrgang') && !Array.from(selK.options).some(o => o.value === 'Lehrgang')) {
@@ -2299,6 +2298,12 @@
           const sortedDienste = [...appData.dienste].sort((a, b) => new Date(b.datumVon || b.datum) - new Date(a.datumVon || a.datum)).filter(matchesDienstSuche);
           const trefferEl = document.getElementById('dienstSuchTreffer');
           if (trefferEl) trefferEl.innerText = `${sortedDienste.length} von ${appData.dienste.length} Einträgen`;
+          // Aktive Filter dezent hervorheben, "zurücksetzen" nur bei Bedarf zeigen
+          const filterIds = ['dienstFilterStatus', 'dienstFilterJahr', 'dienstFilterMonat', 'dienstFilterKategorie'];
+          let filterAktiv = false;
+          filterIds.forEach(id => { const el = document.getElementById(id); if (el) { el.classList.toggle('aktiv', !!el.value); if (el.value) filterAktiv = true; } });
+          const resetBtn = document.getElementById('dienstFilterReset');
+          if (resetBtn) resetBtn.style.display = filterAktiv ? '' : 'none';
           if (sortedDienste.length === 0) {
             dBody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Keine Einträge gefunden.</td></tr>`;
           }
