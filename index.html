@@ -1230,6 +1230,20 @@
       return m.geschlecht === 'w' ? (DIENSTGRAD_W[dg] || dg) : dg;
     }
 
+    // Kurzname für Rollen im Dienstbuch: Anfangsbuchstabe(n) des Vornamens + Nachname.
+    // Ein Buchstabe genügt; bei gleichem Nachnamen und gleichem Anfangsbuchstaben werden so viele Buchstaben genommen, bis es eindeutig ist (z. B. Ro. und Ra. Kissmann).
+    function kurzname(m) {
+      const norm = t => String(t || '').trim().toLowerCase();
+      const vorname = (m.vorname || '').trim();
+      const gleicheNachnamen = appData.members.filter(x => x.id !== m.id && norm(x.nachname) === norm(m.nachname));
+      if (!vorname) return m.nachname || '';
+      if (!gleicheNachnamen.length) return `${vorname.charAt(0).toUpperCase()}. ${m.nachname}`;
+      let n = 1;
+      while (n < vorname.length && gleicheNachnamen.some(x => norm(x.vorname).startsWith(norm(vorname).slice(0, n)))) n++;
+      const kuerzel = vorname.slice(0, n);
+      return `${kuerzel.charAt(0).toUpperCase()}${kuerzel.slice(1).toLowerCase()}. ${m.nachname}`;
+    }
+
     function funktionAnzeige(m) {
       const fk = m.funktion || '';
       return m.geschlecht === 'w' ? (FUNKTION_W[fk] || fk) : fk;
@@ -2308,15 +2322,15 @@
             }
             if (d.ausbilder) {
               const ab = appData.members.find(m => m.id === d.ausbilder);
-              rollenBadges.push(`<span class="badge badge-ausb">🎓 Ausb: ${ab ? ab.nachname : d.ausbilder}</span>`);
+              rollenBadges.push(`<span class="badge badge-ausb">🎓 Ausb: ${ab ? kurzname(ab) : d.ausbilder}</span>`);
             }
             if (d.einheitsfuehrer) {
               const ef = appData.members.find(m => m.id === d.einheitsfuehrer);
-              rollenBadges.push(`<span class="badge badge-gf">EF: ${ef ? ef.nachname : 'Unbekannt'}</span>`);
+              rollenBadges.push(`<span class="badge badge-gf">EF: ${ef ? kurzname(ef) : 'Unbekannt'}</span>`);
             }
             if (d.maschinist) {
               const ma = appData.members.find(m => m.id === d.maschinist);
-              rollenBadges.push(`<span class="badge badge-masch">Ma: ${ma ? ma.nachname : 'Unbekannt'}</span>`);
+              rollenBadges.push(`<span class="badge badge-masch">Ma: ${ma ? kurzname(ma) : 'Unbekannt'}</span>`);
             }
 
             dBody.innerHTML += `
