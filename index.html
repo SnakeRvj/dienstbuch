@@ -481,27 +481,25 @@
             <button class="btn btn-primary btn-sm" onclick="openLehrgangModal()">+ Lehrgang / Bewerbung eintragen</button>
           </div>
         </div>
-        <div class="card-body" style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);">
-          <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:flex-end;">
-            <div style="flex:1 1 240px; min-width:200px;">
-              <label class="form-label" style="margin-bottom:0.25rem;">🔍 Suche</label>
-              <input type="text" id="lehrgangSuchText" class="form-control" placeholder="Name, Lehrgang, Ausbildungsstätte..." oninput="renderApp()">
-            </div>
-            <div>
-              <label class="form-label" style="margin-bottom:0.25rem;">Status</label>
-              <select id="lehrgangSuchStatus" class="form-control" onchange="renderApp()">
-                <option value="">Alle</option>
-                <option value="Beworben">Beworben</option>
-                <option value="Angemeldet">Angemeldet</option>
-                <option value="Bestanden">Bestanden</option>
-                <option value="Nicht bestanden">Nicht bestanden</option>
-              </select>
-            </div>
-            <button class="btn btn-secondary btn-sm" onclick="resetLehrgangSuche()">✕ Zurücksetzen</button>
-          </div>
-          <div style="margin-top:0.6rem; font-size:0.85rem; text-align:right;">
-            <span id="lehrgangSuchTreffer" style="color:var(--text-muted);"></span>
-          </div>
+        <div class="dienst-filter">
+          <select id="lehrgangFilterStatus" onchange="renderApp()" title="Status">
+            <option value="">Alle Status</option>
+            <option value="Beworben">Beworben</option>
+            <option value="Angemeldet">Angemeldet</option>
+            <option value="Bestanden">Bestanden</option>
+            <option value="Nicht bestanden">Nicht bestanden</option>
+          </select>
+          <select id="lehrgangFilterJahr" onchange="renderApp()" title="Jahr">
+            <option value="">Alle Jahre</option>
+          </select>
+          <select id="lehrgangFilterName" onchange="renderApp()" title="Lehrgang">
+            <option value="">Alle Lehrgänge</option>
+          </select>
+          <select id="lehrgangFilterKamerad" onchange="renderApp()" title="Kamerad">
+            <option value="">Alle Kameraden</option>
+          </select>
+          <button type="button" id="lehrgangFilterReset" class="filter-reset" onclick="resetLehrgangSuche()" style="display:none;">✕ zurücksetzen</button>
+          <span id="lehrgangSuchTreffer" class="filter-treffer"></span>
         </div>
         <div class="card-body" style="padding:0;">
           <div class="table-responsive">
@@ -1289,29 +1287,47 @@
       return true;
     }
 
+    // Lehrgangs-Filter (Dropdowns): Lehrgangsnamen und Kameraden nur aus tatsächlich eingetragenen Lehrgängen
+    function lehrgangFilterAktualisieren() {
+      const plan = appData.lehrgangPlan || [];
+      const fuelle = (id, alleText, eintraege) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const alt = el.value;
+        el.innerHTML = `<option value="">${alleText}</option>` + eintraege.map(([wert, text]) => `<option value="${wert}">${text}</option>`).join('');
+        el.value = eintraege.some(([wert]) => wert === alt) ? alt : '';
+      };
+      const jahre = [...new Set(plan.map(l => (l.startDatum || '').slice(0, 4)).filter(j => /^\d{4}$/.test(j)))].sort();
+      fuelle('lehrgangFilterJahr', 'Alle Jahre', jahre.map(j => [j, j]));
+
+      // Nur Lehrgänge, die bereits stattgefunden haben oder zu denen jemand angemeldet ist
+      const namen = [...new Set(plan.filter(l => ['Angemeldet', 'Bestanden', 'Nicht bestanden'].includes(l.status)).map(l => l.titel).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, 'de'));
+      fuelle('lehrgangFilterName', 'Alle Lehrgänge', namen.map(n => [n.replace(/"/g, '&quot;'), n]));
+
+      const idsMitLehrgang = new Set(plan.map(l => l.memberId));
+      const kameraden = appData.members.filter(m => idsMitLehrgang.has(m.id))
+        .sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de') || (a.vorname || '').localeCompare(b.vorname || '', 'de'));
+      fuelle('lehrgangFilterKamerad', 'Alle Kameraden', kameraden.map(m => [m.id, `${m.nachname}, ${m.vorname}`]));
+    }
+
     function matchesLehrgangSuche(l) {
-      const statusEl = document.getElementById('lehrgangSuchStatus');
-      const textEl = document.getElementById('lehrgangSuchText');
-      const statusFilter = statusEl ? statusEl.value : '';
-      const q = textEl ? textEl.value.trim().toLowerCase() : '';
+      const val = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+      const status = val('lehrgangFilterStatus');
+      const jahr = val('lehrgangFilterJahr');
+      const name = val('lehrgangFilterName');
+      const kamerad = val('lehrgangFilterKamerad');
+      const start = l.startDatum || '';
 
-      if (statusFilter && l.status !== statusFilter) return false;
-      if (!q) return true;
-
-      const mem = appData.members.find(m => m.id === l.memberId);
-      const felder = [
-        mem ? `${mem.nachname || ''} ${mem.vorname || ''}` : 'Unbekannt',
-        mem ? `${mem.vorname || ''} ${mem.nachname || ''}` : '',
-        l.titel || '',
-        l.ort || '',
-        l.status || ''
-      ];
-      return felder.some(f => String(f).toLowerCase().includes(q));
+      if (status && l.status !== status) return false;
+      if (jahr && start.slice(0, 4) !== jahr) return false;
+      if (name && l.titel !== name) return false;
+      if (kamerad && l.memberId !== kamerad) return false;
+      return true;
     }
 
     function resetLehrgangSuche() {
-      const t = document.getElementById('lehrgangSuchText'); if (t) t.value = '';
-      const st = document.getElementById('lehrgangSuchStatus'); if (st) st.value = '';
+      ['lehrgangFilterStatus', 'lehrgangFilterJahr', 'lehrgangFilterName', 'lehrgangFilterKamerad'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
       renderApp();
     }
 
@@ -2359,6 +2375,7 @@
         const lBody = document.getElementById('lehrgangTableBody');
         if (lBody) {
           lBody.innerHTML = '';
+          lehrgangFilterAktualisieren();
           const sortedLehrgaenge = [...(appData.lehrgangPlan || [])].sort((a,b) => {
             const dA = a.startDatum ? new Date(a.startDatum) : new Date('2099-01-01');
             const dB = b.startDatum ? new Date(b.startDatum) : new Date('2099-01-01');
@@ -2367,6 +2384,13 @@
 
           const lTrefferEl = document.getElementById('lehrgangSuchTreffer');
           if (lTrefferEl) lTrefferEl.innerText = `${sortedLehrgaenge.length} von ${(appData.lehrgangPlan || []).length} Einträgen`;
+          let lFilterAktiv = false;
+          ['lehrgangFilterStatus', 'lehrgangFilterJahr', 'lehrgangFilterName', 'lehrgangFilterKamerad'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.classList.toggle('aktiv', !!el.value); if (el.value) lFilterAktiv = true; }
+          });
+          const lResetBtn = document.getElementById('lehrgangFilterReset');
+          if (lResetBtn) lResetBtn.style.display = lFilterAktiv ? '' : 'none';
           if (sortedLehrgaenge.length === 0) {
             lBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Keine Einträge gefunden.</td></tr>`;
           }
