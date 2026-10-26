@@ -262,6 +262,7 @@
       .dienst-filter { gap: 0.35rem; }
       .dienst-filter select { flex: 1 1 calc(50% - 0.35rem); min-width: 0; font-size: 16px; padding: 0.2rem 0.4rem; text-overflow: ellipsis; }
       .filter-treffer { flex: 1; text-align: right; }
+      .dienst-filter .btn { flex: 1 1 calc(50% - 0.35rem); }
     }
   </style>
 </head>
@@ -315,21 +316,22 @@
         <span class="stat-sub" id="statPlannedSub" style="color:#facc15; font-weight:600; margin-top:0.15rem;"></span>
       </div>
       <div class="stat-card">
-        <span class="stat-title">Beteiligung Aktive – Ausbildung</span>
+        <span class="stat-title">Beteiligung Ausbildung</span>
         <span class="stat-value" id="statBeteiligung">0%</span>
         <span class="stat-sub" id="statBeteiligungSub">Ø Teilnahme pro Dienst</span>
         <span class="stat-sub" id="statBeteiligungStunden" style="margin-top:0.15rem;"></span>
       </div>
       <div class="stat-card">
-        <span class="stat-title">Beteiligung Aktive – Einsatz</span>
+        <span class="stat-title">Beteiligung Einsatz</span>
         <span class="stat-value" id="statEinsatz">0%</span>
         <span class="stat-sub" id="statEinsatzSub">Noch keine Einsätze</span>
         <span class="stat-sub" id="statEinsatzStunden" style="margin-top:0.15rem;"></span>
       </div>
       <div class="stat-card">
-        <span class="stat-title">Atemschutz (G26.3 & Strecke)</span>
+        <span class="stat-title">Atemschutz</span>
         <span class="stat-value" id="statAgtCount">0</span>
-        <span class="stat-sub" id="statAgtSub" style="margin-top:0.15rem;"></span>
+        <span class="stat-title" id="statUvvTitel" style="margin-top:0.7rem;">UVV-Unterweisung</span>
+        <span class="stat-value" id="statUvvCount">0%</span>
       </div>
       <div class="stat-card">
         <span class="stat-title">Mannschaftsstärke</span>
@@ -380,13 +382,6 @@
     <!-- TAB 2: DIENSTE -->
     <section id="view-dienste" class="view-section">
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">📅 Durchgeführte & Geplante Dienste / Einsätze</div>
-          <div style="display: flex; gap: 0.5rem;">
-            <button class="btn btn-success btn-sm" id="btnJahresplanImport" onclick="importJahresplan2027()" style="display:none;">📥 Jahresplan 2027 importieren</button>
-            <button class="btn btn-primary btn-sm" onclick="openDienstModal()">+ Neuer Dienst / Termin</button>
-          </div>
-        </div>
         <div class="dienst-filter">
           <select id="dienstFilterStatus" onchange="renderApp()" title="Status">
             <option value="">Alle Status</option>
@@ -426,6 +421,8 @@
           </select>
           <button type="button" id="dienstFilterReset" class="filter-reset" onclick="resetDienstSuche()" style="display:none;">✕ zurücksetzen</button>
           <span id="dienstSuchTreffer" class="filter-treffer"></span>
+          <button class="btn btn-success btn-sm" id="btnJahresplanImport" onclick="importJahresplan2027()" style="display:none;">📥 Jahresplan 2027 importieren</button>
+          <button class="btn btn-primary btn-sm" onclick="openDienstModal()">+ Neuer Dienst / Termin</button>
         </div>
         <div class="card-body" style="padding:0;">
           <div class="table-responsive">
@@ -540,7 +537,6 @@
                   <th>Kamerad</th>
                   <th>G 26.3 Ablaufdatum</th>
                   <th>AGT-Übungsstrecke (1 Jahr gültig)</th>
-                  <th>CSA-Übungslauf (1 Jahr gültig)</th>
                   <th>UVV</th>
                   <th>Einsatztauglichkeit</th>
                   <th>Schnellaktion</th>
@@ -2286,8 +2282,10 @@
           : '';
 
         // UVV-Quote steht jetzt in der Atemschutz-Kachel
-        const statAgtSubEl = document.getElementById('statAgtSub');
-        if (statAgtSubEl) statAgtSubEl.innerText = `UVV-Unterweisung ${curYear}: ${activeMembers.length ? Math.round((uvvOk / activeMembers.length) * 100) : 0} %`;
+        const statUvvEl = document.getElementById('statUvvCount');
+        if (statUvvEl) statUvvEl.innerText = (activeMembers.length ? Math.round((uvvOk / activeMembers.length) * 100) : 0) + '%';
+        const statUvvTitelEl = document.getElementById('statUvvTitel');
+        if (statUvvTitelEl) statUvvTitelEl.innerText = `UVV-Unterweisung ${curYear}`;
 
         // Beteiligung Einsatz: Anwesenheit der einsatzfähigen Kameraden (Status "Aktiv") bei den Einsätzen des Jahres
         const einsatzfaehigeIds = new Set(appData.members.filter(m => m.status === 'Aktiv').map(m => m.id));
@@ -2466,7 +2464,6 @@
           appData.members.filter(m => m.lehrgaenge && m.lehrgaenge.includes('AGT')).forEach(m => {
             const g26 = checkG26Validity(m.g26Ablauf);
             const str = checkOneYearValidity(m.streckeDatum);
-            const csa = checkOneYearValidity(m.csaDatum);
             
             const isUvvOk = checkUvvValidityForMember(m.id, curYear);
             const isReady = (g26.status !== 'danger') && (str.status !== 'danger') && isUvvOk;
@@ -2476,7 +2473,6 @@
                 <td><strong>${m.nachname}</strong>, ${m.vorname}</td>
                 <td><span class="badge badge-${g26.status}">${g26.label}</span></td>
                 <td><span class="badge badge-${str.status}">${str.label}</span></td>
-                <td><span class="badge badge-${csa.status}">${csa.label}</span></td>
                 <td>${isUvvOk ? '<span class="badge badge-success">✓ OK</span>' : '<span class="badge badge-danger">⚠️ Fällig</span>'}</td>
                 <td>${isReady ? '<span class="badge badge-success">Einsatztauglich ✓</span>' : '<span class="badge badge-danger">Nicht tauglich ✕</span>'}</td>
                 <td>
