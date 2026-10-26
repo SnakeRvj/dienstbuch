@@ -150,6 +150,16 @@
     .filter-reset { background: none; border: none; color: var(--text-muted); font-size: 0.75rem; cursor: pointer; padding: 0.2rem 0.3rem; }
     .filter-reset:hover { color: var(--text); text-decoration: underline; }
     .filter-treffer { margin-left: auto; font-size: 0.72rem; color: var(--text-muted); }
+    /* ===== Formulare in den Fenstern: kompakt und dezent ===== */
+    .modal-body .form-group { margin-bottom: 0.6rem; }
+    .modal-body .form-label { font-size: 0.72rem; margin-bottom: 0.2rem; font-weight: 600; color: var(--text-muted); }
+    .modal-body .form-control { padding: 0.3rem 0.5rem; font-size: 0.85rem; background: transparent; border-radius: 6px; }
+    .modal-body select.form-control { cursor: pointer; text-overflow: ellipsis; }
+    .modal-body select.form-control option { background: var(--input-bg); color: var(--text); }
+    .modal-body .form-row { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem 0.7rem; }
+    .modal-body div[style*="background: #172033"] { padding: 0.6rem 0.7rem !important; margin-bottom: 0.7rem !important; }
+    .modal-body .checkbox-grid { gap: 0.35rem; }
+    .modal-body .checkbox-item { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
     /* ===== MOBILE ANSICHT (Handy / schmale Fenster) ===== */
     .cal-mobile-nav { display: none; }
     .cal-legend-mobil { display: none; }
@@ -263,6 +273,12 @@
       .dienst-filter select { flex: 1 1 calc(50% - 0.35rem); min-width: 0; font-size: 16px; padding: 0.2rem 0.4rem; text-overflow: ellipsis; }
       .filter-treffer { flex: 1; text-align: right; }
       .dienst-filter .btn { flex: 1 1 calc(50% - 0.35rem); }
+    }
+    @media (max-width: 768px) {
+      .modal-body { padding: 0.8rem; }
+      .modal-body .form-control, .modal-body select, .modal-body input { font-size: 14px; }
+      .modal-body .form-row { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.45rem 0.5rem; }
+      .modal-body .checkbox-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
     }
   </style>
 </head>
@@ -608,20 +624,20 @@
                 <option value="Ausbildung">🚒 Ausbildung / Übungsdienst</option>
                 <option value="Einsatz">🚨 Einsatz (Brand / TH)</option>
                 <option value="Arbeitsdienst">🔧 Arbeits- & Pflegedienst</option>
-                <option value="UVV">🛡️ UVV-Unterweisung / Sicherheitsbelehrung (Setzt Jahres-UVV auf Gültig)</option>
-                <option value="Strecke">🤿 AGT-Übungsstrecke (Belastungsübung)</option>
-                <option value="CSA">🧪 CSA-Übungslauf (Gefahrgut)</option>
-                <option value="Veranstaltung">🎆 Veranstaltung / Öffentlichkeit (Osterfeuer, Fackelumzug)</option>
-                <option value="OWF-Versammlung">🏛️ Ortswehrführer-Versammlung / Beratung (Wehrführung)</option>
+                <option value="UVV">🛡️ UVV-Unterweisung / Sicherheitsbelehrung</option>
+                <option value="Strecke">🤿 AGT-Übungsstrecke</option>
+                <option value="CSA">🧪 CSA-Übungslauf</option>
+                <option value="Veranstaltung">🎆 Veranstaltung / Öffentlichkeit</option>
+                <option value="OWF-Versammlung">🏛️ Ortswehrführer-Versammlung</option>
                 <option value="Versammlung">📋 Jahreshaupt- / Dienstversammlung</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">Planungs- & Durchführungsstatus</label>
-              <select id="dienstStatus" class="form-control" style="font-weight:700; border-color:#3b82f6;" onchange="dienstAutoGeplant = false;">
-                <option value="Durchgeführt" selected>✅ Durchgeführt (Stunden werden gezählt)</option>
-                <option value="Geplant">⏳ Geplant / Vorankündigung (Keine Stundenanrechnung)</option>
-                <option value="Ausgefallen">❌ Ausgefallen / Abgesagt</option>
+              <label class="form-label">Status</label>
+              <select id="dienstStatus" class="form-control" title="Durchgeführt: Stunden werden gezählt · Geplant: keine Stundenanrechnung" onchange="dienstAutoGeplant = false;">
+                <option value="Durchgeführt" selected>✅ Durchgeführt</option>
+                <option value="Geplant">⏳ Geplant</option>
+                <option value="Ausgefallen">❌ Ausgefallen</option>
               </select>
             </div>
           </div>
@@ -673,7 +689,7 @@
                 <option value="">-- bitte wählen --</option>
                 <option value="B">B – Brand</option>
                 <option value="H">H – Hilfeleistung (TH)</option>
-                <option value="S">Sonstiges (z. B. Fehlalarm, Sicherheitswache)</option>
+                <option value="S">Sonstiges (z. B. Fehlalarm)</option>
               </select>
             </div>
           </div>
@@ -684,7 +700,7 @@
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Ausbilder auswählen (Christdorf)</label>
                 <select id="dienstAusbilderSelect" class="form-control" onchange="syncAusbilderChoice('select'); rolleGewaehlt('dienstAusbilderSelect')">
-                  <option value="">-- Kamerad aus Christdorf auswählen --</option>
+                  <option value="">-- Kamerad wählen --</option>
                 </select>
               </div>
               <div class="form-group" style="margin-bottom:0;">
@@ -700,13 +716,13 @@
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Einheitsführer</label>
                 <select id="dienstEinheitsfuehrer" class="form-control" onchange="rolleGewaehlt('dienstEinheitsfuehrer')">
-                  <option value="">-- Nicht festgelegt --</option>
+                  <option value="">-- offen --</option>
                 </select>
               </div>
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Maschinist (Fahrer)</label>
                 <select id="dienstMaschinist" class="form-control" onchange="rolleGewaehlt('dienstMaschinist')">
-                  <option value="">-- Nicht festgelegt --</option>
+                  <option value="">-- offen --</option>
                 </select>
               </div>
             </div>
@@ -756,7 +772,7 @@
           
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Lehrgang auswählen (Dropdown Brandenburg / OPR)</label>
+              <label class="form-label">Lehrgang</label>
               <select id="lehrgangSelect" class="form-control" onchange="handleLehrgangSelectChange()" required>
                 <option value="">-- Lehrgang auswählen --</option>
                 <optgroup label="Truppausbildung">
@@ -804,10 +820,10 @@
           <div class="form-group">
             <label class="form-label">Status des Lehrgangs</label>
             <select id="lehrgangStatus" class="form-control" onchange="lehrgangStatusGeaendert()">
-              <option value="Beworben" selected>📝 Beworben / Vorgemerkt (Nur Interesse, kein Datum nötig)</option>
-              <option value="Angemeldet">⏳ Angemeldet / Platz bestätigt</option>
-              <option value="Bestanden">✅ Erfolgreich absolviert / Bestanden (Hakt Qualifikation automatisch ab)</option>
-              <option value="Nicht bestanden">❌ Nicht bestanden / Abgebrochen</option>
+              <option value="Beworben" selected>📝 Beworben / Vorgemerkt</option>
+              <option value="Angemeldet">⏳ Angemeldet</option>
+              <option value="Bestanden">✅ Bestanden</option>
+              <option value="Nicht bestanden">❌ Nicht bestanden</option>
             </select>
           </div>
 
@@ -850,7 +866,7 @@
           
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Personalnummer / Sortiernummer (z. B. 1, 2, 10, 101...)</label>
+              <label class="form-label">Personalnummer</label>
               <input type="number" id="memberPersonalnummer" class="form-control" placeholder="1" style="font-weight: 700; border-color: #3b82f6;">
               <span style="font-size: 0.75rem; color: #94a3b8;">Bestimmt die feste Reihenfolge im Hintergrund</span>
             </div>
@@ -861,7 +877,7 @@
                 <option value="Reserve">Reserve</option>
                 <option value="Altersabteilung">Alters- und Ehrenabteilung</option>
                 <option value="Inaktiv">Inaktiv</option>
-                <option value="Nicht einsatzfähig">Nicht einsatzfähig (z. B. UVV fehlt, zu wenig Ausbildung)</option>
+                <option value="Nicht einsatzfähig">Nicht einsatzfähig</option>
               </select>
             </div>
           </div>
@@ -920,7 +936,7 @@
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Besuchte Lehrgänge & Qualifikationen (Brandenburg / OPR Konform)</label>
+            <label class="form-label">Lehrgänge & Qualifikationen</label>
             <div class="checkbox-grid" id="lehrgangGrid">
               <label class="checkbox-item"><input type="checkbox" name="lg" value="TM 1"> Truppmann 1</label>
               <label class="checkbox-item"><input type="checkbox" name="lg" value="TM 2"> Truppmann 2</label>
@@ -2595,12 +2611,12 @@
       const efSelect = document.getElementById('dienstEinheitsfuehrer');
       const maSelect = document.getElementById('dienstMaschinist');
       
-      abSelect.innerHTML = '<option value="">-- Kamerad aus Christdorf auswählen --</option>';
+      abSelect.innerHTML = '<option value="">-- Kamerad wählen --</option>';
       dienstAutoGeplant = false;
       rollenAuswahl = {};
       rollenAutoGesetzt = new Set();
-      efSelect.innerHTML = '<option value="">-- Nicht festgelegt --</option>';
-      maSelect.innerHTML = '<option value="">-- Nicht festgelegt --</option>';
+      efSelect.innerHTML = '<option value="">-- offen --</option>';
+      maSelect.innerHTML = '<option value="">-- offen --</option>';
 
       appData.members.forEach(m => {
         abSelect.innerHTML += `<option value="${m.id}">${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})</option>`;
