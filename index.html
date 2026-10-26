@@ -430,7 +430,6 @@
             <option value="Arbeitsdienst">Arbeits- & Pflegedienst</option>
             <option value="UVV">UVV-Unterweisung</option>
             <option value="Strecke">AGT-Übungsstrecke</option>
-            <option value="CSA">CSA-Übungslauf</option>
             <option value="Veranstaltung">Veranstaltung / Öffentlichkeit</option>
             <option value="OWF-Versammlung">Ortswehrführer-Versammlung</option>
             <option value="Versammlung">Jahreshaupt- / Dienstversammlung</option>
@@ -626,7 +625,6 @@
                 <option value="Arbeitsdienst">🔧 Arbeits- & Pflegedienst</option>
                 <option value="UVV">🛡️ UVV-Unterweisung / Sicherheitsbelehrung</option>
                 <option value="Strecke">🤿 AGT-Übungsstrecke</option>
-                <option value="CSA">🧪 CSA-Übungslauf</option>
                 <option value="Veranstaltung">🎆 Veranstaltung / Öffentlichkeit</option>
                 <option value="OWF-Versammlung">🏛️ Ortswehrführer-Versammlung</option>
                 <option value="Versammlung">📋 Jahreshaupt- / Dienstversammlung</option>
@@ -672,10 +670,10 @@
                 <input type="time" id="dienstZeitBis" class="form-control" onchange="autoCalculateHours()" required>
               </div>
             </div>
-            <div class="form-row" id="dauerRow" style="margin-top: 0.4rem;">
+            <div class="form-row" id="dauerRow" style="margin-top: 0.4rem; display: none;">
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Berechnete Gesamtdauer (h)</label>
-                <input type="number" step="0.05" min="0.1" id="dienstDauer" class="form-control" required placeholder="z. B. 2.0">
+                <input type="number" step="0.05" min="0.1" id="dienstDauer" class="form-control" placeholder="z. B. 2.0">
                 <span id="calcHint" class="calc-hint">Wird minutengenau errechnet</span>
               </div>
             </div>
@@ -1282,8 +1280,12 @@
       selJ.innerHTML = '<option value="">Alle Jahre</option>' + jahre.map(j => `<option value="${j}">${j}</option>`).join('');
       selJ.value = jahre.includes(aktuell) ? aktuell : '';
       // Alte Einträge mit entfernter Kategorie (Lehrgangs-Dienst) bleiben filterbar
-      if (selK && (appData.dienste || []).some(d => d.typ === 'Lehrgang') && !Array.from(selK.options).some(o => o.value === 'Lehrgang')) {
-        selK.insertAdjacentHTML('beforeend', '<option value="Lehrgang">Lehrgangs-Dienst (alt)</option>');
+      if (selK) {
+        [['Lehrgang', 'Lehrgangs-Dienst (alt)'], ['CSA', 'CSA-Übungslauf (alt)']].forEach(([typ, text]) => {
+          if ((appData.dienste || []).some(d => d.typ === typ) && !Array.from(selK.options).some(o => o.value === typ)) {
+            selK.insertAdjacentHTML('beforeend', `<option value="${typ}">${text}</option>`);
+          }
+        });
       }
     }
 
@@ -1354,7 +1356,7 @@
     // ===== KALENDER =====
     const KAL_KATEGORIEN = {
       einsatz:       { label: 'Einsatz',                          farbe: '#e02424', prio: 1 }, // Signalrot
-      strecke:       { label: 'AGT-Übungsstrecke / CSA-Übungslauf', farbe: '#ff8a00', prio: 2 }, // Leuchtorange
+      strecke:       { label: 'AGT-Übungsstrecke', farbe: '#ff8a00', prio: 2 }, // Leuchtorange
       ausbildung:    { label: 'Ausbildung / Übung',               farbe: '#1f8fff', prio: 4 }, // Azurblau
       arbeitsdienst: { label: 'Arbeitsdienst',                    farbe: '#10a874', prio: 5 }, // Smaragdgrün
       veranstaltung: { label: 'Veranstaltung',                    farbe: '#d6409f', prio: 6 }, // Magenta
@@ -1997,8 +1999,6 @@
       const istEinsatz = (typ === 'Einsatz');
       document.getElementById('einsatzArtBox').style.display = istEinsatz ? 'block' : 'none';
       document.getElementById('dienstEinsatzArt').required = istEinsatz;
-      document.getElementById('dauerRow').style.display = istEinsatz ? 'none' : '';
-      document.getElementById('dienstDauer').required = !istEinsatz;
       const themaLabel = document.getElementById('dienstThemaLabel');
       if (!themaInput.dataset.platzhalter) themaInput.dataset.platzhalter = themaInput.placeholder;
       themaLabel.innerText = istEinsatz ? 'Einsatzstichwort (z. B. B2 Wohnungsbrand, TH 1 Baum auf Straße)' : 'Thema / Ausbildungsziel / Einsatzstichwort';
