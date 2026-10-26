@@ -252,7 +252,6 @@
         <span class="sync-dot" id="syncDot"></span>
         <span id="syncText">Verbinde Cloud...</span>
       </div>
-      <button class="btn btn-light btn-sm" onclick="openBerichtModal()" title="Jahresbericht für die Jahreshauptversammlung erstellen">📄 Jahresbericht</button>
       <button class="btn btn-light btn-sm" onclick="logout()" title="Von diesem Gerät abmelden">🔒 Abmelden</button>
     </div>
   </header>
@@ -272,15 +271,12 @@
         <span class="stat-sub" id="statBeteiligungStunden" style="margin-top:0.15rem;"></span>
       </div>
       <div class="stat-card">
-        <span class="stat-title">Einsätze</span>
-        <span class="stat-value" id="statEinsatzAnzahl">0</span>
-        <span class="stat-sub" id="statEinsatzStunden"></span>
-        <span class="stat-sub" id="statEinsatzKraefte" style="margin-top:0.15rem;"></span>
+        <span class="stat-title">UVV-Sicherheitsunterweisung</span>
+        <span class="stat-value" id="statUvvCount">0%</span>
       </div>
       <div class="stat-card">
         <span class="stat-title">Atemschutz (G26.3 & Strecke)</span>
         <span class="stat-value" id="statAgtCount">0</span>
-        <span class="stat-sub" id="statAgtHinweis"></span>
       </div>
       <div class="stat-card">
         <span class="stat-title">Mannschaftsstärke</span>
@@ -630,8 +626,8 @@
             </div>
             <div class="form-row" style="margin-top: 0.4rem;">
               <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Berechnete Gesamtdauer (Std:Min)</label>
-                <input type="text" inputmode="numeric" id="dienstDauer" class="form-control" required placeholder="z. B. 0:30" oninput="dauerHinweis()" onblur="dauerFeldFormatieren()">
+                <label class="form-label">Berechnete Gesamtdauer (h)</label>
+                <input type="number" step="0.05" min="0.1" id="dienstDauer" class="form-control" required placeholder="z. B. 2.0">
                 <span id="calcHint" class="calc-hint">Wird minutengenau errechnet</span>
               </div>
             </div>
@@ -816,17 +812,11 @@
             <div class="form-group">
               <label class="form-label">Status</label>
               <select id="memberStatus" class="form-control">
-                <option value="Aktiv">Aktiv (Einsatzabteilung)</option>
+                <option value="Aktiv">Aktiv (einsatzfähig)</option>
                 <option value="Reserve">Reserve</option>
                 <option value="Altersabteilung">Alters- und Ehrenabteilung</option>
                 <option value="Inaktiv">Inaktiv</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Einsatzfähigkeit</label>
-              <select id="memberEinsatzfaehig" class="form-control">
-                <option value="ja">✅ Einsatzfähig</option>
-                <option value="nein">⛔ Nicht einsatzfähig</option>
+                <option value="Nicht einsatzfähig">Nicht einsatzfähig (z. B. UVV fehlt, zu wenig Ausbildung)</option>
               </select>
             </div>
           </div>
@@ -926,45 +916,6 @@
     </div>
   </div>
 
-  <!-- MODAL: JAHRESBERICHT EXPORT -->
-  <div id="modalBericht" class="modal-overlay">
-    <div class="modal">
-      <div class="modal-header">
-        <div class="modal-title">📄 Jahresbericht erstellen</div>
-        <button class="btn btn-sm btn-secondary" onclick="closeModal('modalBericht')">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Berichtsjahr</label>
-            <select id="berichtJahr" class="form-control"></select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Dateiformat</label>
-            <select id="berichtFormat" class="form-control">
-              <option value="word">📝 Word-Datei (.doc)</option>
-              <option value="excel">📊 Excel-Datei (.xlsx)</option>
-            </select>
-          </div>
-        </div>
-        <label class="form-label">Was soll in den Bericht?</label>
-        <div style="display:grid; gap:0.4rem; margin-top:0.4rem;">
-          <label class="checkbox-item"><input type="checkbox" id="bxAusbildung" checked> Ausbildungsdienste inkl. Arbeits- und Pflegedienste: Anzahl, Stunden und Beteiligung</label>
-          <label class="checkbox-item"><input type="checkbox" id="bxAusbildungListe"> Liste der Ausbildungsdienste (Datum, Thema, Teilnehmerzahl)</label>
-          <label class="checkbox-item"><input type="checkbox" id="bxEinsatz" checked> Einsätze: Anzahl und Einsatzstunden</label>
-          <label class="checkbox-item"><input type="checkbox" id="bxEinsatzListe"> Liste der Einsätze (Datum, Stichwort, Kräfte, Dauer)</label>
-          <label class="checkbox-item"><input type="checkbox" id="bxLehrgang" checked> Besuchte Lehrgänge</label>
-          <label class="checkbox-item"><input type="checkbox" id="bxVeranstaltung" checked> Veranstaltungen (mit Platz zum selbst Ergänzen)</label>
-        </div>
-        <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.8rem;">Der Bericht enthält keine Namen, nur Zahlen und Themen. Gezählt werden nur Dienste mit Status „Durchgeführt“ und abgeschlossene Lehrgänge.</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeModal('modalBericht')">Abbrechen</button>
-        <button type="button" class="btn btn-primary" id="berichtButton" onclick="berichtErstellen()">Bericht herunterladen</button>
-      </div>
-    </div>
-  </div>
-
   <!-- FIREBASE SDK FÜR ECHTZEIT-DATENBANK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -1028,6 +979,9 @@
           m.personalnummer = parseInt(m.personalnummer) || (idx + 1);
         }
         if (!m.lehrgaenge) m.lehrgaenge = [];
+        // Frühere Einstellung "Nicht einsatzfähig" wird jetzt über den Status abgebildet
+        if (m.einsatzfaehig === false && (m.status || 'Aktiv') === 'Aktiv') m.status = 'Nicht einsatzfähig';
+        delete m.einsatzfaehig;
 
         if (m.lehrgaenge) {
           if (m.lehrgaenge.includes('TF') && !m.lehrgaenge.includes('TF Brand')) {
@@ -1509,45 +1463,9 @@
 
     // ===== EINSATZ-AUSWAHL: UVV-Pflicht & Einsatzfähigkeit =====
     // Stunden-Anzeige als farbige Pille (Farben wie im Kalender)
-    // Stunden als Std:Min anzeigen (z. B. 0,5 h -> 0:30 h); gespeichert wird weiterhin als Dezimalzahl
-    function fmtStd(h) {
-      const min = Math.round((parseFloat(h) || 0) * 60);
-      return `${Math.floor(min / 60).toLocaleString('de-DE')}:${String(min % 60).padStart(2, '0')} h`;
-    }
-
-    // Std:Min für das Eingabefeld (ohne „h“), z. B. 0,55 h -> 0:33
-    function stdFeld(h) {
-      const min = Math.round((parseFloat(h) || 0) * 60);
-      return `${Math.floor(min / 60)}:${String(min % 60).padStart(2, '0')}`;
-    }
-
-    // Liest „1:30“, „0:25“, „90 min“ oder alte Dezimalwerte wie „1,5“ und liefert Stunden als Dezimalzahl
-    function dauerAusFeld(text) {
-      const t = String(text || '').trim().toLowerCase().replace(/\s*(h|std\.?|stunden)$/, '');
-      let m = t.match(/^(\d+):(\d{1,2})$/);
-      if (m) return parseInt(m[1]) + parseInt(m[2]) / 60;
-      m = t.match(/^(\d+)\s*(min|minuten)$/);
-      if (m) return parseInt(m[1]) / 60;
-      const v = parseFloat(t.replace(',', '.'));
-      return isNaN(v) ? NaN : v;
-    }
-
-    function dauerHinweis() {
-      const v = dauerAusFeld(document.getElementById('dienstDauer').value);
-      const hint = document.getElementById('calcHint');
-      if (!hint) return;
-      hint.innerText = v > 0 ? `${Math.round(v * 60)} Minuten` : 'Dauer als Std:Min eingeben, z. B. 0:30 oder 2:15';
-    }
-
-    function dauerFeldFormatieren() {
-      const el = document.getElementById('dienstDauer');
-      const v = dauerAusFeld(el.value);
-      if (v > 0) el.value = stdFeld(v);
-    }
-
     function stdPille(stunden, farbe, textfarbe, fett) {
       const leer = !stunden;
-      return `<span class="std-pille" style="background:${farbe}; color:${textfarbe || '#ffffff'}; ${fett ? 'font-size:0.9rem; box-shadow:0 0 0 2px rgba(250,204,21,0.35);' : ''} ${leer ? 'opacity:0.4;' : ''}">${fmtStd(stunden)}</span>`;
+      return `<span class="std-pille" style="background:${farbe}; color:${textfarbe || '#ffffff'}; ${fett ? 'font-size:0.9rem; box-shadow:0 0 0 2px rgba(250,204,21,0.35);' : ''} ${leer ? 'opacity:0.4;' : ''}">${stunden.toFixed(1)} h</span>`;
     }
 
     // ===== MOBILE ANSICHT: Tabellen als Karten beschriften =====
@@ -1666,7 +1584,11 @@
 
     // Liefert '' wenn der Kamerad für den Einsatz wählbar ist, sonst den Grund der Sperre.
     function einsatzGesperrtGrund(m, einsatzDatum) {
-      if (m.einsatzfaehig === false) return 'nicht einsatzfähig';
+      // Nur Kameraden mit Status "Aktiv" sind einsatzfähig
+      if ((m.status || 'Aktiv') !== 'Aktiv') {
+        const gruende = { 'Nicht einsatzfähig': 'nicht einsatzfähig', 'Inaktiv': 'inaktiv', 'Reserve': 'Reserve', 'Altersabteilung': 'Alters-/Ehrenabteilung' };
+        return gruende[m.status] || 'nicht aktiv';
+      }
       const datum = einsatzDatum || kalKey(new Date());
       const jahr = datum.slice(0, 4);
       let uvvSchonGehalten = false, teilgenommen = false;
@@ -1825,11 +1747,11 @@
       const totalMinutes = Math.round(diffMs / 60000);
       const hours = totalMinutes / 60;
 
-      dauerInput.value = stdFeld(hours);
+      dauerInput.value = (Math.round(hours * 100) / 100).toFixed(2);
       
       const daysDiff = Math.floor(totalMinutes / (24 * 60));
       let dayText = daysDiff > 0 ? ` (${daysDiff} Tag(e))` : '';
-      hint.innerText = `Automatisch berechnet: ${totalMinutes} Minuten${dayText}`;
+      hint.innerText = `Berechnet: ${totalMinutes} Minuten (${(Math.round(hours * 100) / 100).toFixed(2)} h)${dayText}`;
     }
 
     function handleDienstTypChange() {
@@ -2047,7 +1969,7 @@
         });
 
         const statTotalEl = document.getElementById('statTotalHours');
-        if (statTotalEl) statTotalEl.innerText = fmtStd(totalHours);
+        if (statTotalEl) statTotalEl.innerText = totalHours.toFixed(1) + ' h';
         
         const statYearEl = document.getElementById('statYearSub');
         if (statYearEl) statYearEl.innerText = `Gesamt geleistet im Jahr ${curYear}`;
@@ -2074,7 +1996,7 @@
           geplanteStunden += parseFloat(l.stunden) || 0;
         });
         const statPlannedEl = document.getElementById('statPlannedSub');
-        if (statPlannedEl) statPlannedEl.innerText = `Geplant: ${fmtStd(geplanteStunden)}`;
+        if (statPlannedEl) statPlannedEl.innerText = `Geplant: ${geplanteStunden.toFixed(1).replace('.', ',')} h`;
         
         const statMemEl = document.getElementById('statMembersCount');
         if (statMemEl) {
@@ -2088,7 +2010,8 @@
         }
 
         let agtReady = 0, agtTotal = 0, uvvOk = 0;
-        const activeMembers = appData.members.filter(m => m.status === 'Aktiv');
+        // Kameraden im aktiven Dienst: Status "Aktiv" und "Nicht einsatzfähig" (sie nehmen weiter an der Ausbildung teil)
+        const activeMembers = appData.members.filter(m => m.status === 'Aktiv' || m.status === 'Nicht einsatzfähig');
         activeMembers.forEach(m => {
           const isUvvOk = checkUvvValidityForMember(m.id, curYear);
           if (isUvvOk) uvvOk++;
@@ -2103,37 +2026,6 @@
 
         const statAgtEl = document.getElementById('statAgtCount');
         if (statAgtEl) statAgtEl.innerText = `${agtReady} / ${agtTotal}`;
-
-        // Hinweis unter der Atemschutz-Kachel: bald ablaufende (gelb) oder abgelaufene (rot) Nachweise
-        const agtHinweisEl = document.getElementById('statAgtHinweis');
-        if (agtHinweisEl) {
-          const bald = [], weg = [];
-          appData.members.filter(m => m.status === 'Aktiv' && m.lehrgaenge && m.lehrgaenge.includes('AGT')).forEach(m => {
-            const pruefe = (art, erg) => {
-              const eintrag = `${art} ${m.nachname}` + (erg.daysLeft > -999 && erg.daysLeft >= 0 ? ` (${erg.daysLeft} T.)` : '');
-              if (erg.status === 'warning') bald.push(eintrag);
-              else if (erg.status === 'danger') weg.push(eintrag);
-            };
-            pruefe('G26.3', checkG26Validity(m.g26Ablauf));
-            pruefe('Strecke', checkOneYearValidity(m.streckeDatum));
-            if (m.csaDatum) pruefe('CSA', checkOneYearValidity(m.csaDatum));
-          });
-          let txt = '';
-          if (weg.length) txt += `<span style="color:#ef4444; font-weight:700; display:block;">⛔ Abgelaufen: ${weg.join(', ')}</span>`;
-          if (bald.length) txt += `<span style="color:#facc15; font-weight:700; display:block;">⚠️ Läuft bald ab: ${bald.join(', ')}</span>`;
-          agtHinweisEl.innerHTML = txt || '<span style="color:#22c55e;">Alle Nachweise gültig</span>';
-        }
-
-        // Einsatz-Kachel: Einsätze im gewählten Jahr
-        const einsaetzeJahr = appData.dienste.filter(d => (d.status || 'Durchgeführt') === 'Durchgeführt' && d.typ === 'Einsatz' && new Date(d.datumVon || d.datum).getFullYear() === curYear);
-        const einsatzStd = einsaetzeJahr.reduce((sum, d) => sum + (parseFloat(d.dauer) || 0), 0);
-        const einsatzKraefte = einsaetzeJahr.reduce((sum, d) => sum + (d.teilnehmer || []).length, 0);
-        const eAnzEl = document.getElementById('statEinsatzAnzahl');
-        if (eAnzEl) eAnzEl.innerText = einsaetzeJahr.length;
-        const eStdEl = document.getElementById('statEinsatzStunden');
-        if (eStdEl) eStdEl.innerText = einsaetzeJahr.length ? `Gesamtdauer: ${fmtStd(einsatzStd)}` : `Keine Einsätze in ${curYear}`;
-        const eKrEl = document.getElementById('statEinsatzKraefte');
-        if (eKrEl) eKrEl.innerText = einsaetzeJahr.length ? `Ø ${(einsatzKraefte / einsaetzeJahr.length).toFixed(1).replace('.', ',')} Kameraden je Einsatz` : '';
         
         const aktiveIds = new Set(activeMembers.map(m => m.id));
         let bDienste = 0, bQuoteSumme = 0, bTeilnahmen = 0, bStundenIst = 0, bStundenSoll = 0;
@@ -2164,7 +2056,7 @@
           : `Noch keine durchgeführten Dienste in ${curYear}`;
         const statBetStdEl = document.getElementById('statBeteiligungStunden');
         if (statBetStdEl) statBetStdEl.innerText = bStundenSoll
-          ? `${fmtStd(bStundenIst)} von ${fmtStd(bStundenSoll)} möglich (${Math.round((bStundenIst / bStundenSoll) * 100)}%)`
+          ? `${bStundenIst.toFixed(1).replace('.', ',')} h von ${bStundenSoll.toFixed(1).replace('.', ',')} h möglich (${Math.round((bStundenIst / bStundenSoll) * 100)}%)`
           : '';
 
         const statUvvEl = document.getElementById('statUvvCount');
@@ -2241,7 +2133,7 @@
                 <td><span class="badge badge-tag">${d.typ}</span></td>
                 <td><strong>${d.thema}</strong></td>
                 <td>${rollenBadges.length ? rollenBadges.join(' ') : '<span style="color:var(--text-muted);">-</span>'}</td>
-                <td><strong style="color:${dStatus === 'Geplant' ? 'var(--text-muted)' : '#60a5fa'};">${fmtStd(d.dauer)} ${dStatus === 'Geplant' ? '<small>(ausstehend)</small>' : ''}</strong></td>
+                <td><strong style="color:${dStatus === 'Geplant' ? 'var(--text-muted)' : '#60a5fa'};">${d.dauer.toFixed(2)} h ${dStatus === 'Geplant' ? '<small>(ausstehend)</small>' : ''}</strong></td>
                 <td>${tnCount} Kameraden</td>
                 <td>
                   <button class="btn btn-secondary btn-sm" onclick="openDienstModal('${d.id}')" title="Bearbeiten">✏️ Bearbeiten</button>
@@ -2280,7 +2172,7 @@
               dateDisplay = `${new Date(l.startDatum).toLocaleDateString('de-DE')} - ${new Date(l.endeDatum).toLocaleDateString('de-DE')}`;
             }
 
-            const stundenDisplay = l.stunden ? fmtStd(l.stunden) : '-';
+            const stundenDisplay = l.stunden ? `${parseFloat(l.stunden).toFixed(1)} h` : '-';
 
             lBody.innerHTML += `
               <tr>
@@ -2397,7 +2289,7 @@
                 <td>${funktionAnzeige(m)}</td>
                 <td>${geburtsdatumDisplay}</td>
                 <td>${qualiCell}</td>
-                <td><span class="badge ${m.status === 'Aktiv' ? 'badge-success' : 'badge-tag'}">${m.status || 'Aktiv'}</span>${m.einsatzfaehig === false ? '<br><span class="badge badge-danger" style="margin-top:0.3rem;">⛔ Nicht einsatzfähig</span>' : ''}</td>
+                <td><span class="badge ${(m.status || 'Aktiv') === 'Aktiv' ? 'badge-success' : (m.status === 'Nicht einsatzfähig' ? 'badge-danger' : 'badge-tag')}">${m.status === 'Nicht einsatzfähig' ? '⛔ ' : ''}${m.status || 'Aktiv'}</span></td>
                 <td>
                   <button class="btn btn-secondary btn-sm" onclick="openMemberModal('${m.id}')">✏️ Bearbeiten</button>
                   <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">🗑️</button>
@@ -2486,7 +2378,7 @@
           document.getElementById('dienstModalTitle').innerText = '✏️ Dienst / Termin bearbeiten';
           document.getElementById('dienstSubmitBtn').innerText = 'Änderungen speichern';
           handleDienstTypChange();
-          document.getElementById('dienstDauer').value = stdFeld(d.dauer);
+          document.getElementById('dienstDauer').value = d.dauer;
 
           appData.members.forEach(m => {
             const isChecked = d.teilnehmer && d.teilnehmer.includes(m.id);
@@ -2560,8 +2452,7 @@
       const zeitVon = document.getElementById('dienstZeitVon').value;
       const datumBis = (typ === 'Lehrgang' && document.getElementById('dienstDatumBis').value) ? document.getElementById('dienstDatumBis').value : datumVon;
       const zeitBis = document.getElementById('dienstZeitBis').value;
-      const dauer = Math.round(dauerAusFeld(document.getElementById('dienstDauer').value) * 10000) / 10000;
-      if (!(dauer > 0)) { alert('Bitte eine gültige Dauer eingeben, z. B. 0:30 oder 2:15.'); return; }
+      const dauer = parseFloat(document.getElementById('dienstDauer').value);
       // Rollen nur bei Einsätzen speichern
       const einheitsfuehrer = (typ === 'Einsatz') ? document.getElementById('dienstEinheitsfuehrer').value : '';
       const maschinist = (typ === 'Einsatz') ? document.getElementById('dienstMaschinist').value : '';
@@ -2777,7 +2668,6 @@
           document.getElementById('memberId').value = m.id;
           document.getElementById('memberPersonalnummer').value = m.personalnummer !== undefined ? m.personalnummer : '';
           document.getElementById('memberStatus').value = m.status || 'Aktiv';
-          document.getElementById('memberEinsatzfaehig').value = (m.einsatzfaehig === false) ? 'nein' : 'ja';
           document.getElementById('memberVorname').value = m.vorname || '';
           document.getElementById('memberNachname').value = m.nachname || '';
           document.getElementById('memberGeburtsdatum').value = m.geburtsdatum || '';
@@ -2816,7 +2706,6 @@
       const pnrInput = document.getElementById('memberPersonalnummer').value;
       const personalnummer = pnrInput !== '' ? parseInt(pnrInput) : 9999;
       const status = document.getElementById('memberStatus').value;
-      const einsatzfaehig = document.getElementById('memberEinsatzfaehig').value !== 'nein';
       const vorname = document.getElementById('memberVorname').value.trim();
       const nachname = document.getElementById('memberNachname').value.trim();
       const geburtsdatum = document.getElementById('memberGeburtsdatum').value;
@@ -2832,7 +2721,7 @@
       const existingIdx = appData.members.findIndex(m => m.id === id);
 
       const memberObj = {
-        id, personalnummer, status, vorname, nachname, geburtsdatum, geschlecht, dienstgrad, funktion, einsatzfaehig, lehrgaenge,
+        id, personalnummer, status, vorname, nachname, geburtsdatum, geschlecht, dienstgrad, funktion, lehrgaenge,
         g26Ablauf, streckeDatum, csaDatum
       };
 
@@ -2851,189 +2740,6 @@
       if (confirm('Kamerad wirklich löschen?')) {
         appData.members = appData.members.filter(m => m.id !== id);
         saveData();
-      }
-    }
-
-    // ===== JAHRESBERICHT FÜR DIE JAHRESHAUPTVERSAMMLUNG (ohne Namen) =====
-    function openBerichtModal() {
-      const sel = document.getElementById('berichtJahr');
-      const jetzt = new Date().getFullYear();
-      const jahre = new Set([jetzt, jetzt - 1]);
-      (appData.dienste || []).forEach(d => { const j = parseInt((d.datumVon || d.datum || '').slice(0, 4)); if (j) jahre.add(j); });
-      (appData.lehrgangPlan || []).forEach(l => { const j = parseInt((l.startDatum || '').slice(0, 4)); if (j) jahre.add(j); });
-      const liste = [...jahre].sort((a, b) => b - a);
-      sel.innerHTML = liste.map(j => `<option value="${j}" ${j === jetzt - 1 ? 'selected' : ''}>${j}</option>`).join('');
-      document.getElementById('modalBericht').style.display = 'flex';
-    }
-
-    function berichtZahl(v) { return (Math.round((v || 0) * 10) / 10).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
-    function berichtDatum(iso) { const t = String(iso || '').slice(0, 10).split('-'); return t.length === 3 ? `${t[2]}.${t[1]}.${t[0]}` : ''; }
-    function berichtEsc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-
-    function berichtDaten(jahr) {
-      const J = String(jahr);
-      const aktive = appData.members.filter(m => m.status === 'Aktiv');
-      const aktiveIds = new Set(aktive.map(m => m.id));
-      const dienste = (appData.dienste || [])
-        .filter(d => (d.status || 'Durchgeführt') === 'Durchgeführt' && (d.datumVon || d.datum || '').slice(0, 4) === J)
-        .sort((a, b) => (a.datumVon || a.datum || '').localeCompare(b.datumVon || b.datum || ''));
-      const gruppe = (typen) => {
-        const liste = dienste.filter(d => typen.includes(d.typ));
-        let dienstStd = 0, personenStd = 0, teilnahmen = 0, quote = 0;
-        liste.forEach(d => {
-          const dauer = parseFloat(d.dauer) || 0;
-          const tn = (d.teilnehmer || []).length;
-          dienstStd += dauer; personenStd += dauer * tn; teilnahmen += tn;
-          if (aktive.length) quote += (d.teilnehmer || []).filter(id => aktiveIds.has(id)).length / aktive.length;
-        });
-        return { liste, anzahl: liste.length, dienstStd, personenStd, teilnahmen,
-                 schnitt: liste.length ? teilnahmen / liste.length : 0,
-                 beteiligung: liste.length ? Math.round(quote / liste.length * 100) : 0 };
-      };
-      const ausbildung = gruppe(['Ausbildung', 'UVV', 'Strecke', 'CSA', 'Lehrgang', 'Arbeitsdienst']);
-      ausbildung.tage = new Set(ausbildung.liste.map(d => (d.datumVon || d.datum || '').slice(0, 10))).size;
-      const einsatz = gruppe(['Einsatz']);
-      const arbeit = gruppe(['Arbeitsdienst']);
-      const versammlung = gruppe(['Versammlung']);
-      const veranstaltungen = dienste.filter(d => d.typ === 'Veranstaltung');
-
-      const lgMap = {};
-      (appData.lehrgangPlan || []).forEach(l => {
-        if (!l.startDatum || l.startDatum.slice(0, 4) !== J) return;
-        if (l.status !== 'Bestanden' && l.status !== 'Nicht bestanden') return;
-        const key = (l.titel || 'Lehrgang') + '|' + (l.ort || '');
-        if (!lgMap[key]) lgMap[key] = { titel: l.titel || 'Lehrgang', ort: l.ort || '', teilnehmer: 0, bestanden: 0, stunden: 0 };
-        lgMap[key].teilnehmer++;
-        if (l.status === 'Bestanden') lgMap[key].bestanden++;
-        lgMap[key].stunden += parseFloat(l.stunden) || 0;
-      });
-      const lehrgaenge = Object.values(lgMap).sort((a, b) => a.titel.localeCompare(b.titel, 'de'));
-      const lehrgangStd = lehrgaenge.reduce((s, l) => s + l.stunden, 0);
-      const gesamt = ausbildung.personenStd + einsatz.personenStd + arbeit.personenStd + versammlung.personenStd + lehrgangStd;
-      return { jahr, aktive: aktive.length, ausbildung, einsatz, arbeit, versammlung, veranstaltungen, lehrgaenge, lehrgangStd, gesamt };
-    }
-
-    // Baut den Bericht als Abschnitte; Word und Excel nutzen dieselben Inhalte
-    function berichtAbschnitte(D, opt) {
-      const A = [];
-      const z = berichtZahl;
-      if (opt.ausbildung) A.push({ titel: 'Ausbildungsdienste', kopf: ['Kennzahl', 'Wert'], zeilen: [
-        ['Anzahl Ausbildungstage', D.ausbildung.tage + (D.ausbildung.tage === 1 ? ' Tag' : ' Tage')],
-        ['Ausbildungszeit (Dauer der Dienste)', fmtStd(D.ausbildung.dienstStd)],
-        ['Gesamtausbildungsstunden aller Teilnehmer', fmtStd(D.ausbildung.personenStd)],
-        ['Ø Teilnehmer je Dienst', z(D.ausbildung.schnitt)],
-        ['Beteiligung der Aktiven', D.ausbildung.beteiligung + ' %']
-      ], hinweis: `Inklusive Arbeits- und Pflegedienste. Beteiligung bezogen auf derzeit ${D.aktive} aktive Kameraden.` });
-      if (opt.ausbildungListe) A.push({ titel: 'Übersicht der Ausbildungsdienste', kopf: ['Datum', 'Thema', 'Teilnehmer', 'Dauer'],
-        zeilen: D.ausbildung.liste.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || d.typ, String((d.teilnehmer || []).length), fmtStd(d.dauer)]),
-        leer: 'Keine Ausbildungsdienste erfasst.' });
-      if (opt.einsatz) A.push({ titel: 'Einsätze', kopf: ['Kennzahl', 'Wert'], zeilen: [
-        ['Anzahl Einsätze', String(D.einsatz.anzahl)],
-        ['Einsatzdauer gesamt', fmtStd(D.einsatz.dienstStd)],
-        ['Einsatzstunden (alle Kräfte)', fmtStd(D.einsatz.personenStd)],
-        ['Ø Einsatzkräfte je Einsatz', z(D.einsatz.schnitt)]
-      ] });
-      if (opt.einsatzListe) A.push({ titel: 'Übersicht der Einsätze', kopf: ['Datum', 'Stichwort', 'Kräfte', 'Dauer'],
-        zeilen: D.einsatz.liste.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || 'Einsatz', String((d.teilnehmer || []).length), fmtStd(d.dauer)]),
-        leer: 'Keine Einsätze erfasst.' });
-      if (opt.lehrgang) A.push({ titel: 'Besuchte Lehrgänge', kopf: ['Lehrgang', 'Ausbildungsstätte', 'Teilnehmer', 'davon bestanden', 'Stunden gesamt'],
-        zeilen: D.lehrgaenge.map(l => [l.titel, l.ort, String(l.teilnehmer), String(l.bestanden), fmtStd(l.stunden)]),
-        leer: 'Keine abgeschlossenen Lehrgänge erfasst.' });
-      if (opt.veranstaltung) {
-        const zeilen = D.veranstaltungen.map(d => [berichtDatum(d.datumVon || d.datum), d.thema || 'Veranstaltung', '']);
-        for (let i = 0; i < 3; i++) zeilen.push(['', '', '']);
-        A.push({ titel: 'Veranstaltungen', kopf: ['Datum', 'Veranstaltung', 'Bemerkung'], zeilen, hoch: true });
-      }
-      return A;
-    }
-
-    function berichtDownload(blob, name) {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = name;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    }
-
-    function berichtWord(D, A) {
-      const heute = berichtDatum(new Date().toISOString());
-      let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Jahresbericht ${D.jahr}</title>
-        <style>body{font-family:Arial,sans-serif;font-size:11pt;color:#000}h1{font-size:18pt;color:#b91c1c;margin-bottom:2pt}h2{font-size:13pt;color:#b91c1c;margin-top:16pt;margin-bottom:4pt;border-bottom:1pt solid #b91c1c}
-        table{border-collapse:collapse;width:100%}th{background:#f3d4d4;text-align:left;border:1pt solid #999;padding:4pt}td{border:1pt solid #999;padding:4pt}td.r,th.r{text-align:right}.sub{color:#555;font-size:10pt}.hinweis{color:#555;font-size:9pt;margin-top:3pt}</style></head><body>
-        <h1>Freiwillige Feuerwehr Christdorf</h1>
-        <p class="sub">Jahresbericht ${D.jahr} für die Jahreshauptversammlung · erstellt am ${heute}</p>`;
-      A.forEach(a => {
-        html += `<h2>${berichtEsc(a.titel)}</h2>`;
-        if (!a.zeilen.length) { html += `<p>${berichtEsc(a.leer || '–')}</p>`; return; }
-        html += '<table><tr>' + a.kopf.map((k, i) => `<th${i > 0 && !a.hoch && !/Thema|Stichwort|Veranstaltung|Ausbildungsstätte|Bemerkung/.test(k) ? ' class="r"' : ''}>${berichtEsc(k)}</th>`).join('') + '</tr>';
-        a.zeilen.forEach((z, zi) => {
-          const fett = a.fett && zi === a.zeilen.length - 1;
-          html += '<tr>' + z.map((c, i) => {
-            const rechts = i > 0 && !a.hoch && !/Thema|Stichwort|Veranstaltung|Ausbildungsstätte|Bemerkung/.test(a.kopf[i]);
-            return `<td${rechts ? ' class="r"' : ''}${a.hoch ? ' style="height:20pt"' : ''}>${fett ? '<b>' : ''}${berichtEsc(c) || '&nbsp;'}${fett ? '</b>' : ''}</td>`;
-          }).join('') + '</tr>';
-        });
-        html += '</table>';
-        if (a.hinweis) html += `<p class="hinweis">${berichtEsc(a.hinweis)}</p>`;
-      });
-      html += '</body></html>';
-      berichtDownload(new Blob(['\ufeff', html], { type: 'application/msword' }), `Jahresbericht_${D.jahr}_FF_Christdorf.doc`);
-    }
-
-    function berichtLadeSheetJS() {
-      if (window.XLSX) return Promise.resolve();
-      return new Promise((ok, fehler) => {
-        const s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-        s.onload = ok; s.onerror = fehler;
-        document.head.appendChild(s);
-      });
-    }
-
-    function berichtExcel(D, A) {
-      const aoa = [['Freiwillige Feuerwehr Christdorf'], [`Jahresbericht ${D.jahr} für die Jahreshauptversammlung`], [`Erstellt am ${berichtDatum(new Date().toISOString())}`], []];
-      const alsZahl = (c) => /^-?\d+(\.\d{3})*(,\d+)?$/.test(String(c)) ? parseFloat(String(c).replace(/\./g, '').replace(',', '.')) : c;
-      A.forEach(a => {
-        aoa.push([a.titel]);
-        if (!a.zeilen.length) { aoa.push([a.leer || '–']); aoa.push([]); return; }
-        aoa.push(a.kopf);
-        a.zeilen.forEach(z => aoa.push(z.map((c, i) => i === 0 ? c : alsZahl(c))));
-        if (a.hinweis) aoa.push([a.hinweis]);
-        aoa.push([]);
-      });
-      const ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws['!cols'] = [{ wch: 42 }, { wch: 40 }, { wch: 14 }, { wch: 16 }, { wch: 10 }];
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, `Jahresbericht ${D.jahr}`);
-      const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-      berichtDownload(new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `Jahresbericht_${D.jahr}_FF_Christdorf.xlsx`);
-    }
-
-    async function berichtErstellen() {
-      const jahr = parseInt(document.getElementById('berichtJahr').value);
-      const opt = {
-        ausbildung: bxAusbildung.checked, ausbildungListe: bxAusbildungListe.checked,
-        einsatz: bxEinsatz.checked, einsatzListe: bxEinsatzListe.checked,
-        lehrgang: bxLehrgang.checked, veranstaltung: bxVeranstaltung.checked
-      };
-      if (!Object.values(opt).some(Boolean)) { alert('Bitte mindestens einen Bereich für den Bericht anhaken.'); return; }
-      const D = berichtDaten(jahr);
-      const A = berichtAbschnitte(D, opt);
-      const btn = document.getElementById('berichtButton');
-      try {
-        if (document.getElementById('berichtFormat').value === 'excel') {
-          btn.disabled = true; btn.innerText = 'Wird erstellt...';
-          await berichtLadeSheetJS();
-          berichtExcel(D, A);
-        } else {
-          berichtWord(D, A);
-        }
-        closeModal('modalBericht');
-      } catch (err) {
-        console.error(err);
-        alert('Die Excel-Datei konnte nicht erstellt werden, weil gerade keine Internetverbindung besteht. Wähle Word oder versuche es mit Verbindung erneut.');
-      } finally {
-        btn.disabled = false; btn.innerText = 'Bericht herunterladen';
       }
     }
 
