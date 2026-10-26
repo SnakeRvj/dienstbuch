@@ -448,8 +448,8 @@
                   <th>Status</th>
                   <th>Datum / Zeitraum</th>
                   <th>Kategorie</th>
-                  <th>Thema / Einsatzstichwort</th>
-                  <th>Rollen / Ausbilder</th>
+                  <th id="thDienstThema">Thema / Einsatzstichwort</th>
+                  <th id="thDienstRollen">Rollen / Ausbilder</th>
                   <th>Dauer</th>
                   <th>Teilnehmer</th>
                   <th>Aktionen</th>
@@ -2358,6 +2358,15 @@
         if (dBody) {
           dBody.innerHTML = '';
           dienstFilterJahreAktualisieren();
+          // Tabellenkopf passt sich der gewählten Kategorie an
+          const kategorieFilter = (document.getElementById('dienstFilterKategorie') || {}).value || '';
+          const thThema = document.getElementById('thDienstThema');
+          const thRollen = document.getElementById('thDienstRollen');
+          if (thThema && thRollen) {
+            if (kategorieFilter === 'Einsatz') { thThema.innerText = 'Einsatzstichwort'; thRollen.innerText = 'Rollen'; }
+            else if (kategorieFilter) { thThema.innerText = 'Thema'; thRollen.innerText = 'Ausbilder'; }
+            else { thThema.innerText = 'Thema / Einsatzstichwort'; thRollen.innerText = 'Rollen / Ausbilder'; }
+          }
           const sortedDienste = [...appData.dienste].sort((a, b) => new Date(b.datumVon || b.datum) - new Date(a.datumVon || a.datum)).filter(matchesDienstSuche);
           const trefferEl = document.getElementById('dienstSuchTreffer');
           if (trefferEl) trefferEl.innerText = `${sortedDienste.length} von ${appData.dienste.length} Einträgen`;
