@@ -373,7 +373,7 @@
       <button class="nav-tab active" onclick="switchTab('kalender')">📆 Kalender</button>
       <button class="nav-tab" onclick="switchTab('dashboard')">📊 Übersicht</button>
       <button class="nav-tab" onclick="switchTab('dienste')">📅 Dienstbuch</button>
-      <button class="nav-tab" onclick="switchTab('atemschutz')">🤿 Atemschutz & G26.3</button>
+      <button class="nav-tab" onclick="switchTab('atemschutz')">🤿 Atemschutz</button>
       <button class="nav-tab" onclick="switchTab('lehrgaenge')">🎓 Lehrgangsplanung</button>
       <button class="nav-tab" onclick="switchTab('mitglieder')">👨‍🚒 Mannschaftsliste</button>
     </div>
@@ -565,9 +565,7 @@
                   <th>Kamerad</th>
                   <th>G 26.3 Ablaufdatum</th>
                   <th>AGT-Übungsstrecke (1 Jahr gültig)</th>
-                  <th>UVV</th>
                   <th>Einsatztauglichkeit</th>
-                  <th>Schnellaktion</th>
                 </tr>
               </thead>
               <tbody id="agtTableBody">
@@ -2285,7 +2283,7 @@
             agtTotal++;
             const g26 = checkG26Validity(m.g26Ablauf);
             const str = checkOneYearValidity(m.streckeDatum);
-            if (g26.status !== 'danger' && str.status !== 'danger' && isUvvOk) agtReady++;
+            if (g26.status !== 'danger' && str.status !== 'danger') agtReady++;
           }
         });
 
@@ -2518,19 +2516,15 @@
             const g26 = checkG26Validity(m.g26Ablauf);
             const str = checkOneYearValidity(m.streckeDatum);
             
-            const isUvvOk = checkUvvValidityForMember(m.id, curYear);
-            const isReady = (g26.status !== 'danger') && (str.status !== 'danger') && isUvvOk;
+            // Einsatztauglich: gültige G26.3 und gültige AGT-Übungsstrecke
+            const isReady = (g26.status !== 'danger') && (str.status !== 'danger');
 
             agtBody.innerHTML += `
               <tr>
                 <td><strong>${m.nachname}</strong>, ${m.vorname}</td>
                 <td><span class="badge badge-${g26.status}">${g26.label}</span></td>
                 <td><span class="badge badge-${str.status}">${str.label}</span></td>
-                <td>${isUvvOk ? '<span class="badge badge-success">✓ OK</span>' : '<span class="badge badge-danger">⚠️ Fällig</span>'}</td>
                 <td>${isReady ? '<span class="badge badge-success">Einsatztauglich ✓</span>' : '<span class="badge badge-danger">Nicht tauglich ✕</span>'}</td>
-                <td>
-                  <button class="btn btn-secondary btn-sm" onclick="setStreckeToday('${m.id}')" title="Streckendurchgang auf heute setzen">+ Strecke heute</button>
-                </td>
               </tr>
             `;
           });
@@ -2621,16 +2615,6 @@
         mobileTabellenBeschriften();
       } catch (err) {
         console.error("Fehler beim Rendern der Ansicht:", err);
-      }
-    }
-
-    function setStreckeToday(memberId) {
-      const m = appData.members.find(x => x.id === memberId);
-      if (m) {
-        const today = new Date().toISOString().split('T')[0];
-        m.streckeDatum = today;
-        saveData();
-        alert(`Atemschutzstrecke für ${m.vorname} ${m.nachname} auf ${today} gesetzt.`);
       }
     }
 
