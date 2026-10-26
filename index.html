@@ -785,15 +785,13 @@
               <select id="lehrgangSelect" class="form-control" onchange="handleLehrgangSelectChange()" required>
                 <option value="">-- Lehrgang auswählen --</option>
                 <optgroup label="Truppausbildung">
-                  <option value="Truppmann Teil 1" data-code="TM 1" data-hours="70" data-ort="FTZ Kyritz">Truppmann Teil 1 (TM 1)</option>
-                  <option value="Truppmann Teil 2" data-code="TM 2" data-hours="80" data-ort="Stadt Wittstock/Dosse">Truppmann Teil 2 (TM 2)</option>
-                  <option value="Truppführer Brandbekämpfung" data-code="TF Brand" data-hours="35" data-ort="FTZ Kyritz">Truppführer Brandbekämpfung</option>
-                  <option value="Truppführer TH (Technische Hilfe)" data-code="TF TH" data-hours="35" data-ort="FTZ Kyritz">Truppführer TH (Technische Hilfe)</option>
+                  <option value="Truppführer Brandbekämpfung" data-code="TF Brand" data-hours="24" data-ort="FTZ Kyritz">Truppführer Brandbekämpfung</option>
+                  <option value="Truppführer TH (Technische Hilfe)" data-code="TF TH" data-hours="24" data-ort="FTZ Kyritz">Truppführer TH (Technische Hilfe)</option>
                 </optgroup>
                 <optgroup label="Sonderausbildungen / Fachlehrgänge">
                   <option value="Sprechfunker" data-code="Funk" data-hours="16" data-ort="FTZ Kyritz">Sprechfunker (Funk)</option>
-                  <option value="Atemschutzgeräteträger (AGT)" data-code="AGT" data-hours="25" data-ort="FTZ Kyritz">Atemschutzgeräteträger (AGT)</option>
-                  <option value="Maschinist für Löschfahrzeuge" data-code="Maschinist" data-hours="35" data-ort="FTZ Kyritz">Maschinist für Löschfahrzeuge</option>
+                  <option value="Atemschutzgeräteträger (AGT)" data-code="AGT" data-hours="24" data-ort="FTZ Kyritz">Atemschutzgeräteträger (AGT)</option>
+                  <option value="Maschinist für Löschfahrzeuge" data-code="Maschinist" data-hours="24" data-ort="FTZ Kyritz">Maschinist für Löschfahrzeuge</option>
                   <option value="Motorkettensägenführer (Modul A/B)" data-code="Motorkettensäge" data-hours="16" data-ort="FTZ Kyritz">Motorkettensägenführer</option>
                   <option value="Chemikalienschutzanzug (CSA)" data-code="CSA" data-hours="16" data-ort="FTZ Kyritz">CSA-Träger</option>
                   <option value="Erste Hilfe / Ersthelfer Feuerwehr" data-code="Erste Hilfe" data-hours="16" data-ort="FTZ Kyritz">Erste Hilfe Feuerwehr</option>
@@ -817,7 +815,7 @@
 
           <div class="form-group">
             <label class="form-label">Ausbildungsstätte</label>
-            <select id="lehrgangOrt" class="form-control">
+            <select id="lehrgangOrt" class="form-control" onchange="lehrgangStundenFeldAktualisieren()">
               <option value="FTZ Kyritz">FTZ Kyritz</option>
               <option value="LSTE Eisenhüttenstadt">LSTE Eisenhüttenstadt</option>
               <option value="LSTE Wünsdorf">LSTE Wünsdorf</option>
@@ -847,7 +845,7 @@
                 <input type="date" id="lehrgangEndeDatum" class="form-control" onchange="lehrgangZukunftRegel(false)">
               </div>
             </div>
-            <div class="form-group">
+            <div class="form-group" id="lehrgangStundenGroup" style="display:none;">
               <label class="form-label">Ausbildungsstunden (für Jahreskonto)</label>
               <input type="number" step="0.5" min="1" id="lehrgangStunden" class="form-control" placeholder="z. B. 35.0">
             </div>
@@ -1469,7 +1467,7 @@
         const namen = kalNamen(ids);
         add(l.startDatum, l.endeDatum || l.startDatum, {
           kat: 'lehrgang', titel: `${l.titel || 'Lehrgang'}`, namen,
-          info: [namen.length ? (namen.length > 1 ? 'Kameraden: ' : '') + namen.join(', ') : 'Unbekannt', l.ort, l.status].filter(Boolean).join(' · '),
+          info: [namen.length ? (namen.length > 1 ? 'Kameraden: ' : '') + namen.join(', ') : 'Unbekannt', l.ort, kyritz ? '8:00–16:00 Uhr' : '', l.status].filter(Boolean).join(' · '),
           geplant: l.status === 'Angemeldet'
         }, kyritz);
       });
@@ -2085,6 +2083,51 @@
       }
     }
 
+    // ===== LEHRGANGSSTUNDEN: werden automatisch berechnet =====
+    // Feste Stundenzahlen je Lehrgang (Brandenburg, FTZ Kyritz): Samstage à 8 Stunden
+    const FESTE_LEHRGANGSSTUNDEN = {
+      'Truppführer Brandbekämpfung': 24,          // 3 Samstage à 8 h
+      'Truppführer TH (Technische Hilfe)': 24,    // 3 Samstage à 8 h
+      'Sprechfunker': 16,                         // 2 Ausbildungstage à 8 h (Theorie online + Praxis vor Ort), eingetragen über 3 Samstage
+      'Atemschutzgeräteträger (AGT)': 24,         // 3 Samstage à 8 h
+      'Maschinist für Löschfahrzeuge': 24         // 3 Samstage à 8 h
+    };
+    const KYRITZ_STUNDEN_PRO_TAG = 8; // 8:00 bis 16:00 Uhr
+
+    function istKyritz(ort) { return ort === 'FTZ Kyritz' || ort === 'Kreisebene OPR'; }
+
+    // Ausbildungstage in Kyritz: nur die Samstage im Zeitraum (ohne Samstag alle Tage, einzelner Tag zählt als ein Tag)
+    function kyritzTage(startIso, endeIso) {
+      const a = kalIsoToDate(startIso);
+      if (!a) return 0;
+      let b = kalIsoToDate(endeIso) || a;
+      if (b < a) b = a;
+      let samstage = 0, alle = 0;
+      for (let d = new Date(a); d <= b && alle < 400; d.setDate(d.getDate() + 1)) {
+        alle++;
+        if (d.getDay() === 6) samstage++;
+      }
+      return (b > a && samstage > 0) ? samstage : alle;
+    }
+
+    // Stunden eines Lehrgangs: 1. feste Vorgabe, 2. Kyritz = 8 h je Samstag, 3. sonst gespeicherte Stundenzahl
+    function lehrgangStunden(l) {
+      if (FESTE_LEHRGANGSSTUNDEN[l.titel]) return FESTE_LEHRGANGSSTUNDEN[l.titel];
+      if (istKyritz(l.ort) && l.startDatum) return KYRITZ_STUNDEN_PRO_TAG * kyritzTage(l.startDatum, l.endeDatum || l.startDatum);
+      return parseFloat(l.stunden) || 0;
+    }
+
+    // Das Stundenfeld wird nur gebraucht, wenn sich die Stunden nicht berechnen lassen (freier Lehrgang außerhalb von Kyritz)
+    function lehrgangStundenFeldAktualisieren() {
+      const gruppe = document.getElementById('lehrgangStundenGroup');
+      if (!gruppe) return;
+      const status = document.getElementById('lehrgangStatus').value;
+      const frei = document.getElementById('lehrgangSelect').value === 'Sonstiges' && !istKyritz(document.getElementById('lehrgangOrt').value);
+      const zeigen = frei && status !== 'Beworben';
+      gruppe.style.display = zeigen ? '' : 'none';
+      document.getElementById('lehrgangStunden').required = zeigen;
+    }
+
     function handleLehrgangSelectChange() {
       const sel = document.getElementById('lehrgangSelect');
       const customBox = document.getElementById('lehrgangCustomBox');
@@ -2099,9 +2142,9 @@
       } else {
         customBox.style.display = 'none';
         customInput.required = false;
-        if (opt && opt.dataset.hours) stundenInput.value = opt.dataset.hours;
         if (opt && opt.dataset.ort) ortSelect.value = opt.dataset.ort;
       }
+      lehrgangStundenFeldAktualisieren();
     }
 
     // Lehrgänge, die noch nicht zu Ende sind, können nicht "Bestanden" / "Nicht bestanden" sein
@@ -2137,8 +2180,8 @@
         section.style.display = 'block';
         startInp.required = true;
         endeInp.required = true;
-        hInp.required = true;
       }
+      lehrgangStundenFeldAktualisieren();
     }
 
     function checkUvvValidityForMember(memberId, year) {
@@ -2223,9 +2266,9 @@
             const lYear = new Date(l.startDatum).getFullYear();
             if (lYear === curYear && (l.status === 'Bestanden' || l.status === 'Nicht bestanden')) {
               if (memberHours[l.memberId]) {
-                memberHours[l.memberId].lehrgang += (parseFloat(l.stunden) || 0);
-                memberHours[l.memberId].gesamt += (parseFloat(l.stunden) || 0);
-                totalHours += (parseFloat(l.stunden) || 0);
+                memberHours[l.memberId].lehrgang += lehrgangStunden(l);
+                memberHours[l.memberId].gesamt += lehrgangStunden(l);
+                totalHours += lehrgangStunden(l);
               }
             }
           }
@@ -2256,7 +2299,7 @@
           const schluessel = [l.titel, l.ort, l.startDatum, l.endeDatum || l.startDatum].join('|');
           if (gezaehlteLehrgaenge.has(schluessel)) return;
           gezaehlteLehrgaenge.add(schluessel);
-          geplanteStunden += parseFloat(l.stunden) || 0;
+          geplanteStunden += lehrgangStunden(l);
         });
         const statPlannedEl = document.getElementById('statPlannedSub');
         if (statPlannedEl) statPlannedEl.innerText = `Geplant: ${geplanteStunden.toFixed(1).replace('.', ',')} h`;
@@ -2490,7 +2533,7 @@
               dateDisplay = `${new Date(l.startDatum).toLocaleDateString('de-DE')} - ${new Date(l.endeDatum).toLocaleDateString('de-DE')}`;
             }
 
-            const stundenDisplay = l.stunden ? `${parseFloat(l.stunden).toFixed(1)} h` : '-';
+            const stundenDisplay = lehrgangStunden(l) ? `${lehrgangStunden(l).toFixed(1)} h` : '-';
 
             lBody.innerHTML += `
               <tr>
@@ -2881,6 +2924,7 @@
       }
       
       toggleLehrgangFields();
+      lehrgangStundenFeldAktualisieren();
       document.getElementById('modalLehrgang').style.display = 'flex';
     }
 
@@ -2925,7 +2969,9 @@
       if (status !== 'Beworben') {
         startDatum = document.getElementById('lehrgangStartDatum').value;
         endeDatum = document.getElementById('lehrgangEndeDatum').value;
-        stunden = parseFloat(document.getElementById('lehrgangStunden').value) || 0;
+        const feldSichtbar = document.getElementById('lehrgangStundenGroup').style.display !== 'none';
+        const katalogStunden = (opt && opt.dataset.hours) ? parseFloat(opt.dataset.hours) : 0;
+        stunden = lehrgangStunden({ titel, ort, startDatum, endeDatum, stunden: feldSichtbar ? (parseFloat(document.getElementById('lehrgangStunden').value) || 0) : katalogStunden });
       }
 
       if (!appData.lehrgangPlan) appData.lehrgangPlan = [];
