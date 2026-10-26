@@ -1633,10 +1633,7 @@
 
       const aktive = appData.members.filter(m => m.status === 'Aktiv' || m.status === 'Nicht einsatzfähig');
       const aktivIds = new Set(aktive.map(m => m.id));
-      const nFaehig = aktive.filter(m => m.status === 'Aktiv').length;
-      const nNichtFaehig = aktive.length - nFaehig;
       const nAgt = aktive.filter(m => (m.lehrgaenge || []).includes('AGT')).length;
-      const nCsa = aktive.filter(m => (m.lehrgaenge || []).includes('CSA')).length;
 
       const imJahr = d => (d.status || 'Durchgeführt') === 'Durchgeführt' && new Date(d.datumVon || d.datum).getFullYear() === jahr;
       const teilnahmen = d => (d.teilnehmer || []).filter(id => aktivIds.has(id)).length;
@@ -1667,10 +1664,7 @@
 
       h += '<h2>Mannschaft</h2>';
       h += zeile('Aktive Kameraden', aktive.length);
-      h += zeile('davon einsatzfähig', nFaehig, true);
-      if (nNichtFaehig) h += zeile('davon nicht einsatzfähig', nNichtFaehig, true);
       h += zeile('Atemschutzgeräteträger (AGT)', nAgt);
-      h += zeile('CSA-Träger', nCsa);
 
       h += `<h2>Ausbildung ${jahr}</h2>`;
       h += zeile('Ausbildungstage', ausb.length);
@@ -1698,7 +1692,46 @@
       }
       if (arten['?'].length) h += '<div class="b-hinweis">Einsätze „nicht zugeordnet“: Das Einsatzstichwort beginnt weder mit B (Brand) noch mit H bzw. TH (Hilfeleistung).</div>';
 
-      h += `<div class="b-hinweis">Grundlage: durchgeführte Dienste des Jahres ${jahr}. Beteiligung = Anwesenheit der aktiven Kameraden (Status „Aktiv“ und „Nicht einsatzfähig“) im Verhältnis zur Zahl der aktiven Kameraden heute.</div>`;
+      // Lehrgänge des Jahres (nach Startdatum), gleiche Lehrgänge mit gleichem Ergebnis werden zusammengefasst
+      const lgJahr = (appData.lehrgangPlan || [])
+        .filter(l => l.startDatum && new Date(l.startDatum).getFullYear() === jahr)
+        .sort((a, b) => a.startDatum.localeCompare(b.startDatum) || (a.titel || '').localeCompare(b.titel || '', 'de'));
+      const nBest = lgJahr.filter(l => l.status === 'Bestanden').length;
+      const nNicht = lgJahr.filter(l => l.status === 'Nicht bestanden').length;
+      const nOffen = lgJahr.length - nBest - nNicht;
+      const fmtDat = iso => new Date(iso).toLocaleDateString('de-DE');
+      h += `<h2>Lehrgänge ${jahr}</h2>`;
+      if (!lgJahr.length) {
+        h += '<div class="b-zeile"><span>Im Jahr ' + jahr + ' sind keine Lehrgänge eingetragen.</span></div>';
+      } else {
+        h += zeile('Lehrgangsteilnahmen gesamt', lgJahr.length);
+        h += zeile('davon bestanden', nBest, true);
+        h += zeile('davon nicht bestanden', nNicht, true);
+        if (nOffen) h += zeile('davon noch offen (angemeldet)', nOffen, true);
+
+        const gruppen = [];
+        lgJahr.forEach(l => {
+          const schluessel = [l.titel, l.ort, l.startDatum, l.endeDatum || l.startDatum, l.status].join('|');
+          let g = gruppen.find(x => x.k === schluessel);
+          if (!g) { g = { k: schluessel, l, ids: [] }; gruppen.push(g); }
+          g.ids.push(l.memberId);
+        });
+        h += '<div style="margin-top:0.9rem;">';
+        gruppen.forEach(g => {
+          const l = g.l;
+          const namen = g.ids.map(id => appData.members.find(m => m.id === id)).filter(Boolean)
+            .sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de'))
+            .map(m => `${m.vorname || ''} ${m.nachname || ''}`.trim());
+          const zeitraum = (l.endeDatum && l.endeDatum !== l.startDatum) ? `${fmtDat(l.startDatum)} – ${fmtDat(l.endeDatum)}` : fmtDat(l.startDatum);
+          let ergebnis = 'noch offen', farbe = '#6b7280';
+          if (l.status === 'Bestanden') { ergebnis = 'Bestanden ✓'; farbe = '#166534'; }
+          else if (l.status === 'Nicht bestanden') { ergebnis = 'Nicht bestanden ✗'; farbe = '#991b1b'; }
+          h += `<div class="b-zeile"><span><strong>${esc(l.titel)}</strong> – ${esc(namen.join(', ') || 'Unbekannt')}<br><span style="font-size:0.8rem; color:#4b5563;">${zeitraum}${l.ort ? ' · ' + esc(l.ort) : ''}</span></span><strong style="color:${farbe};">${ergebnis}</strong></div>`;
+        });
+        h += '</div>';
+      }
+
+      h += `<div class="b-hinweis">Grundlage: durchgeführte Dienste des Jahres ${jahr}; Lehrgänge nach Startdatum. Beteiligung = Anwesenheit der aktiven Kameraden (Status „Aktiv“ und „Nicht einsatzfähig“) im Verhältnis zur Zahl der aktiven Kameraden heute.</div>`;
 
       document.getElementById('berichtInhalt').innerHTML = h;
       document.getElementById('berichtOverlay').classList.add('offen');
