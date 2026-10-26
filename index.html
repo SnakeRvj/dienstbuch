@@ -315,18 +315,21 @@
         <span class="stat-sub" id="statPlannedSub" style="color:#facc15; font-weight:600; margin-top:0.15rem;"></span>
       </div>
       <div class="stat-card">
-        <span class="stat-title">Beteiligung Aktive</span>
+        <span class="stat-title">Beteiligung Aktive – Ausbildung</span>
         <span class="stat-value" id="statBeteiligung">0%</span>
         <span class="stat-sub" id="statBeteiligungSub">Ø Teilnahme pro Dienst</span>
         <span class="stat-sub" id="statBeteiligungStunden" style="margin-top:0.15rem;"></span>
       </div>
       <div class="stat-card">
-        <span class="stat-title">UVV-Sicherheitsunterweisung</span>
-        <span class="stat-value" id="statUvvCount">0%</span>
+        <span class="stat-title">Beteiligung Aktive – Einsatz</span>
+        <span class="stat-value" id="statEinsatz">0%</span>
+        <span class="stat-sub" id="statEinsatzSub">Noch keine Einsätze</span>
+        <span class="stat-sub" id="statEinsatzStunden" style="margin-top:0.15rem;"></span>
       </div>
       <div class="stat-card">
         <span class="stat-title">Atemschutz (G26.3 & Strecke)</span>
         <span class="stat-value" id="statAgtCount">0</span>
+        <span class="stat-sub" id="statAgtSub" style="margin-top:0.15rem;"></span>
       </div>
       <div class="stat-card">
         <span class="stat-title">Mannschaftsstärke</span>
@@ -2254,7 +2257,8 @@
         if (activeMembers.length) {
           appData.dienste.forEach(d => {
             if ((d.status || 'Durchgeführt') !== 'Durchgeführt') return;
-            if (d.typ === 'Lehrgang' || d.typ === 'OWF-Versammlung' || d.typ === 'Veranstaltung') return;
+            // Beteiligung Ausbildung: nur Dienste, bei denen alle Aktiven teilnehmen sollen
+            if (!['Ausbildung', 'UVV', 'Arbeitsdienst', 'Versammlung'].includes(d.typ)) return;
             if (new Date(d.datumVon || d.datum).getFullYear() !== curYear) return;
             const anwesend = (d.teilnehmer || []).filter(id => aktiveIds.has(id)).length;
             const dauer = parseFloat(d.dauer) || 0;
@@ -2281,8 +2285,37 @@
           ? `${bStundenIst.toFixed(1).replace('.', ',')} h von ${bStundenSoll.toFixed(1).replace('.', ',')} h möglich (${Math.round((bStundenIst / bStundenSoll) * 100)}%)`
           : '';
 
-        const statUvvEl = document.getElementById('statUvvCount');
-        if (statUvvEl) statUvvEl.innerText = activeMembers.length ? Math.round((uvvOk / activeMembers.length) * 100) + '%' : '0%';
+        // UVV-Quote steht jetzt in der Atemschutz-Kachel
+        const statAgtSubEl = document.getElementById('statAgtSub');
+        if (statAgtSubEl) statAgtSubEl.innerText = `UVV-Unterweisung ${curYear}: ${activeMembers.length ? Math.round((uvvOk / activeMembers.length) * 100) : 0} %`;
+
+        // Beteiligung Einsatz: Anwesenheit der einsatzfähigen Kameraden (Status "Aktiv") bei den Einsätzen des Jahres
+        const einsatzfaehigeIds = new Set(appData.members.filter(m => m.status === 'Aktiv').map(m => m.id));
+        let nEinsaetze = 0, eQuoteSumme = 0, eTeilnahmen = 0, eStunden = 0;
+        if (einsatzfaehigeIds.size) {
+          appData.dienste.forEach(d => {
+            if (d.typ !== 'Einsatz' || (d.status || 'Durchgeführt') !== 'Durchgeführt') return;
+            if (new Date(d.datumVon || d.datum).getFullYear() !== curYear) return;
+            const anwesend = (d.teilnehmer || []).filter(id => einsatzfaehigeIds.has(id)).length;
+            nEinsaetze++;
+            eQuoteSumme += anwesend / einsatzfaehigeIds.size;
+            eTeilnahmen += anwesend;
+            eStunden += parseFloat(d.dauer) || 0;
+          });
+        }
+        const statEinsEl = document.getElementById('statEinsatz');
+        if (statEinsEl) {
+          const eProzent = nEinsaetze ? Math.round((eQuoteSumme / nEinsaetze) * 100) : 0;
+          statEinsEl.innerText = eProzent + '%';
+          // gleiche Farbstufen wie bei der Ausbildung: unter 30 % rot, 30 bis unter 55 % gelb, ab 55 % grün
+          statEinsEl.style.color = !nEinsaetze ? '' : (eProzent < 30 ? '#ef4444' : (eProzent < 55 ? '#facc15' : '#22c55e'));
+        }
+        const statEinsSubEl = document.getElementById('statEinsatzSub');
+        if (statEinsSubEl) statEinsSubEl.innerText = nEinsaetze
+          ? `${nEinsaetze} ${nEinsaetze === 1 ? 'Einsatz' : 'Einsätze'}, Ø ${(eTeilnahmen / nEinsaetze).toFixed(1).replace('.', ',')} von ${einsatzfaehigeIds.size} Kameraden`
+          : `Noch keine Einsätze in ${curYear}`;
+        const statEinsStdEl = document.getElementById('statEinsatzStunden');
+        if (statEinsStdEl) statEinsStdEl.innerText = nEinsaetze ? `Einsatzzeit gesamt: ${eStunden.toFixed(1).replace('.', ',')} h` : '';
         
         const rankBody = document.getElementById('rankingTableBody');
         if (rankBody) {
