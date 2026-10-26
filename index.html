@@ -660,12 +660,25 @@
                 <input type="time" id="dienstZeitBis" class="form-control" onchange="autoCalculateHours()" required>
               </div>
             </div>
-            <div class="form-row" style="margin-top: 0.4rem;">
+            <div class="form-row" id="dauerRow" style="margin-top: 0.4rem;">
               <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Berechnete Gesamtdauer (h)</label>
                 <input type="number" step="0.05" min="0.1" id="dienstDauer" class="form-control" required placeholder="z. B. 2.0">
                 <span id="calcHint" class="calc-hint">Wird minutengenau errechnet</span>
               </div>
+            </div>
+          </div>
+
+          <div id="einsatzArtBox" style="display:none; background: #172033; padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.1rem;">
+            <div style="font-weight: 700; font-size: 0.85rem; color: #fca5a5; margin-bottom: 0.6rem;">🚨 Einsatzart:</div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Stichwort-Gruppe</label>
+              <select id="dienstEinsatzArt" class="form-control">
+                <option value="">-- bitte wählen --</option>
+                <option value="B">B – Brand</option>
+                <option value="H">H – Hilfeleistung (TH)</option>
+                <option value="S">Sonstiges (z. B. Fehlalarm, Sicherheitswache)</option>
+              </select>
             </div>
           </div>
 
@@ -704,7 +717,7 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Thema / Ausbildungsziel / Einsatzstichwort</label>
+            <label class="form-label" id="dienstThemaLabel">Thema / Ausbildungsziel / Einsatzstichwort</label>
             <input type="text" id="dienstThema" class="form-control" required placeholder="z. B. Jährliche Sicherheitsbelehrung / UVV, FwDV 3, Dienstberatung...">
           </div>
 
@@ -1621,6 +1634,14 @@
       return '?';
     }
 
+    // Einsatzart eines Einsatzes: gespeicherte Auswahl, sonst aus dem Stichwort abgeleitet
+    function einsatzArtVon(d) {
+      if (d.einsatzArt === 'B') return 'B';
+      if (d.einsatzArt === 'H') return 'TH';
+      if (d.einsatzArt === 'S') return '?';
+      return einsatzArt(d.thema);
+    }
+
     function jahresberichtSchliessen() {
       document.getElementById('berichtOverlay').classList.remove('offen');
     }
@@ -1651,7 +1672,7 @@
       const einsaetze = appData.dienste.filter(d => imJahr(d) && d.typ === 'Einsatz')
         .sort((a, b) => (a.datumVon || a.datum).localeCompare(b.datumVon || b.datum));
       const arten = { B: [], TH: [], '?': [] };
-      einsaetze.forEach(d => arten[einsatzArt(d.thema)].push(d));
+      einsaetze.forEach(d => arten[einsatzArtVon(d)].push(d));
       const einsTeil = d => teilnahmen(d);
       const einsSchnitt = (liste) => liste.length ? liste.reduce((s, d) => s + einsTeil(d), 0) / liste.length : 0;
       const einsZeile = (label, liste) => liste.length
@@ -1677,7 +1698,7 @@
       h += zeile('Einsätze gesamt', einsaetze.length);
       h += zeile('davon Brand (Stichwort B)', arten.B.length, true);
       h += zeile('davon Hilfeleistung (Stichwort H / TH)', arten.TH.length, true);
-      if (arten['?'].length) h += zeile('davon nicht zugeordnet', arten['?'].length, true);
+      if (arten['?'].length) h += zeile('davon Sonstiges (z. B. Fehlalarm)', arten['?'].length, true);
       h += zeile('Ø Beteiligung pro Einsatz', einsaetze.length ? `${zahl(einsSchnitt(einsaetze))} von ${aktive.length} Kameraden (${prozent(einsSchnitt(einsaetze), aktive.length)})` : '–');
       h += einsZeile('Brand', arten.B);
       h += einsZeile('Hilfeleistung', arten.TH);
@@ -1685,12 +1706,12 @@
       if (einsaetze.length) {
         h += '<div style="margin-top:0.9rem;"><div class="b-liste-kopf"><span>Datum</span><span>Stichwort</span><span>Art</span><span>Kameraden</span></div>';
         einsaetze.forEach(d => {
-          const art = einsatzArt(d.thema);
-          h += `<div class="b-liste-zeile"><span>${new Date(d.datumVon || d.datum).toLocaleDateString('de-DE')}</span><span>${esc(d.thema)}</span><span>${art === 'B' ? 'Brand' : (art === 'TH' ? 'Hilfeleistung' : 'nicht zugeordnet')}</span><span>${einsTeil(d)}</span></div>`;
+          const art = einsatzArtVon(d);
+          h += `<div class="b-liste-zeile"><span>${new Date(d.datumVon || d.datum).toLocaleDateString('de-DE')}</span><span>${esc(d.thema)}</span><span>${art === 'B' ? 'Brand' : (art === 'TH' ? 'Hilfeleistung' : 'Sonstiges')}</span><span>${einsTeil(d)}</span></div>`;
         });
         h += '</div>';
       }
-      if (arten['?'].length) h += '<div class="b-hinweis">Einsätze „nicht zugeordnet“: Das Einsatzstichwort beginnt weder mit B (Brand) noch mit H bzw. TH (Hilfeleistung).</div>';
+      if (arten['?'].length) h += '<div class="b-hinweis">„Sonstiges“: Einsätze, die weder als Brand (B) noch als Hilfeleistung (H) gekennzeichnet sind.</div>';
 
       // Lehrgänge des Jahres (nach Startdatum), gleiche Lehrgänge mit gleichem Ergebnis werden zusammengefasst
       const lgJahr = (appData.lehrgangPlan || [])
@@ -1927,6 +1948,17 @@
       const dBisInput = document.getElementById('dienstDatumBis');
 
       uvvBox.style.display = (typ === 'UVV') ? 'block' : 'none';
+
+      // Einsatz: Einsatzart wählen, Gesamtdauer wird automatisch berechnet und nicht angezeigt
+      const istEinsatz = (typ === 'Einsatz');
+      document.getElementById('einsatzArtBox').style.display = istEinsatz ? 'block' : 'none';
+      document.getElementById('dienstEinsatzArt').required = istEinsatz;
+      document.getElementById('dauerRow').style.display = istEinsatz ? 'none' : '';
+      document.getElementById('dienstDauer').required = !istEinsatz;
+      const themaLabel = document.getElementById('dienstThemaLabel');
+      if (!themaInput.dataset.platzhalter) themaInput.dataset.platzhalter = themaInput.placeholder;
+      themaLabel.innerText = istEinsatz ? 'Einsatzstichwort (z. B. B2 Wohnungsbrand, TH 1 Baum auf Straße)' : 'Thema / Ausbildungsziel / Einsatzstichwort';
+      themaInput.placeholder = istEinsatz ? 'z. B. B2 Wohnungsbrand' : themaInput.dataset.platzhalter;
       owfBox.style.display = (typ === 'OWF-Versammlung') ? 'block' : 'none';
 
       // Ausbilder wird bei Einsätzen und Veranstaltungen nicht benötigt
@@ -2291,7 +2323,7 @@
               <tr style="${dStatus === 'Geplant' ? 'opacity: 0.9; background: rgba(234, 179, 8, 0.04);' : ''}">
                 <td>${statusBadge}</td>
                 <td><strong>${timeStr}</strong></td>
-                <td><span class="badge badge-tag">${d.typ}</span></td>
+                <td><span class="badge badge-tag">${d.typ}${d.typ === 'Einsatz' && d.einsatzArt ? ' · ' + d.einsatzArt : ''}</span></td>
                 <td><strong>${d.thema}</strong></td>
                 <td>${rollenBadges.length ? rollenBadges.join(' ') : '<span style="color:var(--text-muted);">-</span>'}</td>
                 <td><strong style="color:${dStatus === 'Geplant' ? 'var(--text-muted)' : '#60a5fa'};">${d.dauer.toFixed(2)} h ${dStatus === 'Geplant' ? '<small>(ausstehend)</small>' : ''}</strong></td>
@@ -2518,6 +2550,9 @@
             typSelect.appendChild(alt);
           }
           typSelect.value = d.typ;
+          // Einsatzart: gespeicherten Wert nehmen, bei älteren Einsätzen aus dem Stichwort ableiten
+          const geraten = einsatzArt(d.thema);
+          document.getElementById('dienstEinsatzArt').value = d.einsatzArt || (geraten === 'B' ? 'B' : (geraten === 'TH' ? 'H' : ''));
           document.getElementById('dienstStatus').value = d.status || 'Durchgeführt';
           document.getElementById('dienstDatumVon').value = d.datumVon || d.datum;
           document.getElementById('dienstZeitVon').value = d.zeitVon || d.von || '19:00';
@@ -2613,7 +2648,10 @@
       const zeitVon = document.getElementById('dienstZeitVon').value;
       const datumBis = (typ === 'Lehrgang' && document.getElementById('dienstDatumBis').value) ? document.getElementById('dienstDatumBis').value : datumVon;
       const zeitBis = document.getElementById('dienstZeitBis').value;
-      const dauer = parseFloat(document.getElementById('dienstDauer').value);
+      // Gesamtdauer wird automatisch berechnet (bei Einsätzen ist das Feld ausgeblendet)
+      if (!(parseFloat(document.getElementById('dienstDauer').value) > 0)) autoCalculateHours();
+      const dauer = parseFloat(document.getElementById('dienstDauer').value) || 0;
+      const einsatzArt = (typ === 'Einsatz') ? document.getElementById('dienstEinsatzArt').value : '';
       // Rollen nur bei Einsätzen speichern
       const einheitsfuehrer = (typ === 'Einsatz') ? document.getElementById('dienstEinheitsfuehrer').value : '';
       const maschinist = (typ === 'Einsatz') ? document.getElementById('dienstMaschinist').value : '';
@@ -2638,6 +2676,7 @@
       }
 
       const dObj = { id, typ, status, datumVon, zeitVon, datumBis, zeitBis, dauer, einheitsfuehrer, maschinist, ausbilder, thema, teilnehmer };
+      if (einsatzArt) dObj.einsatzArt = einsatzArt;
 
       const existingIdx = appData.dienste.findIndex(x => x.id === id);
       if (existingIdx !== -1) {
