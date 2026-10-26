@@ -160,6 +160,19 @@
     .modal-body div[style*="background: #172033"] { padding: 0.6rem 0.7rem !important; margin-bottom: 0.7rem !important; }
     .modal-body .checkbox-grid { gap: 0.35rem; }
     .modal-body .checkbox-item { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+    /* Teilnehmer als kompakte Namens-Kacheln */
+    .attendance-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 0.35rem; max-height: none; overflow: visible; padding: 0.4rem; }
+    .attendance-row.tn-kachel { display: block; position: relative; cursor: pointer; padding: 0; margin: 0; border: none; background: none; border-radius: 0; }
+    .attendance-row.tn-kachel input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .tn-inhalt { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 38px; padding: 0.25rem 0.3rem; border-radius: 8px; border: 1px solid var(--border); background: #172033; color: #94a3b8; font-size: 0.8rem; line-height: 1.15; transition: background 0.1s, border-color 0.1s; }
+    .tn-name { font-weight: 600; }
+    .tn-kachel input:checked + .tn-inhalt { background: #14532d; border-color: #22c55e; color: #ffffff; }
+    .tn-kachel input:focus-visible + .tn-inhalt { outline: 2px solid #60a5fa; }
+    .tn-kachel input:disabled + .tn-inhalt { opacity: 0.5; cursor: not-allowed; }
+    .tn-tags { display: flex; gap: 0.2rem; justify-content: center; margin-top: 2px; }
+    .tn-tag { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.03em; padding: 0 0.3rem; border-radius: 999px; background: rgba(148, 163, 184, 0.25); }
+    .tn-kachel .einsatz-sperre { display: block; font-size: 0.55rem; padding: 0 0.3rem; margin-top: 2px; text-align: center; }
+    .tn-zaehler { font-weight: 700; color: #4ade80; margin-left: 0.4rem; }
     /* ===== MOBILE ANSICHT (Handy / schmale Fenster) ===== */
     .cal-mobile-nav { display: none; }
     .cal-legend-mobil { display: none; }
@@ -733,7 +746,7 @@
 
           <div class="form-group">
             <label class="form-label" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem;">
-              <span>Teilnehmer / Anwesenheit</span>
+              <span>Teilnehmer / Anwesenheit<span id="teilnehmerZaehler" class="tn-zaehler"></span></span>
               <div style="display:flex; gap:0.25rem;">
                 <button type="button" class="btn btn-secondary btn-sm" onclick="selectAllAttendance(true)">Alle</button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="selectAllAttendance(false)">Keine</button>
@@ -741,7 +754,7 @@
                 <button type="button" class="btn btn-secondary btn-sm" onclick="selectAgtAttendance()">Nur AGT</button>
               </div>
             </label>
-            <div class="attendance-list" id="attendanceCheckboxes"></div>
+            <div class="attendance-list" id="attendanceCheckboxes" onchange="aktualisiereTeilnehmerZaehler()"></div>
           </div>
 
           <div class="modal-footer">
@@ -1853,7 +1866,7 @@
           if (!badge) {
             badge = document.createElement('span');
             badge.className = 'badge badge-danger einsatz-sperre';
-            row.appendChild(badge);
+            (row.querySelector('.tn-inhalt') || row).appendChild(badge);
           }
           badge.textContent = '⛔ ' + grund;
         } else {
@@ -1862,6 +1875,8 @@
           if (badge) badge.remove();
         }
       });
+
+      aktualisiereTeilnehmerZaehler();
 
       // Einheitsführer & Maschinist: gesperrte Kameraden nicht wählbar
       ['dienstEinheitsfuehrer', 'dienstMaschinist'].forEach(id => {
@@ -1929,6 +1944,7 @@
           rollenAutoGesetzt.delete(alt);
         }
       }
+      aktualisiereTeilnehmerZaehler();
       // Neuen Kameraden automatisch anhaken
       if (neu) {
         const cb = cbFuer(neu);
@@ -1937,6 +1953,7 @@
           rollenAutoGesetzt.add(neu);
         }
       }
+      aktualisiereTeilnehmerZaehler();
     }
 
     function autoCalculateHours() {
@@ -2673,18 +2690,9 @@
           handleDienstTypChange();
           document.getElementById('dienstDauer').value = d.dauer;
 
-          appData.members.forEach(m => {
+          [...appData.members].sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de') || (a.vorname || '').localeCompare(b.vorname || '', 'de')).forEach(m => {
             const isChecked = d.teilnehmer && d.teilnehmer.includes(m.id);
-            container.innerHTML += `
-              <div class="attendance-row">
-                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:100%; color:#f1f5f9;">
-                  <input type="checkbox" name="attendance" value="${m.id}" ${isChecked ? 'checked data-vorhanden="1"' : ''}>
-                  <span><strong>${m.nachname}</strong>, ${m.vorname} (${dienstgradAnzeige(m)})</span>
-                </label>
-                ${(m.funktion === 'Ortswehrführer' || m.funktion === 'Stellv. Ortswehrführer') ? '<span class="badge badge-owf">Führung</span>' : ''}
-                ${m.lehrgaenge && m.lehrgaenge.includes('AGT') ? '<span class="badge badge-tag">AGT</span>' : ''}
-              </div>
-            `;
+            container.innerHTML += teilnehmerKachel(m, isChecked);
           });
         }
       } else {
@@ -2700,17 +2708,8 @@
         document.getElementById('dienstSubmitBtn').innerText = 'Dienst speichern';
         handleDienstTypChange();
 
-        appData.members.forEach(m => {
-          container.innerHTML += `
-            <div class="attendance-row">
-              <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:100%; color:#f1f5f9;">
-                <input type="checkbox" name="attendance" value="${m.id}">
-                <span><strong>${m.nachname}</strong>, ${m.vorname} (${dienstgradAnzeige(m)})</span>
-              </label>
-              ${(m.funktion === 'Ortswehrführer' || m.funktion === 'Stellv. Ortswehrführer') ? '<span class="badge badge-owf">Führung</span>' : ''}
-              ${m.lehrgaenge && m.lehrgaenge.includes('AGT') ? '<span class="badge badge-tag">AGT</span>' : ''}
-            </div>
-          `;
+        [...appData.members].sort((a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de') || (a.vorname || '').localeCompare(b.vorname || '', 'de')).forEach(m => {
+          container.innerHTML += teilnehmerKachel(m, false);
         });
       }
 
@@ -2718,22 +2717,45 @@
       document.getElementById('modalDienst').style.display = 'flex';
     }
 
+    // Teilnehmer-Kachel: kompakter Name (Nachname + Anfangsbuchstabe(n) des Vornamens), Tippen = anwesend
+    function teilnehmerKachel(m, angehakt) {
+      const kurz = kurzname(m);
+      const punkt = kurz.indexOf('. ');
+      const name = punkt > -1 ? `${m.nachname} ${kurz.slice(0, punkt + 1)}` : (m.nachname || '');
+      const fuehrung = (m.funktion === 'Ortswehrführer' || m.funktion === 'Stellv. Ortswehrführer');
+      const agt = m.lehrgaenge && m.lehrgaenge.includes('AGT');
+      const tags = (fuehrung || agt) ? `<span class="tn-tags">${fuehrung ? '<span class="tn-tag">Führung</span>' : ''}${agt ? '<span class="tn-tag">AGT</span>' : ''}</span>` : '';
+      const titel = `${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})`.replace(/"/g, '&quot;');
+      return `<label class="attendance-row tn-kachel" title="${titel}"><input type="checkbox" name="attendance" value="${m.id}" ${angehakt ? 'checked data-vorhanden="1"' : ''}><span class="tn-inhalt"><span class="tn-name">${name}</span>${tags}</span></label>`;
+    }
+
+    function aktualisiereTeilnehmerZaehler() {
+      const el = document.getElementById('teilnehmerZaehler');
+      if (!el) return;
+      const alle = document.querySelectorAll('#attendanceCheckboxes input[name="attendance"]');
+      const an = document.querySelectorAll('#attendanceCheckboxes input[name="attendance"]:checked');
+      el.innerText = `${an.length} von ${alle.length} anwesend`;
+    }
+
     function selectAllAttendance(check) {
-      document.querySelectorAll('#attendanceCheckboxes input').forEach(c => c.checked = check);
+      document.querySelectorAll('#attendanceCheckboxes input').forEach(c => { if (!c.disabled) c.checked = check; });
+      aktualisiereTeilnehmerZaehler();
     }
 
     function selectAgtAttendance() {
       const agtIds = appData.members.filter(m => m.lehrgaenge && m.lehrgaenge.includes('AGT')).map(m => m.id);
       document.querySelectorAll('#attendanceCheckboxes input').forEach(c => {
-        c.checked = agtIds.includes(c.value);
+        if (!c.disabled) c.checked = agtIds.includes(c.value);
       });
+      aktualisiereTeilnehmerZaehler();
     }
 
     function selectWehrfuehrungAttendance() {
       const fuehrungIds = appData.members.filter(m => m.funktion === 'Ortswehrführer' || m.funktion === 'Stellv. Ortswehrführer').map(m => m.id);
       document.querySelectorAll('#attendanceCheckboxes input').forEach(c => {
-        c.checked = fuehrungIds.includes(c.value);
+        if (!c.disabled) c.checked = fuehrungIds.includes(c.value);
       });
+      aktualisiereTeilnehmerZaehler();
     }
 
     function saveDienst(e) {
