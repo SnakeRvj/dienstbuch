@@ -615,33 +615,8 @@
             <option value="dienstgrad">Sortierung: Dienstgrad</option>
             <option value="nummer">Sortierung: Personalnummer</option>
           </select>
-          <select id="mlFilterStatus" onchange="renderApp()" title="Status">
-            <option value="">Alle Status</option>
-            <option value="Aktiv">Aktiv (einsatzfähig)</option>
-            <option value="Nicht einsatzfähig">Nicht einsatzfähig</option>
-            <option value="Reserve">Reserve</option>
-            <option value="Altersabteilung">Alters- und Ehrenabteilung</option>
-            <option value="Inaktiv">Inaktiv</option>
-          </select>
-          <select id="mlFilterFunktion" onchange="renderApp()" title="Funktion">
-            <option value="">Alle Funktionen</option>
-          </select>
           <select id="mlFilterQual" onchange="renderApp()" title="Qualifikation">
             <option value="">Alle Qualifikationen</option>
-            <option value="AGT">Atemschutzgeräteträger (AGT)</option>
-            <option value="Maschinist">Maschinist</option>
-            <option value="Funk">Sprechfunker</option>
-            <option value="Motorkettensäge">Motorkettensäge</option>
-            <option value="CSA">CSA-Träger</option>
-            <option value="ERSTHELFER">Ersthelfer oder Sanitäter</option>
-            <option value="SANITAETER">Sanitäter (Rettungs-/Notfallsanitäter)</option>
-            <option value="TF">Truppführer komplett</option>
-            <option value="GF">Gruppenführer (oder höher)</option>
-            <option value="ZF">Zugführer (oder höher)</option>
-            <option value="VF">Verbandsführer</option>
-            <option value="AUSB">Ausbilder in der Feuerwehr</option>
-            <option value="GERAETEWART">Gerätewart</option>
-            <option value="AGW">Atemschutzgerätewart</option>
           </select>
           <button type="button" id="mlFilterReset" class="filter-reset" onclick="mlFilterZuruecksetzen()" style="display:none;">✕ zurücksetzen</button>
           <span id="mlTreffer" class="filter-treffer"></span>
@@ -664,21 +639,7 @@
               </tbody>
             </table>
             <table id="mlTabelleMatrix" style="display:none;">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Rang</th>
-                  <th>AGT</th>
-                  <th>Maschinist</th>
-                  <th>Funk</th>
-                  <th>Kettensäge</th>
-                  <th>CSA</th>
-                  <th>Ersthelfer</th>
-                  <th>Sanitäter</th>
-                  <th>Ausbilder</th>
-                  <th>Gerätewart</th>
-                </tr>
-              </thead>
+              <thead id="mlMatrixKopf"></thead>
               <tbody id="mlMatrixBody">
               </tbody>
             </table>
@@ -2039,8 +2000,18 @@
       return { rang, fach, med, sonst };
     }
 
+    // Qualifikationen, die als Filter und in der Qualifikationsübersicht angeboten werden (nur solche, die es in der Wehr gibt)
+    const ML_QUAL_AUSWAHL = [
+      ['AGT', 'Atemschutzgeräteträger (AGT)'], ['Maschinist', 'Maschinist'], ['Funk', 'Sprechfunker'], ['Motorkettensäge', 'Motorkettensäge'], ['CSA', 'CSA-Träger'],
+      ['ERSTHELFER', 'Ersthelfer oder Sanitäter'], ['SANITAETER', 'Sanitäter (Rettungs-/Notfallsanitäter)'],
+      ['TF', 'Truppführer komplett'], ['GF', 'Gruppenführer (oder höher)'], ['ZF', 'Zugführer (oder höher)'], ['VF', 'Verbandsführer'],
+      ['AUSB', 'Ausbilder in der Feuerwehr'], ['GERAETEWART', 'Gerätewart'], ['AGW', 'Atemschutzgerätewart']
+    ];
+    const ML_MATRIX_SPALTEN = [['AGT', 'AGT'], ['Maschinist', 'Maschinist'], ['Funk', 'Funk'], ['Motorkettensäge', 'Kettensäge'], ['CSA', 'CSA'], ['ERSTHELFER', 'Ersthelfer'], ['SANITAETER', 'Sanitäter'], ['AUSB', 'Ausbilder'], ['GERAETEWART', 'Gerätewart'], ['AGW', 'Atemschutzgerätewart']];
+
     function mlFilterZuruecksetzen() {
-      ['mlFilterStatus', 'mlFilterFunktion', 'mlFilterQual'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      const el = document.getElementById('mlFilterQual');
+      if (el) el.value = '';
       renderApp();
     }
 
@@ -2049,25 +2020,20 @@
       const matrixBody = document.getElementById('mlMatrixBody');
       if (!memBody || !matrixBody) return;
 
-      // Funktions-Auswahl aus den vorhandenen Funktionen füllen
-      const selF = document.getElementById('mlFilterFunktion');
-      const altF = selF.value;
-      const funktionen = [...new Set(appData.members.map(m => m.funktion).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
-      selF.innerHTML = '<option value="">Alle Funktionen</option>' + funktionen.map(f => `<option value="${f.replace(/"/g, '&quot;')}">${f === ML_STANDARD_FUNKTION ? 'Einsatzkraft (ohne Sonderfunktion)' : f}</option>`).join('');
-      selF.value = funktionen.includes(altF) ? altF : '';
+      // Qualifikations-Auswahl: nur Qualifikationen, die es in der Wehr tatsächlich gibt
+      const selQ = document.getElementById('mlFilterQual');
+      const altQ = selQ.value;
+      const vorhanden = ML_QUAL_AUSWAHL.filter(([k]) => appData.members.some(m => mlHatQual(m, k)));
+      selQ.innerHTML = '<option value="">Alle Qualifikationen</option>' + vorhanden.map(([k, l]) => `<option value="${k}">${l}</option>`).join('');
+      selQ.value = vorhanden.some(([k]) => k === altQ) ? altQ : '';
 
-      const fStatus = document.getElementById('mlFilterStatus').value;
-      const fFunktion = selF.value;
-      const fQual = document.getElementById('mlFilterQual').value;
+      const fQual = selQ.value;
       const sortierung = document.getElementById('mlSortierung').value;
 
-      const gefiltert = appData.members.filter(m =>
-        (!fStatus || (m.status || 'Aktiv') === fStatus) &&
-        (!fFunktion || m.funktion === fFunktion) &&
-        (!fQual || mlHatQual(m, fQual)));
+      const gefiltert = appData.members.filter(m => !fQual || mlHatQual(m, fQual));
 
-      ['mlFilterStatus', 'mlFilterFunktion', 'mlFilterQual'].forEach(id => { const el = document.getElementById(id); el.classList.toggle('aktiv', !!el.value); });
-      document.getElementById('mlFilterReset').style.display = (fStatus || fFunktion || fQual) ? '' : 'none';
+      selQ.classList.toggle('aktiv', !!fQual);
+      document.getElementById('mlFilterReset').style.display = fQual ? '' : 'none';
       document.getElementById('mlTreffer').innerText = `${gefiltert.length} von ${appData.members.length} Kameraden`;
 
       // Ansicht umschalten
@@ -2086,11 +2052,13 @@
 
       if (!gruppen.length) {
         html = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Keine Kameraden gefunden.</td></tr>';
-        matrixHtml = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Keine Kameraden gefunden.</td></tr>';
+        matrixHtml = '<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Keine Kameraden gefunden.</td></tr>';
       }
 
-      // Anzahl je Qualifikation (Qualifikationsübersicht)
-      const matrixSpalten = [['AGT'], ['Maschinist'], ['Funk'], ['Motorkettensäge'], ['CSA'], ['ERSTHELFER'], ['SANITAETER'], ['AUSB'], ['GERAETEWART']];
+      // Qualifikationsübersicht: nur Spalten für Qualifikationen, die es in der Wehr gibt
+      const matrixSpalten = ML_MATRIX_SPALTEN.filter(([k]) => appData.members.some(m => mlHatQual(m, k)));
+      const spaltenAnzahl = 2 + matrixSpalten.length;
+      document.getElementById('mlMatrixKopf').innerHTML = '<tr><th>Name</th><th>Rang</th>' + matrixSpalten.map(([, l]) => `<th>${l}</th>`).join('') + '</tr>';
       if (gruppen.length) {
         matrixHtml += `<tr class="matrix-summe"><td>Anzahl</td><td></td>${matrixSpalten.map(([k]) => `<td>${gefiltert.filter(m => mlHatQual(m, k)).length}</td>`).join('')}</tr>`;
       }
@@ -2098,7 +2066,7 @@
       gruppen.forEach(g => {
         const kopf = `<tr class="gruppen-kopf"><td colspan="COLS">${ML_STATUS_TITEL[g.st] || g.st}<span class="gruppen-zahl">${g.liste.length}</span></td></tr>`;
         html += kopf.replace('COLS', 7);
-        matrixHtml += kopf.replace('COLS', 11);
+        matrixHtml += kopf.replace('COLS', spaltenAnzahl);
 
         g.liste.forEach(m => {
           const qs = mlQualifikationen(m);
