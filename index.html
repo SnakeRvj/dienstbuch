@@ -144,6 +144,13 @@
     /* Auswahllisten: Gruppenüberschriften und Einträge im dunklen Design lesbar */
     select optgroup { background: var(--input-bg); color: #93c5fd; font-weight: 700; font-style: normal; }
     select option { background: var(--input-bg); color: var(--text); }
+    /* Kamerad-Formular: Reiter */
+    .mf-tabs { display: flex; gap: 0.3rem; margin-bottom: 0.9rem; border-bottom: 1px solid var(--border); }
+    .mf-tab { flex: 1; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-weight: 700; padding: 0.55rem 0.3rem; cursor: pointer; font-size: 0.85rem; }
+    .mf-tab.aktiv { color: #ffffff; border-bottom-color: var(--primary); }
+    .mf-sektion { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #93c5fd; margin: 0.9rem 0 0.4rem; }
+    .qual-chip { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.3rem 0.2rem 0.65rem; border-radius: 999px; background: rgba(148, 163, 184, 0.2); font-size: 0.8rem; margin: 0 0.3rem 0.3rem 0; }
+    .qual-chip button { background: none; border: none; color: #fca5a5; cursor: pointer; font-size: 0.9rem; padding: 0 0.2rem; }
     /* Mannschaftsliste */
     .ml-ansicht { display: inline-flex; gap: 0.3rem; margin-right: 0.5rem; }
     .ml-ansicht .btn.aktiv { background: var(--primary); color: #ffffff; border-color: var(--primary); }
@@ -937,15 +944,42 @@
         <button class="btn btn-sm btn-secondary" onclick="closeModal('modalMember')">✕</button>
       </div>
       <div class="modal-body">
-        <form id="memberForm" onsubmit="saveMember(event)">
+        <form id="memberForm" onsubmit="saveMember(event)" novalidate>
           <input type="hidden" id="memberId">
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Personalnummer</label>
-              <input type="number" id="memberPersonalnummer" class="form-control" placeholder="1" style="font-weight: 700; border-color: #3b82f6;">
-              <span style="font-size: 0.75rem; color: #94a3b8;">Bestimmt die feste Reihenfolge im Hintergrund</span>
+
+          <div class="mf-tabs">
+            <button type="button" class="mf-tab aktiv" data-tab="person" onclick="memberTabWechseln('person')">Person</button>
+            <button type="button" class="mf-tab" data-tab="dienst" onclick="memberTabWechseln('dienst')">Dienst</button>
+            <button type="button" class="mf-tab" data-tab="quali" onclick="memberTabWechseln('quali')">Qualifikationen</button>
+          </div>
+
+          <div class="mf-panel" id="mfPanel-person">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Vorname</label>
+                <input type="text" id="memberVorname" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nachname</label>
+                <input type="text" id="memberNachname" class="form-control" required>
+              </div>
             </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Geburtsdatum</label>
+                <input type="date" id="memberGeburtsdatum" class="form-control">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Geschlecht</label>
+                <select id="memberGeschlecht" class="form-control" onchange="updateGeschlechtLabels()">
+                  <option value="m">Männlich</option>
+                  <option value="w">Weiblich</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="mf-panel" id="mfPanel-dienst" style="display:none;">
             <div class="form-group">
               <label class="form-label">Status</label>
               <select id="memberStatus" class="form-control">
@@ -956,98 +990,92 @@
                 <option value="Nicht einsatzfähig">Nicht einsatzfähig</option>
               </select>
             </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Dienstgrad</label>
+                <select id="memberDienstgrad" class="form-control">
+                  <option value="Feuerwehrmann-Anwärter">Feuerwehrmann-Anwärter / -in</option>
+                  <option value="Feuerwehrmann">Feuerwehrmann / Feuerwehrfrau</option>
+                  <option value="Oberfeuerwehrmann">Oberfeuerwehrmann / -frau</option>
+                  <option value="Hauptfeuerwehrmann">Hauptfeuerwehrmann / -frau</option>
+                  <option value="Löschmeister">Löschmeister / -in</option>
+                  <option value="Oberlöschmeister">Oberlöschmeister / -in</option>
+                  <option value="Hauptlöschmeister">Hauptlöschmeister / -in</option>
+                  <option value="Erster Hauptlöschmeister">Erster Hauptlöschmeister / -in</option>
+                  <option value="Brandmeister">Brandmeister / -in</option>
+                  <option value="Oberbrandmeister">Oberbrandmeister / -in</option>
+                  <option value="Hauptbrandmeister">Hauptbrandmeister / -in</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Funktion / Dienststellung</label>
+                <select id="memberFunktion" class="form-control">
+                  <option value="Ortswehrführer">Ortswehrführer (OWF)</option>
+                  <option value="Stellv. Ortswehrführer">Stellv. Ortswehrführer (Stv. OWF)</option>
+                  <option value="Gerätewart">Gerätewart</option>
+                  <option value="Sicherheitsbeauftragter">Sicherheitsbeauftragter</option>
+                  <option value="Schriftführer">Schriftführer</option>
+                  <option value="Einsatzkraft">Einsatzkraft (ohne Sonderfunktion)</option>
+                  <option value="Alters- und Ehrenabteilung">Alters- und Ehrenabteilung</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group" style="max-width: 9rem;">
+              <label class="form-label">Sortiernummer</label>
+              <input type="number" id="memberPersonalnummer" class="form-control" placeholder="1">
+            </div>
           </div>
 
-          <div class="form-row">
+          <div class="mf-panel" id="mfPanel-quali" style="display:none;">
             <div class="form-group">
-              <label class="form-label">Vorname</label>
-              <input type="text" id="memberVorname" class="form-control" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Nachname</label>
-              <input type="text" id="memberNachname" class="form-control" required>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Geburtsdatum</label>
-              <input type="date" id="memberGeburtsdatum" class="form-control">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Geschlecht</label>
-              <select id="memberGeschlecht" class="form-control" onchange="updateGeschlechtLabels()">
-                <option value="m">Männlich</option>
-                <option value="w">Weiblich</option>
+              <label class="form-label">Höchste Führungsqualifikation</label>
+              <select id="memberRang" class="form-control">
+                <option value="">Kein Rang</option>
+                <option value="TM 1">Truppmann 1</option>
+                <option value="TM 2">Truppmann 2</option>
+                <option value="TF Brand">Truppführer Brandbekämpfung</option>
+                <option value="TF TH">Truppführer Technische Hilfe</option>
+                <option value="TF komplett">Truppführer komplett (Brand + TH)</option>
+                <option value="GF">Gruppenführer</option>
+                <option value="ZF">Zugführer</option>
+                <option value="VF">Verbandsführer</option>
               </select>
             </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Dienstgrad</label>
-              <select id="memberDienstgrad" class="form-control">
-                <option value="Feuerwehrmann-Anwärter">Feuerwehrmann-Anwärter / -in</option>
-                <option value="Feuerwehrmann">Feuerwehrmann / Feuerwehrfrau</option>
-                <option value="Oberfeuerwehrmann">Oberfeuerwehrmann / -frau</option>
-                <option value="Hauptfeuerwehrmann">Hauptfeuerwehrmann / -frau</option>
-                <option value="Löschmeister">Löschmeister / -in</option>
-                <option value="Oberlöschmeister">Oberlöschmeister / -in</option>
-                <option value="Hauptlöschmeister">Hauptlöschmeister / -in</option>
-                <option value="Erster Hauptlöschmeister">Erster Hauptlöschmeister / -in</option>
-                <option value="Brandmeister">Brandmeister / -in</option>
-                <option value="Oberbrandmeister">Oberbrandmeister / -in</option>
-                <option value="Hauptbrandmeister">Hauptbrandmeister / -in</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Funktion / Dienststellung</label>
-              <select id="memberFunktion" class="form-control">
-                <option value="Ortswehrführer">Ortswehrführer (OWF)</option>
-                <option value="Stellv. Ortswehrführer">Stellv. Ortswehrführer (Stv. OWF)</option>
-                <option value="Gerätewart">Gerätewart</option>
-                <option value="Sicherheitsbeauftragter">Sicherheitsbeauftragter</option>
-                <option value="Schriftführer">Schriftführer</option>
-                <option value="Einsatzkraft">Einsatzkraft (ohne Sonderfunktion)</option>
-                <option value="Alters- und Ehrenabteilung">Alters- und Ehrenabteilung</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Lehrgänge & Qualifikationen</label>
-            <div class="checkbox-grid" id="lehrgangGrid">
-              <label class="checkbox-item"><input type="checkbox" name="lg" value="TM 1"> Truppmann 1</label>
-              <label class="checkbox-item"><input type="checkbox" name="lg" value="TM 2"> Truppmann 2</label>
-              <label class="checkbox-item"><input type="checkbox" name="lg" value="TF Brand"> 🔥 TF Brand</label>
-              <label class="checkbox-item"><input type="checkbox" name="lg" value="TF TH"> 🚗 TF TH</label>
-              <label class="checkbox-item"><input type="checkbox" name="lg" value="Funk"> Sprechfunker</label>
+
+            <div class="mf-sektion">Fachgebiete</div>
+            <div class="checkbox-grid" id="lehrgangGrid" onchange="memberFristenAktualisieren()">
               <label class="checkbox-item"><input type="checkbox" name="lg" value="AGT"> Atemschutz (AGT)</label>
               <label class="checkbox-item"><input type="checkbox" name="lg" value="Maschinist"> Maschinist</label>
-              <label class="checkbox-item"><input type="checkbox" name="lg" value="GF"> Gruppenführer</label>
-              <label class="checkbox-item"><input type="checkbox" name="lg" value="ZF"> Zugführer</label>
-              <label class="checkbox-item"><input type="checkbox" name="lg" value="VF"> Verbandsführer</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="Funk"> Sprechfunker</label>
               <label class="checkbox-item"><input type="checkbox" name="lg" value="Motorkettensäge"> Motorkettensäge</label>
               <label class="checkbox-item"><input type="checkbox" name="lg" value="CSA"> CSA-Träger</label>
-              <label class="checkbox-item"><input type="checkbox" name="lg" value="Erste Hilfe"> ✚ Ersthelfer</label>
-              <label class="checkbox-item"><input type="checkbox" name="lg" value="Rettungssanitäter"> ✚ Rettungssanitäter</label>
-              <label class="checkbox-item"><input type="checkbox" name="lg" value="Rettungsassistent"> ✚ Rettungsassistent</label>
-              <label class="checkbox-item"><input type="checkbox" name="lg" value="Notfallsanitäter"> ✚ Notfallsanitäter</label>
             </div>
+
+            <div id="mfFristAgt">
+              <div class="mf-sektion">Atemschutz-Fristen</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">G 26.3 gültig bis</label>
+                  <input type="date" id="memberG26" class="form-control">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Letzte AGT-Übungsstrecke</label>
+                  <input type="date" id="memberStrecke" class="form-control">
+                </div>
+              </div>
+            </div>
+            <div id="mfFristCsa">
+              <div class="form-group">
+                <label class="form-label">Letzter CSA-Übungslauf</label>
+                <input type="date" id="memberCsa" class="form-control">
+              </div>
+            </div>
+
+            <div class="mf-sektion">Weitere Lehrgänge</div>
+            <div id="weitereQuals"></div>
+            <small style="color: var(--text-muted); font-size: 0.72rem;">Weitere Lehrgänge kommen über die Lehrgangsplanung dazu (Status „Bestanden“). Hier kannst du sie entfernen.</small>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">G 26.3 Gültig bis</label>
-              <input type="date" id="memberG26" class="form-control">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Letzte AGT-Übungsstrecke</label>
-              <input type="date" id="memberStrecke" class="form-control">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Letzter CSA-Übungslauf</label>
-              <input type="date" id="memberCsa" class="form-control">
-            </div>
-          </div>
+
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeModal('modalMember')">Abbrechen</button>
             <button type="submit" class="btn btn-primary">Speichern</button>
@@ -1991,8 +2019,7 @@
       }
 
       ML_FACH.forEach(([code, label]) => { if (q.includes(code)) fach.push(`<span class="badge badge-tag">${label}</span>`); });
-      if (q.includes('Erste Hilfe')) med.push('<span class="badge badge-info" title="Ersthelfer">✚ Ersthelfer</span>');
-      ML_SANITAETER.forEach(s => { if (q.includes(s)) med.push(`<span class="badge badge-info">✚ ${s}</span>`); });
+      // Medizinische Qualifikationen werden vorerst nicht angezeigt (bleiben aber gespeichert)
       q.forEach(l => {
         if (rangCodes.includes(l) || ML_FACH.some(f => f[0] === l) || l === 'Erste Hilfe' || ML_SANITAETER.includes(l)) return;
         sonst.push(`<span class="badge badge-tag">${l}</span>`);
@@ -2003,11 +2030,10 @@
     // Qualifikationen, die als Filter und in der Qualifikationsübersicht angeboten werden (nur solche, die es in der Wehr gibt)
     const ML_QUAL_AUSWAHL = [
       ['AGT', 'Atemschutzgeräteträger (AGT)'], ['Maschinist', 'Maschinist'], ['Funk', 'Sprechfunker'], ['Motorkettensäge', 'Motorkettensäge'], ['CSA', 'CSA-Träger'],
-      ['ERSTHELFER', 'Ersthelfer oder Sanitäter'], ['SANITAETER', 'Sanitäter (Rettungs-/Notfallsanitäter)'],
       ['TF', 'Truppführer komplett'], ['GF', 'Gruppenführer (oder höher)'], ['ZF', 'Zugführer (oder höher)'], ['VF', 'Verbandsführer'],
       ['AUSB', 'Ausbilder in der Feuerwehr'], ['GERAETEWART', 'Gerätewart'], ['AGW', 'Atemschutzgerätewart']
     ];
-    const ML_MATRIX_SPALTEN = [['AGT', 'AGT'], ['Maschinist', 'Maschinist'], ['Funk', 'Funk'], ['Motorkettensäge', 'Kettensäge'], ['CSA', 'CSA'], ['ERSTHELFER', 'Ersthelfer'], ['SANITAETER', 'Sanitäter'], ['AUSB', 'Ausbilder'], ['GERAETEWART', 'Gerätewart'], ['AGW', 'Atemschutzgerätewart']];
+    const ML_MATRIX_SPALTEN = [['AGT', 'AGT'], ['Maschinist', 'Maschinist'], ['Funk', 'Funk'], ['Motorkettensäge', 'Kettensäge'], ['CSA', 'CSA'], ['AUSB', 'Ausbilder'], ['GERAETEWART', 'Gerätewart'], ['AGW', 'Atemschutzgerätewart']];
 
     function mlFilterZuruecksetzen() {
       const el = document.getElementById('mlFilterQual');
@@ -2079,7 +2105,7 @@
             geb = `${gd}.${gm}.${gy} <small>(${mlAlter(m.geburtsdatum)})</small>${marke}`;
           }
 
-          const funktion = (m.funktion && m.funktion !== ML_STANDARD_FUNKTION) ? funktionAnzeige(m) : '';
+          const funktion = (m.funktion && m.funktion !== ML_STANDARD_FUNKTION && m.funktion !== 'Einsatzkraft') ? funktionAnzeige(m) : '';
           const qualis = [...qs.fach, ...qs.med, ...qs.sonst].join(' ');
 
           html += `
@@ -3430,10 +3456,12 @@
     }
 
     function openMemberModal(memberId = null) {
-      document.querySelectorAll('#lehrgangGrid .dyn-lg').forEach(e => e.remove());
       document.getElementById('memberForm').reset();
       updateGeschlechtLabels();
       document.querySelectorAll('#lehrgangGrid input').forEach(c => c.checked = false);
+      document.getElementById('weitereQuals').innerHTML = '';
+      memberVerborgeneQuals = [];
+      memberTabWechseln('person');
 
       if (memberId) {
         const m = appData.members.find(x => x.id === memberId);
@@ -3452,19 +3480,14 @@
           document.getElementById('memberStrecke').value = m.streckeDatum || '';
           document.getElementById('memberCsa').value = m.csaDatum || '';
 
-          (m.lehrgaenge || []).forEach(lg => {
+          const q = m.lehrgaenge || [];
+          document.getElementById('memberRang').value = memberRangAusQuals(q);
+          q.forEach(lg => {
+            if (MF_RANG_KETTE.includes(lg)) return;
+            if (MF_VERBORGEN.includes(lg)) { memberVerborgeneQuals.push(lg); return; }
             const cb = Array.from(document.querySelectorAll('#lehrgangGrid input[name="lg"]')).find(c => c.value === lg);
             if (cb) cb.checked = true;
-            else {
-              // Qualifikation ohne eigenes Feld (z. B. aus einem LSTE-Lehrgang): als abwählbares Feld anzeigen, damit sie beim Speichern erhalten bleibt
-              const label = document.createElement('label');
-              label.className = 'checkbox-item dyn-lg';
-              const input = document.createElement('input');
-              input.type = 'checkbox'; input.name = 'lg'; input.value = lg; input.checked = true;
-              label.appendChild(input);
-              label.appendChild(document.createTextNode(' ' + lg));
-              document.getElementById('lehrgangGrid').appendChild(label);
-            }
+            else document.getElementById('weitereQuals').appendChild(memberWeitereMarke(lg));
           });
           document.getElementById('memberModalTitle').innerText = 'Kamerad bearbeiten';
         }
@@ -3480,11 +3503,93 @@
         document.getElementById('memberStatus').value = 'Aktiv';
         document.getElementById('memberModalTitle').innerText = 'Neuen Kameraden aufnehmen';
       }
+      memberFristenAktualisieren();
+      memberWeitereHinweis();
       document.getElementById('modalMember').style.display = 'flex';
+    }
+
+    // ===== KAMERAD-FORMULAR: Reiter, Rang-Auswahl, Fristen =====
+    const MF_RANG_KETTE = ['TM 1', 'TM 2', 'TF Brand', 'TF TH', 'GF', 'ZF', 'VF'];
+    const MF_FACH_CODES = ['AGT', 'Maschinist', 'Funk', 'Motorkettensäge', 'CSA'];
+    const MF_VERBORGEN = ['Erste Hilfe', 'Rettungssanitäter', 'Rettungsassistent', 'Notfallsanitäter']; // Medizin: vorerst nicht im Formular, bleibt aber gespeichert
+    let memberVerborgeneQuals = [];
+
+    function memberRangAusQuals(q) {
+      if (q.includes('VF')) return 'VF';
+      if (q.includes('ZF')) return 'ZF';
+      if (q.includes('GF')) return 'GF';
+      if (q.includes('TF Brand') && q.includes('TF TH')) return 'TF komplett';
+      if (q.includes('TF Brand')) return 'TF Brand';
+      if (q.includes('TF TH')) return 'TF TH';
+      if (q.includes('TM 2')) return 'TM 2';
+      if (q.includes('TM 1')) return 'TM 1';
+      return '';
+    }
+
+    // Ein höherer Rang schließt die niedrigeren ein
+    function memberRangFlags(rang) {
+      switch (rang) {
+        case 'TM 1': return ['TM 1'];
+        case 'TM 2': return ['TM 1', 'TM 2'];
+        case 'TF Brand': return ['TM 1', 'TM 2', 'TF Brand'];
+        case 'TF TH': return ['TM 1', 'TM 2', 'TF TH'];
+        case 'TF komplett': return ['TM 1', 'TM 2', 'TF Brand', 'TF TH'];
+        case 'GF': return ['TM 1', 'TM 2', 'TF Brand', 'TF TH', 'GF'];
+        case 'ZF': return ['TM 1', 'TM 2', 'TF Brand', 'TF TH', 'GF', 'ZF'];
+        case 'VF': return ['TM 1', 'TM 2', 'TF Brand', 'TF TH', 'GF', 'ZF', 'VF'];
+        default: return [];
+      }
+    }
+
+    function memberTabWechseln(tab) {
+      document.querySelectorAll('.mf-tab').forEach(b => b.classList.toggle('aktiv', b.dataset.tab === tab));
+      ['person', 'dienst', 'quali'].forEach(t => { const el = document.getElementById('mfPanel-' + t); if (el) el.style.display = (t === tab) ? '' : 'none'; });
+    }
+
+    // Fristen nur zeigen, wenn die Qualifikation vorhanden ist
+    function memberFristenAktualisieren() {
+      const an = v => { const cb = Array.from(document.querySelectorAll('#lehrgangGrid input[name="lg"]')).find(c => c.value === v); return !!(cb && cb.checked); };
+      document.getElementById('mfFristAgt').style.display = an('AGT') ? '' : 'none';
+      document.getElementById('mfFristCsa').style.display = an('CSA') ? '' : 'none';
+    }
+
+    // Pflichtfelder prüfen; fehlt etwas, springt das Formular zum passenden Reiter
+    function memberFormPruefen() {
+      const felder = Array.from(document.querySelectorAll('#memberForm [required]'));
+      for (const f of felder) {
+        if (!String(f.value).trim()) {
+          const panel = f.closest('.mf-panel');
+          if (panel) memberTabWechseln(panel.id.replace('mfPanel-', ''));
+          f.focus();
+          if (f.reportValidity) f.reportValidity();
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function memberWeitereMarke(q) {
+      const chip = document.createElement('span');
+      chip.className = 'qual-chip';
+      chip.dataset.q = q;
+      chip.appendChild(document.createTextNode(q));
+      const x = document.createElement('button');
+      x.type = 'button'; x.title = 'Entfernen'; x.textContent = '✕';
+      x.onclick = () => { chip.remove(); memberWeitereHinweis(); };
+      chip.appendChild(x);
+      return chip;
+    }
+    function memberWeitereHinweis() {
+      const box = document.getElementById('weitereQuals');
+      const hinweis = box.querySelector('.leer-hinweis');
+      const hatChips = !!box.querySelector('.qual-chip');
+      if (!hatChips && !hinweis) { const s = document.createElement('span'); s.className = 'leer-hinweis'; s.style.cssText = 'color:var(--text-muted); font-size:0.8rem;'; s.textContent = 'Keine weiteren Lehrgänge.'; box.appendChild(s); }
+      if (hatChips && hinweis) hinweis.remove();
     }
 
     function saveMember(e) {
       e.preventDefault();
+      if (!memberFormPruefen()) return;
       const id = document.getElementById('memberId').value || 'mem-' + Date.now();
       const pnrInput = document.getElementById('memberPersonalnummer').value;
       const personalnummer = pnrInput !== '' ? parseInt(pnrInput) : 9999;
@@ -3499,7 +3604,9 @@
       const streckeDatum = document.getElementById('memberStrecke').value;
       const csaDatum = document.getElementById('memberCsa').value;
 
-      const lehrgaenge = Array.from(document.querySelectorAll('#lehrgangGrid input:checked')).map(c => c.value);
+      const fachAngehakt = Array.from(document.querySelectorAll('#lehrgangGrid input:checked')).map(c => c.value);
+      const weitere = Array.from(document.querySelectorAll('#weitereQuals .qual-chip')).map(c => c.dataset.q);
+      const lehrgaenge = [...new Set([...memberRangFlags(document.getElementById('memberRang').value), ...fachAngehakt, ...weitere, ...memberVerborgeneQuals])];
 
       const existingIdx = appData.members.findIndex(m => m.id === id);
 
