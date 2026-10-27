@@ -3154,6 +3154,23 @@
       document.getElementById('modalLehrgang').style.display = 'flex';
     }
 
+    // Qualifikation, die ein bestandener Lehrgang vergibt (ohne eigenes Kürzel gilt der Lehrgangsname)
+    function lehrgangQualCode(titel) {
+      let opt = null;
+      if (lehrgangKatalogVorlage) opt = Array.from(lehrgangKatalogVorlage.querySelectorAll('option')).find(o => o.value === titel) || null;
+      return mapLehrgangToQualificationCode(titel || '', opt) || titel;
+    }
+
+    // Wird ein bestandener Lehrgang auf "Nicht bestanden" (oder "Angemeldet"/"Beworben") zurückgestellt, entfällt die Qualifikation wieder –
+    // außer ein anderer bestandener Lehrgang desselben Kameraden vergibt dieselbe Qualifikation.
+    function lehrgangQualifikationEntfernen(l) {
+      const m = appData.members.find(x => x.id === l.memberId);
+      if (!m || !m.lehrgaenge) return;
+      const code = lehrgangQualCode(l.titel);
+      const anderer = (appData.lehrgangPlan || []).some(x => x.id !== l.id && x.memberId === l.memberId && x.status === 'Bestanden' && lehrgangQualCode(x.titel) === code);
+      if (!anderer) m.lehrgaenge = m.lehrgaenge.filter(q => q !== code);
+    }
+
     function mapLehrgangToQualificationCode(lehrgangTitle, optElement) {
       if (optElement && optElement.dataset && optElement.dataset.code) {
         return optElement.dataset.code === '-' ? null : optElement.dataset.code;
@@ -3207,12 +3224,16 @@
 
       const lObj = { id, memberId, titel, ort, startDatum, endeDatum, stunden, status };
       const idx = appData.lehrgangPlan.findIndex(x => x.id === id);
+      const vorher = idx !== -1 ? Object.assign({}, appData.lehrgangPlan[idx]) : null;
 
       if (idx !== -1) {
         appData.lehrgangPlan[idx] = lObj;
       } else {
         appData.lehrgangPlan.push(lObj);
       }
+
+      // War der Lehrgang bestanden und wird jetzt anders eingetragen: Qualifikation wieder entfernen
+      if (vorher && vorher.status === 'Bestanden' && status !== 'Bestanden') lehrgangQualifikationEntfernen(vorher);
 
       if (status === 'Bestanden') {
         const m = appData.members.find(x => x.id === memberId);
