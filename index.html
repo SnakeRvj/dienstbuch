@@ -1010,26 +1010,23 @@
               <div class="form-group">
                 <label class="form-label">Funktion / Dienststellung</label>
                 <select id="memberFunktion" class="form-control">
+                  <option value="Einsatzkraft">Einsatzkraft</option>
                   <option value="Ortswehrführer">Ortswehrführer (OWF)</option>
                   <option value="Stellv. Ortswehrführer">Stellv. Ortswehrführer (Stv. OWF)</option>
                   <option value="Gerätewart">Gerätewart</option>
                   <option value="Sicherheitsbeauftragter">Sicherheitsbeauftragter</option>
                   <option value="Schriftführer">Schriftführer</option>
-                  <option value="Einsatzkraft">Einsatzkraft (ohne Sonderfunktion)</option>
                   <option value="Alters- und Ehrenabteilung">Alters- und Ehrenabteilung</option>
                 </select>
               </div>
             </div>
-            <div class="form-group" style="max-width: 9rem;">
-              <label class="form-label">Sortiernummer</label>
-              <input type="number" id="memberPersonalnummer" class="form-control" placeholder="1">
-            </div>
+            <input type="hidden" id="memberPersonalnummer">
           </div>
 
           <div class="mf-panel" id="mfPanel-quali" style="display:none;">
             <div class="form-group">
               <label class="form-label">Höchste Führungsqualifikation</label>
-              <select id="memberRang" class="form-control">
+              <select id="memberRang" class="form-control" onchange="memberFachAktualisieren(); memberFristenAktualisieren()">
                 <option value="">Kein Rang</option>
                 <option value="TM 1">Truppmann 1</option>
                 <option value="TM 2">Truppmann 2</option>
@@ -1043,7 +1040,8 @@
             </div>
 
             <div class="mf-sektion">Fachgebiete</div>
-            <div class="checkbox-grid" id="lehrgangGrid" onchange="memberFristenAktualisieren()">
+            <div id="fachHinweis" style="color: var(--text-muted); font-size: 0.8rem;">Zuerst einen Rang wählen. Dann erscheinen die Fachgebiete, die dafür möglich sind.</div>
+            <div class="checkbox-grid" id="lehrgangGrid" onchange="memberFachAktualisieren(); memberFristenAktualisieren()">
               <label class="checkbox-item"><input type="checkbox" name="lg" value="AGT"> Atemschutz (AGT)</label>
               <label class="checkbox-item"><input type="checkbox" name="lg" value="Maschinist"> Maschinist</label>
               <label class="checkbox-item"><input type="checkbox" name="lg" value="Funk"> Sprechfunker</label>
@@ -3499,10 +3497,11 @@
           const nr = parseInt(m.personalnummer) || 0;
           if (nr > maxNr) maxNr = nr;
         });
-        document.getElementById('memberPersonalnummer').value = maxNr + 1;
+        document.getElementById('memberPersonalnummer').value = '';
         document.getElementById('memberStatus').value = 'Aktiv';
         document.getElementById('memberModalTitle').innerText = 'Neuen Kameraden aufnehmen';
       }
+      memberFachAktualisieren();
       memberFristenAktualisieren();
       memberWeitereHinweis();
       document.getElementById('modalMember').style.display = 'flex';
@@ -3539,6 +3538,23 @@
         case 'VF': return ['TM 1', 'TM 2', 'TF Brand', 'TF TH', 'GF', 'ZF', 'VF'];
         default: return [];
       }
+    }
+
+    // Welche Fachgebiete sind nach dem gewählten Rang möglich? (FwDV 2: Sprechfunker, AGT nach Truppmann Teil 1; Maschinist nach Truppmann Teil 1 + 2; CSA setzt AGT voraus)
+    function memberFachAktualisieren() {
+      const flags = memberRangFlags(document.getElementById('memberRang').value);
+      const hatTM1 = flags.includes('TM 1'), hatTM2 = flags.includes('TM 2');
+      const boxen = Array.from(document.querySelectorAll('#lehrgangGrid input[name="lg"]'));
+      const agt = boxen.some(c => c.value === 'AGT' && c.checked);
+      const erlaubt = { Funk: hatTM1, AGT: hatTM1, 'Motorkettensäge': hatTM1, Maschinist: hatTM2, CSA: agt };
+      let sichtbar = 0;
+      boxen.forEach(c => {
+        const zeigen = !!erlaubt[c.value] || c.checked; // bereits gesetzte Qualifikationen bleiben sichtbar
+        c.closest('label').style.display = zeigen ? '' : 'none';
+        if (zeigen) sichtbar++;
+      });
+      document.getElementById('fachHinweis').style.display = sichtbar ? 'none' : '';
+      document.getElementById('lehrgangGrid').style.display = sichtbar ? '' : 'none';
     }
 
     function memberTabWechseln(tab) {
@@ -3591,8 +3607,12 @@
       e.preventDefault();
       if (!memberFormPruefen()) return;
       const id = document.getElementById('memberId').value || 'mem-' + Date.now();
-      const pnrInput = document.getElementById('memberPersonalnummer').value;
-      const personalnummer = pnrInput !== '' ? parseInt(pnrInput) : 9999;
+      // Die Nummer wird automatisch vergeben: neue Kameraden erhalten die kleinste freie Nummer (frei gewordene Nummern werden wieder verwendet)
+      const pnrAlt = parseInt(document.getElementById('memberPersonalnummer').value);
+      const bestehend = document.getElementById('memberId').value;
+      const belegt = new Set(appData.members.filter(x => x.id !== id).map(x => parseInt(x.personalnummer)).filter(n => n > 0 && n < 9999));
+      let personalnummer = (bestehend && pnrAlt > 0 && pnrAlt < 9999 && !belegt.has(pnrAlt)) ? pnrAlt : 1;
+      if (!(bestehend && pnrAlt > 0 && pnrAlt < 9999 && !belegt.has(pnrAlt))) { while (belegt.has(personalnummer)) personalnummer++; }
       const status = document.getElementById('memberStatus').value;
       const vorname = document.getElementById('memberVorname').value.trim();
       const nachname = document.getElementById('memberNachname').value.trim();
