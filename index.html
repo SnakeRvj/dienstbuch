@@ -784,11 +784,15 @@
               <label class="form-label">Lehrgang</label>
               <select id="lehrgangSelect" class="form-control" onchange="handleLehrgangSelectChange()" required>
                 <option value="">-- Lehrgang auswählen --</option>
-                <optgroup label="Truppausbildung">
+                <optgroup label="Grundausbildung (Gemeinde / Kreis)">
+                  <option value="Truppmann Teil 1" data-code="TM 1" data-hours="70" data-ort="Sonstige">Truppmann Teil 1 (TM 1)</option>
+                  <option value="Truppmann Teil 2" data-code="TM 2" data-hours="80" data-ort="Sonstige">Truppmann Teil 2 (TM 2)</option>
+                </optgroup>
+                <optgroup label="Truppführer (Kreis / FTZ Kyritz)">
                   <option value="Truppführer Brandbekämpfung" data-code="TF Brand" data-hours="24" data-ort="FTZ Kyritz">Truppführer Brandbekämpfung</option>
                   <option value="Truppführer TH (Technische Hilfe)" data-code="TF TH" data-hours="24" data-ort="FTZ Kyritz">Truppführer TH (Technische Hilfe)</option>
                 </optgroup>
-                <optgroup label="Sonderausbildungen / Fachlehrgänge">
+                <optgroup label="Sonderausbildungen (Kreis / FTZ Kyritz)">
                   <option value="Sprechfunker" data-code="Funk" data-hours="16" data-ort="FTZ Kyritz">Sprechfunker (Funk)</option>
                   <option value="Atemschutzgeräteträger (AGT)" data-code="AGT" data-hours="24" data-ort="FTZ Kyritz">Atemschutzgeräteträger (AGT)</option>
                   <option value="Maschinist für Löschfahrzeuge" data-code="Maschinist" data-hours="24" data-ort="FTZ Kyritz">Maschinist für Löschfahrzeuge</option>
@@ -796,13 +800,34 @@
                   <option value="Chemikalienschutzanzug (CSA)" data-code="CSA" data-hours="16" data-ort="FTZ Kyritz">CSA-Träger</option>
                   <option value="Erste Hilfe / Ersthelfer Feuerwehr" data-code="Erste Hilfe" data-hours="16" data-ort="FTZ Kyritz">Erste Hilfe Feuerwehr</option>
                 </optgroup>
-                <optgroup label="Führungsausbildung (LSTE / Kreis)">
-                  <option value="Gruppenführer (F III)" data-code="GF" data-hours="70" data-ort="LSTE Eisenhüttenstadt">Gruppenführer (GF)</option>
-                  <option value="Zugführer (F IV)" data-code="ZF" data-hours="70" data-ort="LSTE Eisenhüttenstadt">Zugführer (ZF)</option>
-                  <option value="Leiter einer Feuerwehr / Ortswehrführer" data-code="OWF-Lehrgang" data-hours="35" data-ort="LSTE Eisenhüttenstadt">Führungskräfte-Fortbildung / OWF</option>
-                  <option value="Gerätewart" data-code="Gerätewart" data-hours="35" data-ort="LSTE Eisenhüttenstadt">Gerätewart</option>
-                  <option value="Atemschutzgerätewart" data-code="Atemschutzgerätewart" data-hours="35" data-ort="LSTE Eisenhüttenstadt">Atemschutzgerätewart</option>
-                  <option value="Jugendfeuerwehrwart" data-code="Jugendfeuerwehrwart" data-hours="35" data-ort="LSTE Eisenhüttenstadt">Jugendfeuerwehrwart</option>
+                <optgroup label="Führung (LSTE)">
+                  <option value="Gruppenführer (F III)" data-code="GF" data-ort="LSTE Eisenhüttenstadt">041 – Gruppenführer (F III)</option>
+                  <option value="Gruppenführer online (e-F III)" data-code="GF" data-hours="70" data-ort="LSTE Eisenhüttenstadt">045 – Gruppenführer online, 4 Wochen online + 1 Woche Präsenz (e-F III)</option>
+                  <option value="Fortbildung Gruppenführer" data-code="-" data-ort="LSTE Eisenhüttenstadt">042 – Fortbildung Gruppenführer</option>
+                  <option value="Zugführer (F IV)" data-code="ZF" data-ort="LSTE Eisenhüttenstadt">031 – Zugführer (F IV)</option>
+                  <option value="Verbandsführer (F/H VI)" data-code="VF" data-ort="LSTE Eisenhüttenstadt">011 – Verbandsführer (F/H VI)</option>
+                  <option value="Leiter einer Freiwilligen Feuerwehr (F V)" data-code="-" data-ort="LSTE Eisenhüttenstadt">020 – Leiter einer Freiwilligen Feuerwehr (F V)</option>
+                  <option value="Ortswehrführer in einer Freiwilligen Feuerwehr" data-code="-" data-ort="LSTE Eisenhüttenstadt">039 – Ortswehrführer</option>
+                  <option value="Fortbildung Wehrführer / Ortswehrführer" data-code="-" data-ort="LSTE Eisenhüttenstadt">044 – Fortbildung Wehrführer / Ortswehrführer</option>
+                  <option value="Führungshilfspersonal" data-code="-" data-ort="LSTE Eisenhüttenstadt">026 – Führungshilfspersonal</option>
+                  <option value="Vegetationsbrandbekämpfung" data-code="-" data-ort="LSTE Eisenhüttenstadt">614 – Vegetationsbrandbekämpfung</option>
+                </optgroup>
+                <optgroup label="Ausbilder (LSTE)">
+                  <option value="Ausbilder in der Feuerwehr" data-code="-" data-ort="LSTE Eisenhüttenstadt">100 – Ausbilder in der Feuerwehr</option>
+                  <option value="Kreisausbilder Atemschutzgeräteträger" data-code="-" data-ort="LSTE Eisenhüttenstadt">104 – Kreisausbilder Atemschutzgeräteträger</option>
+                  <option value="Kreisausbilder ABC" data-code="-" data-ort="LSTE Eisenhüttenstadt">105 – Kreisausbilder ABC</option>
+                  <option value="Kreisausbilder Technische Hilfeleistung" data-code="-" data-ort="LSTE Eisenhüttenstadt">107 – Kreisausbilder Technische Hilfeleistung</option>
+                  <option value="Fachlehrgang Ausbilder Maschinisten" data-code="-" data-ort="LSTE Eisenhüttenstadt">063 – Fachlehrgang Ausbilder Maschinisten</option>
+                  <option value="Fachlehrgang Ausbilder Atemschutzgeräteträger" data-code="-" data-ort="LSTE Eisenhüttenstadt">064 – Fachlehrgang Ausbilder Atemschutzgeräteträger</option>
+                  <option value="Fachlehrgang Ausbilder Technische Hilfeleistung" data-code="-" data-ort="LSTE Eisenhüttenstadt">067 – Fachlehrgang Ausbilder Technische Hilfeleistung</option>
+                  <option value="Ausbilder Brandübungshaus" data-code="-" data-ort="LSTE Eisenhüttenstadt">187 – Ausbilder Brandübungshaus</option>
+                </optgroup>
+                <optgroup label="Sonderlehrgänge (LSTE)">
+                  <option value="Gerätewart" data-code="Gerätewart" data-ort="LSTE Eisenhüttenstadt">135 – Gerätewart für feuerwehrtechnische Ausrüstung</option>
+                  <option value="Atemschutzgerätewart" data-code="Atemschutzgerätewart" data-ort="LSTE Eisenhüttenstadt">130 – Atemschutzgerätewart / Gerätewart CSA</option>
+                  <option value="Fortbildung Maschinisten – Maschinelle Zugeinrichtungen" data-code="-" data-ort="LSTE Eisenhüttenstadt">153 – Fortbildung Maschinisten, Maschinelle Zugeinrichtungen</option>
+                  <option value="Führen im ABC-Einsatz" data-code="-" data-ort="LSTE Eisenhüttenstadt">716 – Führen im ABC-Einsatz</option>
+                  <option value="Sicherheitsbeauftragte der Feuerwehren" data-code="-" data-ort="LSTE Eisenhüttenstadt">525 – Sicherheitsbeauftragte der Feuerwehren (Anmeldung über die FUK)</option>
                 </optgroup>
                 <option value="Sonstiges">✏️ Anderer / Spezieller Lehrgang (Freitext)</option>
               </select>
@@ -2103,6 +2128,9 @@
     };
     const KYRITZ_STUNDEN_PRO_TAG = 8; // 8:00 bis 16:00 Uhr
 
+    // Lehrgänge ohne feste Stundenzahl und ohne Berechnungsregel: Stunden werden von Hand eingetragen
+    const LEHRGANG_MANUELLE_STUNDEN = ['Gruppenführer online (e-F III)'];
+
     function istKyritz(ort) { return ort === 'FTZ Kyritz' || ort === 'Kreisebene OPR'; }
     function istLste(ort) { return typeof ort === 'string' && ort.startsWith('LSTE'); }
     function istWittstock(ort) { return ort === 'Stadt Wittstock/Dosse'; }
@@ -2162,6 +2190,7 @@
 
     // Stunden eines Lehrgangs: 1. feste Vorgabe, 2. Kyritz = 8 h je Samstag, 3. LSTE = nach Uhrzeiten (Mo-Fr), 4. Wittstock = 8 h je Werktag, 5. sonst gespeicherte Stundenzahl
     function lehrgangStunden(l) {
+      if (LEHRGANG_MANUELLE_STUNDEN.includes(l.titel)) return parseFloat(l.stunden) || 0;
       if (FESTE_LEHRGANGSSTUNDEN[l.titel]) return FESTE_LEHRGANGSSTUNDEN[l.titel];
       if (istKyritz(l.ort) && l.startDatum) return KYRITZ_STUNDEN_PRO_TAG * kyritzTage(l.startDatum, l.endeDatum || l.startDatum);
       if (istLste(l.ort) && l.startDatum) return lsteStunden(l.startDatum, l.endeDatum || l.startDatum);
@@ -2174,8 +2203,10 @@
       const gruppe = document.getElementById('lehrgangStundenGroup');
       if (!gruppe) return;
       const status = document.getElementById('lehrgangStatus').value;
-      const frei = document.getElementById('lehrgangSelect').value === 'Sonstiges' && !istKyritz(document.getElementById('lehrgangOrt').value) && !istLste(document.getElementById('lehrgangOrt').value) && !istWittstock(document.getElementById('lehrgangOrt').value);
-      const zeigen = frei && status !== 'Beworben';
+      const titel = document.getElementById('lehrgangSelect').value;
+      const ort = document.getElementById('lehrgangOrt').value;
+      const berechenbar = FESTE_LEHRGANGSSTUNDEN[titel] || (!LEHRGANG_MANUELLE_STUNDEN.includes(titel) && (istKyritz(ort) || istLste(ort) || istWittstock(ort)));
+      const zeigen = !berechenbar && status !== 'Beworben';
       gruppe.style.display = zeigen ? '' : 'none';
       document.getElementById('lehrgangStunden').required = zeigen;
     }
@@ -2195,6 +2226,7 @@
         customBox.style.display = 'none';
         customInput.required = false;
         if (opt && opt.dataset.ort) ortSelect.value = opt.dataset.ort;
+        stundenInput.value = (opt && opt.dataset.hours) ? opt.dataset.hours : '';
       }
       lehrgangStundenFeldAktualisieren();
     }
@@ -2982,7 +3014,7 @@
 
     function mapLehrgangToQualificationCode(lehrgangTitle, optElement) {
       if (optElement && optElement.dataset && optElement.dataset.code) {
-        return optElement.dataset.code;
+        return optElement.dataset.code === '-' ? null : optElement.dataset.code;
       }
       const t = lehrgangTitle.toLowerCase();
       if (t.includes('tf brand') || t.includes('truppführer brand')) return 'TF Brand';
