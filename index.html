@@ -1412,13 +1412,21 @@
 
     function kalenderSammleTermine() {
       const tage = {}; // key -> [{kat, titel, info, geplant}]
-      const add = (von, bis, eintrag, nurSamstage) => {
+      const add = (von, bis, eintrag, nurSamstage, ohneWochenende) => {
         const a = kalIsoToDate(von);
         if (!a) return;
         let b = kalIsoToDate(bis) || a;
         if (b < a) b = a;
         // Nur Samstage markieren, sofern der Zeitraum mehrtägig ist und mindestens einen Samstag enthält
         let samstagsModus = false;
+        // Landesschule: nur Montag bis Freitag markieren (sofern der Zeitraum einen Werktag enthält)
+        let werktagsModus = false;
+        if (ohneWochenende) {
+          let c = 0;
+          for (let d = new Date(a); d <= b && c < 400; d.setDate(d.getDate() + 1), c++) {
+            if (d.getDay() !== 0 && d.getDay() !== 6) { werktagsModus = true; break; }
+          }
+        }
         if (nurSamstage && b > a) {
           let c = 0;
           for (let d = new Date(a); d <= b && c < 400; d.setDate(d.getDate() + 1), c++) {
@@ -1428,6 +1436,7 @@
         let n = 0;
         for (let d = new Date(a); d <= b && n < 400; d.setDate(d.getDate() + 1), n++) {
           if (samstagsModus && d.getDay() !== 6) continue;
+          if (werktagsModus && (d.getDay() === 0 || d.getDay() === 6)) continue;
           const k = kalKey(d);
           (tage[k] = tage[k] || []).push(eintrag);
         }
@@ -1469,7 +1478,7 @@
           kat: 'lehrgang', titel: `${l.titel || 'Lehrgang'}`, namen,
           info: [namen.length ? (namen.length > 1 ? 'Kameraden: ' : '') + namen.join(', ') : 'Unbekannt', l.ort, kyritz ? '8:00–16:00 Uhr' : '', l.status].filter(Boolean).join(' · '),
           geplant: l.status === 'Angemeldet'
-        }, kyritz);
+        }, kyritz, istLste(l.ort) || istWittstock(l.ort));
       });
       return tage;
     }
@@ -2095,6 +2104,47 @@
     const KYRITZ_STUNDEN_PRO_TAG = 8; // 8:00 bis 16:00 Uhr
 
     function istKyritz(ort) { return ort === 'FTZ Kyritz' || ort === 'Kreisebene OPR'; }
+    function istLste(ort) { return typeof ort === 'string' && ort.startsWith('LSTE'); }
+    function istWittstock(ort) { return ort === 'Stadt Wittstock/Dosse'; }
+
+    // Lehrgänge in der Stadt Wittstock (zum Beispiel ABC): 8:00 bis 16:00 Uhr, also 8 Stunden je Tag (Mittagspause wird nicht abgezogen).
+    // Gezählt werden die Tage von Montag bis Freitag im Zeitraum; liegt kein Werktag darin (zum Beispiel ein Samstag), zählen alle Tage.
+    const WITTSTOCK_STUNDEN_PRO_TAG = 8;
+    function wittstockTage(startIso, endeIso) {
+      const a = kalIsoToDate(startIso);
+      if (!a) return 0;
+      let b = kalIsoToDate(endeIso) || a;
+      if (b < a) b = a;
+      let werktage = 0, alle = 0;
+      for (let d = new Date(a); d <= b && alle < 400; d.setDate(d.getDate() + 1)) {
+        alle++;
+        if (d.getDay() !== 0 && d.getDay() !== 6) werktage++;
+      }
+      return werktage > 0 ? werktage : alle;
+    }
+
+    // Landesschule (LSTE): Montag bis Freitag, kein Wochenende.
+    // Erster Tag: Beginn 9:30 Uhr. Freitag und letzter Tag: Ende 13:00 Uhr. Sonst (Annahme): 8:00 bis 16:00 Uhr.
+    const LSTE_ZEITEN = { beginnErsterTag: 9.5, tagBeginn: 8, tagEnde: 16, freitagEnde: 13, letzterTagEnde: 13 };
+    function lsteStunden(startIso, endeIso) {
+      const a = kalIsoToDate(startIso);
+      if (!a) return 0;
+      let b = kalIsoToDate(endeIso) || a;
+      if (b < a) b = a;
+      const tage = [];
+      for (let d = new Date(a); d <= b && tage.length < 400; d.setDate(d.getDate() + 1)) {
+        if (d.getDay() !== 0 && d.getDay() !== 6) tage.push(new Date(d));
+      }
+      const z = LSTE_ZEITEN;
+      let summe = 0;
+      tage.forEach((d, i) => {
+        const beginn = (i === 0) ? z.beginnErsterTag : z.tagBeginn;
+        let ende = (d.getDay() === 5) ? z.freitagEnde : z.tagEnde;
+        if (i === tage.length - 1) ende = Math.min(ende, z.letzterTagEnde);
+        summe += Math.max(0, ende - beginn);
+      });
+      return summe;
+    }
 
     // Ausbildungstage in Kyritz: nur die Samstage im Zeitraum (ohne Samstag alle Tage, einzelner Tag zählt als ein Tag)
     function kyritzTage(startIso, endeIso) {
@@ -2110,10 +2160,12 @@
       return (b > a && samstage > 0) ? samstage : alle;
     }
 
-    // Stunden eines Lehrgangs: 1. feste Vorgabe, 2. Kyritz = 8 h je Samstag, 3. sonst gespeicherte Stundenzahl
+    // Stunden eines Lehrgangs: 1. feste Vorgabe, 2. Kyritz = 8 h je Samstag, 3. LSTE = nach Uhrzeiten (Mo-Fr), 4. Wittstock = 8 h je Werktag, 5. sonst gespeicherte Stundenzahl
     function lehrgangStunden(l) {
       if (FESTE_LEHRGANGSSTUNDEN[l.titel]) return FESTE_LEHRGANGSSTUNDEN[l.titel];
       if (istKyritz(l.ort) && l.startDatum) return KYRITZ_STUNDEN_PRO_TAG * kyritzTage(l.startDatum, l.endeDatum || l.startDatum);
+      if (istLste(l.ort) && l.startDatum) return lsteStunden(l.startDatum, l.endeDatum || l.startDatum);
+      if (istWittstock(l.ort) && l.startDatum) return WITTSTOCK_STUNDEN_PRO_TAG * wittstockTage(l.startDatum, l.endeDatum || l.startDatum);
       return parseFloat(l.stunden) || 0;
     }
 
@@ -2122,7 +2174,7 @@
       const gruppe = document.getElementById('lehrgangStundenGroup');
       if (!gruppe) return;
       const status = document.getElementById('lehrgangStatus').value;
-      const frei = document.getElementById('lehrgangSelect').value === 'Sonstiges' && !istKyritz(document.getElementById('lehrgangOrt').value);
+      const frei = document.getElementById('lehrgangSelect').value === 'Sonstiges' && !istKyritz(document.getElementById('lehrgangOrt').value) && !istLste(document.getElementById('lehrgangOrt').value) && !istWittstock(document.getElementById('lehrgangOrt').value);
       const zeigen = frei && status !== 'Beworben';
       gruppe.style.display = zeigen ? '' : 'none';
       document.getElementById('lehrgangStunden').required = zeigen;
