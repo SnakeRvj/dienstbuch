@@ -777,6 +777,7 @@
           <div class="form-group">
             <label class="form-label">Kamerad / Kameradin</label>
             <select id="lehrgangMemberSelect" class="form-control" required></select>
+            <small id="lehrgangVoraussetzungHinweis" style="display:none; color: var(--text-muted); font-size: 0.72rem;"></small>
           </div>
           
           <div class="form-row">
@@ -841,10 +842,10 @@
           <div class="form-group">
             <label class="form-label">Ausbildungsstätte</label>
             <select id="lehrgangOrt" class="form-control" onchange="lehrgangStundenFeldAktualisieren()">
-              <option value="FTZ Kyritz">FTZ Kyritz</option>
+              <option value="Stadt Wittstock/Dosse">Stadt Wittstock/Dosse</option>
+              <option value="FTZ Kyritz" selected>FTZ Kyritz</option>
               <option value="LSTE Eisenhüttenstadt">LSTE Eisenhüttenstadt</option>
               <option value="LSTE Wünsdorf">LSTE Wünsdorf</option>
-              <option value="Stadt Wittstock/Dosse">Stadt Wittstock/Dosse</option>
               <option value="Sonstige">Sonstige Ausbildungsstätte</option>
             </select>
           </div>
@@ -2228,6 +2229,7 @@
         if (opt && opt.dataset.ort) ortSelect.value = opt.dataset.ort;
         stundenInput.value = (opt && opt.dataset.hours) ? opt.dataset.hours : '';
       }
+      lehrgangKameradenAktualisieren();
       lehrgangStundenFeldAktualisieren();
     }
 
@@ -2955,10 +2957,94 @@
       }
     }
 
+    // ===== VORAUSSETZUNGEN: im Lehrgangsformular nur Kameraden anzeigen, die den vorherigen Lehrgang abgeschlossen haben =====
+    const LG_VORAUSSETZUNG_TEXT = {
+      TM1: 'Truppmann Teil 1', TM2: 'Truppmann Teil 2', TF: 'Truppführer (Brand + TH)', GF: 'Gruppenführer', ZF: 'Zugführer',
+      AGT: 'Atemschutzgeräteträger', MA: 'Maschinist', AUSB: 'Ausbilder in der Feuerwehr (100)', AGW: 'Atemschutzgerätewart (130)',
+      ABC: 'Führen im ABC-Einsatz (716)', OWFL: 'Ortswehrführer (039) oder Leiter einer FF (020)',
+      AGAUSB: 'Kreisausbilder AGT (104), Fachlehrgang Ausbilder AGT (064) oder Atemschutzgerätewart (130)'
+    };
+    const LG_VORAUSSETZUNG = {
+      'Truppmann Teil 2': ['TM1'],
+      'Truppführer Brandbekämpfung': ['TM2'],
+      'Truppführer TH (Technische Hilfe)': ['TM2'],
+      'Gruppenführer (F III)': ['TF'],
+      'Gruppenführer online (e-F III)': ['TF'],
+      'Fortbildung Gruppenführer': ['GF'],
+      'Zugführer (F IV)': ['GF'],
+      'Verbandsführer (F/H VI)': ['ZF'],
+      'Leiter einer Freiwilligen Feuerwehr (F V)': ['ZF'],
+      'Ortswehrführer in einer Freiwilligen Feuerwehr': ['GF'],
+      'Fortbildung Wehrführer / Ortswehrführer': ['OWFL'],
+      'Führungshilfspersonal': ['GF'],
+      'Vegetationsbrandbekämpfung': ['GF'],
+      'Ausbilder in der Feuerwehr': ['GF'],
+      'Kreisausbilder Atemschutzgeräteträger': ['GF', 'AGT', 'AGW', 'AUSB'],
+      'Kreisausbilder ABC': ['GF', 'AUSB', 'ABC'],
+      'Kreisausbilder Technische Hilfeleistung': ['GF', 'AUSB'],
+      'Fachlehrgang Ausbilder Maschinisten': ['GF', 'MA', 'AUSB'],
+      'Fachlehrgang Ausbilder Atemschutzgeräteträger': ['GF', 'AGT', 'AUSB'],
+      'Fachlehrgang Ausbilder Technische Hilfeleistung': ['GF', 'AUSB'],
+      'Ausbilder Brandübungshaus': ['AUSB', 'AGAUSB'],
+      'Gerätewart': ['TF', 'MA'],
+      'Atemschutzgerätewart': ['TF', 'AGT'],
+      'Fortbildung Maschinisten – Maschinelle Zugeinrichtungen': ['TM2', 'MA'],
+      'Führen im ABC-Einsatz': ['GF'],
+      'Sicherheitsbeauftragte der Feuerwehren': ['TM2']
+    };
+
+    // Höhere Führungsstufe schließt die niedrigeren ein: VF > ZF > GF > TF > TM 2 > TM 1
+    function hatLehrgangQualifikation(m, key) {
+      const q = m.lehrgaenge || [];
+      const hatVF = q.includes('VF');
+      const hatZF = q.includes('ZF') || hatVF;
+      const hatGF = q.includes('GF') || hatZF;
+      const hatTF = (q.includes('TF Brand') && q.includes('TF TH')) || hatGF;
+      const hatTM2 = q.includes('TM 2') || q.includes('TF Brand') || q.includes('TF TH') || hatTF;
+      const hatTM1 = q.includes('TM 1') || hatTM2;
+      switch (key) {
+        case 'TM1': return hatTM1;
+        case 'TM2': return hatTM2;
+        case 'TF': return hatTF;
+        case 'GF': return hatGF;
+        case 'ZF': return hatZF;
+        case 'AGT': return q.includes('AGT');
+        case 'MA': return q.includes('Maschinist');
+        case 'AUSB': return q.includes('Ausbilder in der Feuerwehr');
+        case 'AGW': return q.includes('Atemschutzgerätewart');
+        case 'ABC': return q.includes('Führen im ABC-Einsatz');
+        case 'OWFL': return q.includes('Ortswehrführer in einer Freiwilligen Feuerwehr') || q.includes('Leiter einer Freiwilligen Feuerwehr (F V)');
+        case 'AGAUSB': return q.includes('Kreisausbilder Atemschutzgeräteträger') || q.includes('Fachlehrgang Ausbilder Atemschutzgeräteträger') || q.includes('Atemschutzgerätewart');
+        default: return true;
+      }
+    }
+
+    let lehrgangBearbeiteterKamerad = '';
+    function lehrgangKameradenAktualisieren() {
+      const sel = document.getElementById('lehrgangMemberSelect');
+      const titel = document.getElementById('lehrgangSelect').value;
+      const alt = sel.value;
+      const regeln = LG_VORAUSSETZUNG[titel] || [];
+      // Bei der Auswahl für einen bestehenden Eintrag bleibt dessen Kamerad immer erhalten
+      const erlaubt = appData.members.filter(m => m.id === lehrgangBearbeiteterKamerad || regeln.every(k => hatLehrgangQualifikation(m, k)));
+      sel.innerHTML = '<option value="">-- Kamerad auswählen --</option>' + erlaubt.map(m => `<option value="${m.id}">${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})</option>`).join('');
+      sel.value = erlaubt.some(m => m.id === alt) ? alt : '';
+      const hinweis = document.getElementById('lehrgangVoraussetzungHinweis');
+      if (hinweis) {
+        if (!regeln.length) { hinweis.style.display = 'none'; hinweis.innerText = ''; }
+        else {
+          hinweis.style.display = '';
+          const ohne = regeln.length && !appData.members.some(m => regeln.every(k => hatLehrgangQualifikation(m, k)));
+          hinweis.innerText = 'Voraussetzung: ' + regeln.map(k => LG_VORAUSSETZUNG_TEXT[k]).join(' + ') + (ohne ? ' – kein Kamerad erfüllt das bisher. Fehlende Qualifikationen trägst du im Kamerad-Formular nach.' : '');
+        }
+      }
+    }
+
     function openLehrgangModal(lehrgangId = null) {
       document.getElementById('lehrgangForm').reset();
       const mSelect = document.getElementById('lehrgangMemberSelect');
-      mSelect.innerHTML = '<option value="">-- Kamerad auswählen --</option>' + appData.members.map(m => `<option value="${m.id}">${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})</option>`).join('');
+      lehrgangBearbeiteterKamerad = '';
+      lehrgangKameradenAktualisieren();
 
       const sel = document.getElementById('lehrgangSelect');
       const customBox = document.getElementById('lehrgangCustomBox');
@@ -2968,6 +3054,8 @@
         const l = (appData.lehrgangPlan || []).find(x => x.id === lehrgangId);
         if (l) {
           document.getElementById('lehrgangId').value = l.id;
+          lehrgangBearbeiteterKamerad = l.memberId;
+          lehrgangKameradenAktualisieren();
           document.getElementById('lehrgangMemberSelect').value = l.memberId;
           
           let foundOption = false;
@@ -3007,6 +3095,7 @@
         document.getElementById('lehrgangModalTitle').innerText = '+ Lehrgang / Bewerbung erfassen';
       }
       
+      lehrgangKameradenAktualisieren();
       toggleLehrgangFields();
       lehrgangStundenFeldAktualisieren();
       document.getElementById('modalLehrgang').style.display = 'flex';
