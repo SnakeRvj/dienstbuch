@@ -808,8 +808,8 @@
                   <option value="Gruppenführer (F III)" data-code="GF" data-ort="LSTE Eisenhüttenstadt">041 – Gruppenführer (F III)</option>
                   <option value="Gruppenführer online (e-F III)" data-code="GF" data-hours="70" data-ort="LSTE Eisenhüttenstadt">045 – Gruppenführer online, 4 Wochen online + 1 Woche Präsenz (e-F III)</option>
                   <option value="Fortbildung Gruppenführer" data-code="-" data-ort="LSTE Eisenhüttenstadt">042 – Fortbildung Gruppenführer</option>
-                  <option value="Zugführer (F IV)" data-code="ZF" data-ort="LSTE Eisenhüttenstadt">031 – Zugführer (F IV)</option>
-                  <option value="Verbandsführer (F/H VI)" data-code="VF" data-ort="LSTE Eisenhüttenstadt">011 – Verbandsführer (F/H VI)</option>
+                  <option value="Zugführer (F IV)" data-code="ZF" data-ort="LSTE Wünsdorf">031 – Zugführer (F IV)</option>
+                  <option value="Verbandsführer (F/H VI)" data-code="VF" data-ort="LSTE Wünsdorf">011 – Verbandsführer (F/H VI)</option>
                   <option value="Leiter einer Freiwilligen Feuerwehr (F V)" data-code="-" data-ort="LSTE Eisenhüttenstadt">020 – Leiter einer Freiwilligen Feuerwehr (F V)</option>
                   <option value="Ortswehrführer in einer Freiwilligen Feuerwehr" data-code="-" data-ort="LSTE Eisenhüttenstadt">039 – Ortswehrführer</option>
                   <option value="Fortbildung Wehrführer / Ortswehrführer" data-code="-" data-ort="LSTE Eisenhüttenstadt">044 – Fortbildung Wehrführer / Ortswehrführer</option>
@@ -1363,7 +1363,7 @@
       // Nur Lehrgänge, die bereits stattgefunden haben oder zu denen jemand angemeldet ist
       const namen = [...new Set(plan.filter(l => ['Angemeldet', 'Bestanden', 'Nicht bestanden'].includes(l.status)).map(l => l.titel).filter(Boolean))]
         .sort((a, b) => a.localeCompare(b, 'de'));
-      fuelle('lehrgangFilterName', 'Alle Lehrgänge', namen.map(n => [n.replace(/"/g, '&quot;'), n]));
+      fuelle('lehrgangFilterName', 'Alle Lehrgänge', namen.map(n => [n.replace(/"/g, '&quot;'), lehrgangAnzeigeName(n)]));
 
       const idsMitLehrgang = new Set(plan.map(l => l.memberId));
       const kameraden = appData.members.filter(m => idsMitLehrgang.has(m.id))
@@ -2126,6 +2126,22 @@
       }
     }
 
+    // Lehrgangsnummern der LSTE (zur Anzeige vor der Bezeichnung)
+    const LEHRGANGSNUMMERN = {
+      'Gruppenführer (F III)': '041', 'Gruppenführer online (e-F III)': '045', 'Fortbildung Gruppenführer': '042',
+      'Zugführer (F IV)': '031', 'Verbandsführer (F/H VI)': '011', 'Leiter einer Freiwilligen Feuerwehr (F V)': '020',
+      'Ortswehrführer in einer Freiwilligen Feuerwehr': '039', 'Fortbildung Wehrführer / Ortswehrführer': '044',
+      'Führungshilfspersonal': '026', 'Vegetationsbrandbekämpfung': '614', 'Ausbilder in der Feuerwehr': '100',
+      'Kreisausbilder Atemschutzgeräteträger': '104', 'Kreisausbilder ABC': '105', 'Kreisausbilder Technische Hilfeleistung': '107',
+      'Fachlehrgang Ausbilder Maschinisten': '063', 'Fachlehrgang Ausbilder Atemschutzgeräteträger': '064',
+      'Fachlehrgang Ausbilder Technische Hilfeleistung': '067', 'Ausbilder Brandübungshaus': '187', 'Gerätewart': '135',
+      'Atemschutzgerätewart': '130', 'Fortbildung Maschinisten – Maschinelle Zugeinrichtungen': '153',
+      'Führen im ABC-Einsatz': '716', 'Sicherheitsbeauftragte der Feuerwehren': '525'
+    };
+    function lehrgangAnzeigeName(titel) {
+      return LEHRGANGSNUMMERN[titel] ? `${LEHRGANGSNUMMERN[titel]} – ${titel}` : (titel || '');
+    }
+
     // ===== LEHRGANGSSTUNDEN: werden automatisch berechnet =====
     // Feste Stundenzahlen je Lehrgang (Brandenburg, FTZ Kyritz): Samstage à 8 Stunden
     const FESTE_LEHRGANGSSTUNDEN = {
@@ -2632,7 +2648,7 @@
             lBody.innerHTML += `
               <tr>
                 <td><strong>${mem ? mem.nachname + ', ' + mem.vorname : 'Unbekannt'}</strong></td>
-                <td><strong>${l.titel}</strong></td>
+                <td><strong>${lehrgangAnzeigeName(l.titel)}</strong></td>
                 <td>${l.ort}</td>
                 <td>${dateDisplay}</td>
                 <td><strong style="color:#a78bfa;">${stundenDisplay}</strong></td>
