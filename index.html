@@ -987,6 +987,10 @@
               <label class="checkbox-item"><input type="checkbox" name="lg" value="VF"> Verbandsführer</label>
               <label class="checkbox-item"><input type="checkbox" name="lg" value="Motorkettensäge"> Motorkettensäge</label>
               <label class="checkbox-item"><input type="checkbox" name="lg" value="CSA"> CSA-Träger</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="Erste Hilfe"> ✚ Ersthelfer</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="Rettungssanitäter"> ✚ Rettungssanitäter</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="Rettungsassistent"> ✚ Rettungsassistent</label>
+              <label class="checkbox-item"><input type="checkbox" name="lg" value="Notfallsanitäter"> ✚ Notfallsanitäter</label>
             </div>
           </div>
           <div class="form-row">
@@ -2709,6 +2713,8 @@
               if (l === 'VF') { lgBadgesList.push(`<span class="badge badge-success" title="Verbandsführer">⭐ VF</span>`); return; }
               if (l === 'ZF') { lgBadgesList.push(`<span class="badge badge-success" title="Zugführer">⭐ ZF</span>`); return; }
               if (l === 'GF') { lgBadgesList.push(`<span class="badge badge-success" title="Gruppenführer">⭐ GF</span>`); return; }
+              if (l === 'Erste Hilfe') { lgOtherList.push(`<span class="badge badge-info" title="Ersthelfer">✚ Ersthelfer</span>`); return; }
+              if (l === 'Rettungssanitäter' || l === 'Rettungsassistent' || l === 'Notfallsanitäter') { lgOtherList.push(`<span class="badge badge-info">✚ ${l}</span>`); return; }
               lgOtherList.push(`<span class="badge badge-tag">${l}</span>`);
             });
 
@@ -3238,6 +3244,7 @@
     }
 
     function openMemberModal(memberId = null) {
+      document.querySelectorAll('#lehrgangGrid .dyn-lg').forEach(e => e.remove());
       document.getElementById('memberForm').reset();
       updateGeschlechtLabels();
       document.querySelectorAll('#lehrgangGrid input').forEach(c => c.checked = false);
@@ -3260,8 +3267,18 @@
           document.getElementById('memberCsa').value = m.csaDatum || '';
 
           (m.lehrgaenge || []).forEach(lg => {
-            const cb = document.querySelector(`#lehrgangGrid input[value="${lg}"]`);
+            const cb = Array.from(document.querySelectorAll('#lehrgangGrid input[name="lg"]')).find(c => c.value === lg);
             if (cb) cb.checked = true;
+            else {
+              // Qualifikation ohne eigenes Feld (z. B. aus einem LSTE-Lehrgang): als abwählbares Feld anzeigen, damit sie beim Speichern erhalten bleibt
+              const label = document.createElement('label');
+              label.className = 'checkbox-item dyn-lg';
+              const input = document.createElement('input');
+              input.type = 'checkbox'; input.name = 'lg'; input.value = lg; input.checked = true;
+              label.appendChild(input);
+              label.appendChild(document.createTextNode(' ' + lg));
+              document.getElementById('lehrgangGrid').appendChild(label);
+            }
           });
           document.getElementById('memberModalTitle').innerText = 'Kamerad bearbeiten';
         }
