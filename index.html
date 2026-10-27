@@ -794,7 +794,7 @@
                 </optgroup>
                 <optgroup label="Truppführer (Kreis / FTZ Kyritz)">
                   <option value="Truppführer Brandbekämpfung" data-code="TF Brand" data-hours="24" data-ort="FTZ Kyritz">Truppführer Brandbekämpfung</option>
-                  <option value="Truppführer TH (Technische Hilfe)" data-code="TF TH" data-hours="24" data-ort="FTZ Kyritz">Truppführer TH (Technische Hilfe)</option>
+                  <option value="Truppführer Technische Hilfe" data-code="TF TH" data-hours="24" data-ort="FTZ Kyritz">Truppführer Technische Hilfe</option>
                 </optgroup>
                 <optgroup label="Sonderausbildungen (Kreis / FTZ Kyritz)">
                   <option value="Sprechfunker" data-code="Funk" data-hours="16" data-ort="FTZ Kyritz">Sprechfunker (Funk)</option>
@@ -802,7 +802,6 @@
                   <option value="Maschinist für Löschfahrzeuge" data-code="Maschinist" data-hours="24" data-ort="FTZ Kyritz">Maschinist für Löschfahrzeuge</option>
                   <option value="Motorkettensägenführer (Modul A/B)" data-code="Motorkettensäge" data-hours="16" data-ort="FTZ Kyritz">Motorkettensägenführer</option>
                   <option value="Chemikalienschutzanzug (CSA)" data-code="CSA" data-hours="16" data-ort="FTZ Kyritz">CSA-Träger</option>
-                  <option value="Erste Hilfe / Ersthelfer Feuerwehr" data-code="Erste Hilfe" data-hours="16" data-ort="FTZ Kyritz">Erste Hilfe Feuerwehr</option>
                 </optgroup>
                 <optgroup label="Führung (LSTE)">
                   <option value="Gruppenführer (F III)" data-code="GF" data-ort="LSTE Eisenhüttenstadt">041 – Gruppenführer (F III)</option>
@@ -817,7 +816,7 @@
                   <option value="Vegetationsbrandbekämpfung" data-code="-" data-ort="LSTE Eisenhüttenstadt">614 – Vegetationsbrandbekämpfung</option>
                 </optgroup>
                 <optgroup label="Ausbilder (LSTE)">
-                  <option value="Ausbilder in der Feuerwehr" data-code="-" data-ort="LSTE Eisenhüttenstadt">100 – Ausbilder in der Feuerwehr</option>
+                  <option value="Ausbilder in der Feuerwehr" data-code="-" data-ort="LSTE Eisenhüttenstadt">100 – Ausbilder in der Feuerwehr (Kreisausbilder)</option>
                   <option value="Kreisausbilder Atemschutzgeräteträger" data-code="-" data-ort="LSTE Eisenhüttenstadt">104 – Kreisausbilder Atemschutzgeräteträger</option>
                   <option value="Kreisausbilder ABC" data-code="-" data-ort="LSTE Eisenhüttenstadt">105 – Kreisausbilder ABC</option>
                   <option value="Kreisausbilder Technische Hilfeleistung" data-code="-" data-ort="LSTE Eisenhüttenstadt">107 – Kreisausbilder Technische Hilfeleistung</option>
@@ -1073,6 +1072,8 @@
       appData.members = parsed.members || appData.members || [];
       appData.dienste = parsed.dienste || [];
       appData.lehrgangPlan = parsed.lehrgangPlan || [];
+      // Umbenannt: "Truppführer TH (Technische Hilfe)" heißt jetzt "Truppführer Technische Hilfe"
+      appData.lehrgangPlan.forEach(l => { if (l.titel === 'Truppführer TH (Technische Hilfe)') l.titel = 'Truppführer Technische Hilfe'; });
       
       appData.members.forEach((m, idx) => {
         if (m.personalnummer === undefined || m.personalnummer === null || m.personalnummer === '') {
@@ -1363,7 +1364,7 @@
       // Nur Lehrgänge, die bereits stattgefunden haben oder zu denen jemand angemeldet ist
       const namen = [...new Set(plan.filter(l => ['Angemeldet', 'Bestanden', 'Nicht bestanden'].includes(l.status)).map(l => l.titel).filter(Boolean))]
         .sort((a, b) => a.localeCompare(b, 'de'));
-      fuelle('lehrgangFilterName', 'Alle Lehrgänge', namen.map(n => [n.replace(/"/g, '&quot;'), lehrgangAnzeigeName(n)]));
+      fuelle('lehrgangFilterName', 'Alle Lehrgänge', namen.map(n => [n.replace(/"/g, '&quot;'), n]));
 
       const idsMitLehrgang = new Set(plan.map(l => l.memberId));
       const kameraden = appData.members.filter(m => idsMitLehrgang.has(m.id))
@@ -2126,27 +2127,11 @@
       }
     }
 
-    // Lehrgangsnummern der LSTE (zur Anzeige vor der Bezeichnung)
-    const LEHRGANGSNUMMERN = {
-      'Gruppenführer (F III)': '041', 'Gruppenführer online (e-F III)': '045', 'Fortbildung Gruppenführer': '042',
-      'Zugführer (F IV)': '031', 'Verbandsführer (F/H VI)': '011', 'Leiter einer Freiwilligen Feuerwehr (F V)': '020',
-      'Ortswehrführer in einer Freiwilligen Feuerwehr': '039', 'Fortbildung Wehrführer / Ortswehrführer': '044',
-      'Führungshilfspersonal': '026', 'Vegetationsbrandbekämpfung': '614', 'Ausbilder in der Feuerwehr': '100',
-      'Kreisausbilder Atemschutzgeräteträger': '104', 'Kreisausbilder ABC': '105', 'Kreisausbilder Technische Hilfeleistung': '107',
-      'Fachlehrgang Ausbilder Maschinisten': '063', 'Fachlehrgang Ausbilder Atemschutzgeräteträger': '064',
-      'Fachlehrgang Ausbilder Technische Hilfeleistung': '067', 'Ausbilder Brandübungshaus': '187', 'Gerätewart': '135',
-      'Atemschutzgerätewart': '130', 'Fortbildung Maschinisten – Maschinelle Zugeinrichtungen': '153',
-      'Führen im ABC-Einsatz': '716', 'Sicherheitsbeauftragte der Feuerwehren': '525'
-    };
-    function lehrgangAnzeigeName(titel) {
-      return LEHRGANGSNUMMERN[titel] ? `${LEHRGANGSNUMMERN[titel]} – ${titel}` : (titel || '');
-    }
-
     // ===== LEHRGANGSSTUNDEN: werden automatisch berechnet =====
     // Feste Stundenzahlen je Lehrgang (Brandenburg, FTZ Kyritz): Samstage à 8 Stunden
     const FESTE_LEHRGANGSSTUNDEN = {
       'Truppführer Brandbekämpfung': 24,          // 3 Samstage à 8 h
-      'Truppführer TH (Technische Hilfe)': 24,    // 3 Samstage à 8 h
+      'Truppführer Technische Hilfe': 24,         // 3 Samstage à 8 h
       'Sprechfunker': 16,                         // 2 Ausbildungstage à 8 h (Theorie online + Praxis vor Ort), eingetragen über 3 Samstage
       'Atemschutzgeräteträger (AGT)': 24,         // 3 Samstage à 8 h
       'Maschinist für Löschfahrzeuge': 24         // 3 Samstage à 8 h
@@ -2648,7 +2633,7 @@
             lBody.innerHTML += `
               <tr>
                 <td><strong>${mem ? mem.nachname + ', ' + mem.vorname : 'Unbekannt'}</strong></td>
-                <td><strong>${lehrgangAnzeigeName(l.titel)}</strong></td>
+                <td><strong>${l.titel}</strong></td>
                 <td>${l.ort}</td>
                 <td>${dateDisplay}</td>
                 <td><strong style="color:#a78bfa;">${stundenDisplay}</strong></td>
@@ -2993,7 +2978,7 @@
     const LG_VORAUSSETZUNG = {
       'Truppmann Teil 2': ['TM1'],
       'Truppführer Brandbekämpfung': ['TM2'],
-      'Truppführer TH (Technische Hilfe)': ['TM2'],
+      'Truppführer Technische Hilfe': ['TM2'],
       'Gruppenführer (F III)': ['TF'],
       'Gruppenführer online (e-F III)': ['TF'],
       'Fortbildung Gruppenführer': ['GF'],
