@@ -141,6 +141,9 @@
     .cal-detail-item { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.35rem 0; border-top: 1px solid var(--border); }
     .cal-detail-item:first-of-type { border-top: none; }
 
+    /* Auswahllisten: Gruppenüberschriften und Einträge im dunklen Design lesbar */
+    select optgroup { background: var(--input-bg); color: #93c5fd; font-weight: 700; font-style: normal; }
+    select option { background: var(--input-bg); color: var(--text); }
     /* Dienstbuch-Filter (dezent) */
     .dienst-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-bottom: 1px solid var(--border); }
     .dienst-filter select { width: auto; max-width: 100%; padding: 0.2rem 0.45rem; font-size: 0.78rem; background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: 6px; outline: none; cursor: pointer; }
@@ -776,7 +779,7 @@
           <input type="hidden" id="lehrgangId">
           <div class="form-group">
             <label class="form-label">Kamerad / Kameradin</label>
-            <select id="lehrgangMemberSelect" class="form-control" required></select>
+            <select id="lehrgangMemberSelect" class="form-control" required onchange="lehrgangKameradGewaehlt()"></select>
             <small id="lehrgangVoraussetzungHinweis" style="display:none; color: var(--text-muted); font-size: 0.72rem;"></small>
           </div>
           
@@ -832,6 +835,7 @@
                 </optgroup>
                 <option value="Sonstiges">✏️ Anderer / Spezieller Lehrgang (Freitext)</option>
               </select>
+              <small id="lehrgangListenHinweis" style="display:none; color: var(--text-muted); font-size: 0.72rem;"></small>
             </div>
             <div class="form-group" id="lehrgangCustomBox" style="display:none;">
               <label class="form-label">Eigener Lehrgangsname</label>
@@ -2960,7 +2964,7 @@
     // ===== VORAUSSETZUNGEN: im Lehrgangsformular nur Kameraden anzeigen, die den vorherigen Lehrgang abgeschlossen haben =====
     const LG_VORAUSSETZUNG_TEXT = {
       TM1: 'Truppmann Teil 1', TM2: 'Truppmann Teil 2', TF: 'Truppführer (Brand + TH)', GF: 'Gruppenführer', ZF: 'Zugführer',
-      AGT: 'Atemschutzgeräteträger', MA: 'Maschinist', AUSB: 'Ausbilder in der Feuerwehr (100)', AGW: 'Atemschutzgerätewart (130)',
+      MA: 'Maschinist', AUSB: 'Ausbilder in der Feuerwehr (100)', AGW: 'Atemschutzgerätewart (130)',
       ABC: 'Führen im ABC-Einsatz (716)', OWFL: 'Ortswehrführer (039) oder Leiter einer FF (020)',
       AGAUSB: 'Kreisausbilder AGT (104), Fachlehrgang Ausbilder AGT (064) oder Atemschutzgerätewart (130)'
     };
@@ -2979,15 +2983,15 @@
       'Führungshilfspersonal': ['GF'],
       'Vegetationsbrandbekämpfung': ['GF'],
       'Ausbilder in der Feuerwehr': ['GF'],
-      'Kreisausbilder Atemschutzgeräteträger': ['GF', 'AGT', 'AGW', 'AUSB'],
+      'Kreisausbilder Atemschutzgeräteträger': ['GF', 'AGW', 'AUSB'],
       'Kreisausbilder ABC': ['GF', 'AUSB', 'ABC'],
       'Kreisausbilder Technische Hilfeleistung': ['GF', 'AUSB'],
       'Fachlehrgang Ausbilder Maschinisten': ['GF', 'MA', 'AUSB'],
-      'Fachlehrgang Ausbilder Atemschutzgeräteträger': ['GF', 'AGT', 'AUSB'],
+      'Fachlehrgang Ausbilder Atemschutzgeräteträger': ['GF', 'AUSB'],
       'Fachlehrgang Ausbilder Technische Hilfeleistung': ['GF', 'AUSB'],
       'Ausbilder Brandübungshaus': ['AUSB', 'AGAUSB'],
       'Gerätewart': ['TF', 'MA'],
-      'Atemschutzgerätewart': ['TF', 'AGT'],
+      'Atemschutzgerätewart': ['TF'],
       'Fortbildung Maschinisten – Maschinelle Zugeinrichtungen': ['TM2', 'MA'],
       'Führen im ABC-Einsatz': ['GF'],
       'Sicherheitsbeauftragte der Feuerwehren': ['TM2']
@@ -3008,7 +3012,6 @@
         case 'TF': return hatTF;
         case 'GF': return hatGF;
         case 'ZF': return hatZF;
-        case 'AGT': return q.includes('AGT');
         case 'MA': return q.includes('Maschinist');
         case 'AUSB': return q.includes('Ausbilder in der Feuerwehr');
         case 'AGW': return q.includes('Atemschutzgerätewart');
@@ -3024,27 +3027,68 @@
       const sel = document.getElementById('lehrgangMemberSelect');
       const titel = document.getElementById('lehrgangSelect').value;
       const alt = sel.value;
-      const regeln = LG_VORAUSSETZUNG[titel] || [];
+      const regelnLehrgang = LG_VORAUSSETZUNG[titel] || [];
+      const regeln = alt ? [] : regelnLehrgang; // ist bereits ein Kamerad gewählt, steht die volle Liste zur Verfügung
       // Bei der Auswahl für einen bestehenden Eintrag bleibt dessen Kamerad immer erhalten
       const erlaubt = appData.members.filter(m => m.id === lehrgangBearbeiteterKamerad || regeln.every(k => hatLehrgangQualifikation(m, k)));
       sel.innerHTML = '<option value="">-- Kamerad auswählen --</option>' + erlaubt.map(m => `<option value="${m.id}">${m.nachname}, ${m.vorname} (${dienstgradAnzeige(m)})</option>`).join('');
       sel.value = erlaubt.some(m => m.id === alt) ? alt : '';
       const hinweis = document.getElementById('lehrgangVoraussetzungHinweis');
       if (hinweis) {
-        if (!regeln.length) { hinweis.style.display = 'none'; hinweis.innerText = ''; }
+        if (!regelnLehrgang.length) { hinweis.style.display = 'none'; hinweis.innerText = ''; }
         else {
           hinweis.style.display = '';
-          const ohne = regeln.length && !appData.members.some(m => regeln.every(k => hatLehrgangQualifikation(m, k)));
-          hinweis.innerText = 'Voraussetzung: ' + regeln.map(k => LG_VORAUSSETZUNG_TEXT[k]).join(' + ') + (ohne ? ' – kein Kamerad erfüllt das bisher. Fehlende Qualifikationen trägst du im Kamerad-Formular nach.' : '');
+          const ohne = !appData.members.some(m => regelnLehrgang.every(k => hatLehrgangQualifikation(m, k)));
+          hinweis.innerText = 'Voraussetzung: ' + regelnLehrgang.map(k => LG_VORAUSSETZUNG_TEXT[k]).join(' + ') + (ohne && !alt ? ' – kein Kamerad erfüllt das bisher. Fehlende Qualifikationen trägst du im Kamerad-Formular nach.' : '');
         }
       }
+    }
+
+    // Lehrgangsliste nach Kamerad filtern: nur Lehrgänge, die der gewählte Kamerad machen kann
+    let lehrgangKatalogVorlage = null;
+    let lehrgangBearbeiteterTitel = '';
+    function lehrgangListeAktualisieren() {
+      const sel = document.getElementById('lehrgangSelect');
+      if (!lehrgangKatalogVorlage) lehrgangKatalogVorlage = sel.cloneNode(true);
+      const memberId = document.getElementById('lehrgangMemberSelect').value;
+      const m = appData.members.find(x => x.id === memberId);
+      const alt = sel.value;
+      const vorlage = lehrgangKatalogVorlage;
+
+      sel.innerHTML = '';
+      sel.appendChild(vorlage.querySelector(':scope > option[value=""]').cloneNode(true));
+      vorlage.querySelectorAll(':scope > optgroup').forEach(g => {
+        const ng = g.cloneNode(false);
+        g.querySelectorAll('option').forEach(op => {
+          const regeln = LG_VORAUSSETZUNG[op.value] || [];
+          if (!m || op.value === lehrgangBearbeiteterTitel || regeln.every(k => hatLehrgangQualifikation(m, k))) ng.appendChild(op.cloneNode(true));
+        });
+        if (ng.children.length) sel.appendChild(ng);
+      });
+      sel.appendChild(vorlage.querySelector(':scope > option[value="Sonstiges"]').cloneNode(true));
+      sel.value = Array.from(sel.options).some(o => o.value === alt) ? alt : '';
+
+      const hinweis = document.getElementById('lehrgangListenHinweis');
+      if (hinweis) {
+        hinweis.style.display = m ? '' : 'none';
+        hinweis.innerText = m ? `Zur Auswahl stehen nur Lehrgänge, die ${m.vorname} ${m.nachname} machen kann.` : '';
+      }
+    }
+
+    function lehrgangKameradGewaehlt() {
+      const vorher = document.getElementById('lehrgangSelect').value;
+      lehrgangListeAktualisieren();
+      if (document.getElementById('lehrgangSelect').value !== vorher) handleLehrgangSelectChange();
+      else { lehrgangKameradenAktualisieren(); lehrgangStundenFeldAktualisieren(); }
     }
 
     function openLehrgangModal(lehrgangId = null) {
       document.getElementById('lehrgangForm').reset();
       const mSelect = document.getElementById('lehrgangMemberSelect');
       lehrgangBearbeiteterKamerad = '';
+      lehrgangBearbeiteterTitel = '';
       lehrgangKameradenAktualisieren();
+      lehrgangListeAktualisieren();
 
       const sel = document.getElementById('lehrgangSelect');
       const customBox = document.getElementById('lehrgangCustomBox');
@@ -3055,8 +3099,10 @@
         if (l) {
           document.getElementById('lehrgangId').value = l.id;
           lehrgangBearbeiteterKamerad = l.memberId;
+          lehrgangBearbeiteterTitel = l.titel;
           lehrgangKameradenAktualisieren();
           document.getElementById('lehrgangMemberSelect').value = l.memberId;
+          lehrgangListeAktualisieren();
           
           let foundOption = false;
           for (let i = 0; i < sel.options.length; i++) {
