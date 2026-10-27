@@ -144,6 +144,17 @@
     /* Auswahllisten: Gruppenüberschriften und Einträge im dunklen Design lesbar */
     select optgroup { background: var(--input-bg); color: #93c5fd; font-weight: 700; font-style: normal; }
     select option { background: var(--input-bg); color: var(--text); }
+    /* Mannschaftsliste */
+    .ml-ansicht { display: inline-flex; gap: 0.3rem; margin-right: 0.5rem; }
+    .ml-ansicht .btn.aktiv { background: var(--primary); color: #ffffff; border-color: var(--primary); }
+    tr.gruppen-kopf td { background: var(--card-header); color: #93c5fd; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); }
+    tr.gruppen-kopf:hover td { background: var(--card-header); }
+    .gruppen-zahl { display: inline-block; margin-left: 0.4rem; padding: 0 0.45rem; border-radius: 999px; background: rgba(148, 163, 184, 0.25); color: var(--text); font-size: 0.7rem; }
+    .ml-icon { padding: 0.25rem 0.5rem; }
+    .ml-geb { white-space: nowrap; }
+    .ml-geb small { color: var(--text-muted); }
+    .ml-haken { color: #22c55e; font-weight: 800; font-size: 1.05rem; }
+    tr.matrix-summe td { font-weight: 700; color: var(--text-muted); font-size: 0.8rem; }
     /* Dienstbuch-Filter (dezent) */
     .dienst-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; padding: 0.45rem 0.9rem; border-bottom: 1px solid var(--border); }
     .dienst-filter select { width: auto; max-width: 100%; padding: 0.2rem 0.45rem; font-size: 0.78rem; background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: 6px; outline: none; cursor: pointer; }
@@ -295,6 +306,13 @@
       .modal-body .form-control, .modal-body select, .modal-body input { font-size: 14px; }
       .modal-body .form-row { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.45rem 0.5rem; }
       .modal-body .checkbox-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    }
+    @media (max-width: 768px) {
+      tbody tr.gruppen-kopf { background: none; border: none; padding: 0; margin: 0.9rem 0.6rem 0.2rem; }
+      tbody tr.gruppen-kopf td { display: block; text-align: left; border: none; background: none; padding: 0; }
+      tbody td.mobil-leer { display: none; }
+      .ml-ansicht { margin-right: 0; flex: 1 1 100%; }
+      .ml-ansicht .btn { flex: 1; }
     }
   </style>
 </head>
@@ -586,21 +604,82 @@
           <div class="card-title">👨‍🚒 Mannschaftsverwaltung</div>
           <button class="btn btn-primary btn-sm" onclick="openMemberModal()">+ Kamerad hinzufügen</button>
         </div>
+        <div class="dienst-filter">
+          <span class="ml-ansicht">
+            <button type="button" id="mlBtnListe" class="btn btn-secondary btn-sm aktiv" onclick="mlAnsichtWechseln('liste')">☰ Liste</button>
+            <button type="button" id="mlBtnMatrix" class="btn btn-secondary btn-sm" onclick="mlAnsichtWechseln('matrix')">✓ Qualifikationen</button>
+          </span>
+          <select id="mlSortierung" onchange="renderApp()" title="Sortierung">
+            <option value="fuehrung">Sortierung: Führung, dann A–Z</option>
+            <option value="az">Sortierung: A–Z</option>
+            <option value="dienstgrad">Sortierung: Dienstgrad</option>
+            <option value="nummer">Sortierung: Personalnummer</option>
+          </select>
+          <select id="mlFilterStatus" onchange="renderApp()" title="Status">
+            <option value="">Alle Status</option>
+            <option value="Aktiv">Aktiv (einsatzfähig)</option>
+            <option value="Nicht einsatzfähig">Nicht einsatzfähig</option>
+            <option value="Reserve">Reserve</option>
+            <option value="Altersabteilung">Alters- und Ehrenabteilung</option>
+            <option value="Inaktiv">Inaktiv</option>
+          </select>
+          <select id="mlFilterFunktion" onchange="renderApp()" title="Funktion">
+            <option value="">Alle Funktionen</option>
+          </select>
+          <select id="mlFilterQual" onchange="renderApp()" title="Qualifikation">
+            <option value="">Alle Qualifikationen</option>
+            <option value="AGT">Atemschutzgeräteträger (AGT)</option>
+            <option value="Maschinist">Maschinist</option>
+            <option value="Funk">Sprechfunker</option>
+            <option value="Motorkettensäge">Motorkettensäge</option>
+            <option value="CSA">CSA-Träger</option>
+            <option value="ERSTHELFER">Ersthelfer oder Sanitäter</option>
+            <option value="SANITAETER">Sanitäter (Rettungs-/Notfallsanitäter)</option>
+            <option value="TF">Truppführer komplett</option>
+            <option value="GF">Gruppenführer (oder höher)</option>
+            <option value="ZF">Zugführer (oder höher)</option>
+            <option value="VF">Verbandsführer</option>
+            <option value="AUSB">Ausbilder in der Feuerwehr</option>
+            <option value="GERAETEWART">Gerätewart</option>
+            <option value="AGW">Atemschutzgerätewart</option>
+          </select>
+          <button type="button" id="mlFilterReset" class="filter-reset" onclick="mlFilterZuruecksetzen()" style="display:none;">✕ zurücksetzen</button>
+          <span id="mlTreffer" class="filter-treffer"></span>
+        </div>
         <div class="card-body" style="padding:0;">
           <div class="table-responsive">
-            <table>
+            <table id="mlTabelleListe">
               <thead>
                 <tr>
                   <th>Name</th>
                   <th>Dienstgrad</th>
                   <th>Funktion</th>
                   <th>Geburtsdatum</th>
-                  <th>Lehrgänge & Qualifikationen</th>
-                  <th>Status</th>
+                  <th>Rang</th>
+                  <th>Qualifikationen</th>
                   <th>Aktionen</th>
                 </tr>
               </thead>
               <tbody id="membersTableBody">
+              </tbody>
+            </table>
+            <table id="mlTabelleMatrix" style="display:none;">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Rang</th>
+                  <th>AGT</th>
+                  <th>Maschinist</th>
+                  <th>Funk</th>
+                  <th>Kettensäge</th>
+                  <th>CSA</th>
+                  <th>Ersthelfer</th>
+                  <th>Sanitäter</th>
+                  <th>Ausbilder</th>
+                  <th>Gerätewart</th>
+                </tr>
+              </thead>
+              <tbody id="mlMatrixBody">
               </tbody>
             </table>
           </div>
@@ -1630,6 +1709,7 @@
             const label = kopf[i] || '';
             td.setAttribute('data-label', label);
             if (label === 'Aktionen' || label === 'Schnellaktion') td.classList.add('mobil-aktionen');
+            if (i !== titelIndex && td.textContent.trim() === '' && !td.querySelector('button')) { td.classList.add('mobil-leer'); return; }
             if (i === titelIndex) return; // diese Zelle ist die Überschrift der Karte
             if (!(td.children.length === 1 && td.firstElementChild.classList.contains('td-inhalt'))) {
               td.innerHTML = '<div class="td-inhalt">' + td.innerHTML + '</div>';
@@ -1863,6 +1943,203 @@
       document.getElementById('berichtInhalt').innerHTML = h;
       document.getElementById('berichtOverlay').classList.add('offen');
       document.getElementById('berichtOverlay').scrollTop = 0;
+    }
+
+    // ===== MANNSCHAFTSLISTE: Sortierung, Gruppen, Filter, Qualifikationsübersicht =====
+    let mlAnsicht = 'liste';
+    function mlAnsichtWechseln(a) { mlAnsicht = a; renderApp(); }
+
+    const ML_STATUS_REIHENFOLGE = ['Aktiv', 'Nicht einsatzfähig', 'Reserve', 'Altersabteilung', 'Inaktiv'];
+    const ML_STATUS_TITEL = { 'Aktiv': 'Aktiv (einsatzfähig)', 'Nicht einsatzfähig': 'Nicht einsatzfähig', 'Reserve': 'Reserve', 'Altersabteilung': 'Alters- und Ehrenabteilung', 'Inaktiv': 'Inaktiv' };
+    const ML_DIENSTGRADE = ['Feuerwehrmann-Anwärter', 'Feuerwehrmann', 'Oberfeuerwehrmann', 'Hauptfeuerwehrmann', 'Löschmeister', 'Oberlöschmeister', 'Hauptlöschmeister', 'Erster Hauptlöschmeister', 'Brandmeister', 'Oberbrandmeister', 'Hauptbrandmeister'];
+    const ML_FACH = [['AGT', 'AGT'], ['Maschinist', 'Maschinist'], ['Funk', 'Funk'], ['Motorkettensäge', 'Kettensäge'], ['CSA', 'CSA']];
+    const ML_SANITAETER = ['Rettungssanitäter', 'Rettungsassistent', 'Notfallsanitäter'];
+    const ML_STANDARD_FUNKTION = 'Einsatzkraft (ohne Sonderfunktion)';
+
+    function mlHatQual(m, key) {
+      const q = m.lehrgaenge || [];
+      const sani = ML_SANITAETER.some(s => q.includes(s));
+      switch (key) {
+        case 'AGT': case 'Maschinist': case 'Funk': case 'Motorkettensäge': case 'CSA': return q.includes(key);
+        case 'ERSTHELFER': return q.includes('Erste Hilfe') || sani;
+        case 'SANITAETER': return sani;
+        case 'TF': return hatLehrgangQualifikation(m, 'TF');
+        case 'GF': return hatLehrgangQualifikation(m, 'GF');
+        case 'ZF': return hatLehrgangQualifikation(m, 'ZF');
+        case 'VF': return q.includes('VF');
+        case 'AUSB': return q.includes('Ausbilder in der Feuerwehr');
+        case 'GERAETEWART': return q.includes('Gerätewart');
+        case 'AGW': return q.includes('Atemschutzgerätewart');
+        default: return true;
+      }
+    }
+
+    function mlRangWert(m) {
+      if (mlHatQual(m, 'VF')) return 6;
+      if (hatLehrgangQualifikation(m, 'ZF')) return 5;
+      if (hatLehrgangQualifikation(m, 'GF')) return 4;
+      if (hatLehrgangQualifikation(m, 'TF')) return 3;
+      if (hatLehrgangQualifikation(m, 'TM2')) return 2;
+      if (hatLehrgangQualifikation(m, 'TM1')) return 1;
+      return 0;
+    }
+
+    function mlVergleichen(sortierung) {
+      const name = (a, b) => (a.nachname || '').localeCompare(b.nachname || '', 'de') || (a.vorname || '').localeCompare(b.vorname || '', 'de');
+      const funktionsWert = m => m.funktion === 'Ortswehrführer' ? 0 : (m.funktion === 'Stellv. Ortswehrführer' ? 1 : 2);
+      if (sortierung === 'az') return name;
+      if (sortierung === 'nummer') return (a, b) => ((parseInt(a.personalnummer) || 9999) - (parseInt(b.personalnummer) || 9999)) || name(a, b);
+      if (sortierung === 'dienstgrad') return (a, b) => (ML_DIENSTGRADE.indexOf(b.dienstgrad) - ML_DIENSTGRADE.indexOf(a.dienstgrad)) || name(a, b);
+      return (a, b) => (funktionsWert(a) - funktionsWert(b)) || name(a, b); // Führung zuerst
+    }
+
+    function mlAlter(iso) {
+      const t = String(iso).split('-');
+      const g = new Date(parseInt(t[0]), parseInt(t[1]) - 1, parseInt(t[2]));
+      const h = new Date();
+      let a = h.getFullYear() - g.getFullYear();
+      if (h.getMonth() < g.getMonth() || (h.getMonth() === g.getMonth() && h.getDate() < g.getDate())) a--;
+      return a;
+    }
+
+    function mlTageBisGeburtstag(iso) {
+      const t = String(iso).split('-');
+      const h = new Date(); h.setHours(0, 0, 0, 0);
+      let n = new Date(h.getFullYear(), parseInt(t[1]) - 1, parseInt(t[2]));
+      if (n < h) n = new Date(h.getFullYear() + 1, parseInt(t[1]) - 1, parseInt(t[2]));
+      return Math.round((n - h) / 86400000);
+    }
+
+    // Qualifikationen eines Kameraden, aufgeteilt in Rang, Fachqualifikationen, Medizin und weitere Lehrgänge
+    function mlQualifikationen(m) {
+      const q = m.lehrgaenge || [];
+      const hasVf = q.includes('VF'), hasZf = q.includes('ZF') || hasVf, hasGf = q.includes('GF') || hasZf;
+      const hasTfBrand = q.includes('TF Brand'), hasTfTh = q.includes('TF TH');
+      const rang = [], fach = [], med = [], sonst = [];
+      const rangCodes = ['TM 1', 'TM 2', 'TF Brand', 'TF TH', 'GF', 'ZF', 'VF'];
+
+      if (hasVf) rang.push('<span class="badge badge-success" title="Verbandsführer">⭐ VF</span>');
+      else if (hasZf) rang.push('<span class="badge badge-success" title="Zugführer">⭐ ZF</span>');
+      else if (hasGf) rang.push('<span class="badge badge-success" title="Gruppenführer">⭐ GF</span>');
+      else if (hasTfBrand && hasTfTh) rang.push('<span class="badge badge-success" title="Truppführer vollständig (Brand + TH)">⭐ TF komplett</span>');
+      else {
+        if (q.includes('TM 2')) rang.push('<span class="badge badge-success" title="Truppmann Teil 2">⭐ TM 2</span>');
+        else if (q.includes('TM 1')) rang.push('<span class="badge badge-success" title="Truppmann Teil 1">⭐ TM 1</span>');
+        if (hasTfBrand) rang.push('<span class="badge badge-danger" title="Truppführer Brandbekämpfung">🔥 TF Brand</span>');
+        if (hasTfTh) rang.push('<span class="badge badge-info" title="Truppführer Technische Hilfe">🚗 TF TH</span>');
+      }
+
+      ML_FACH.forEach(([code, label]) => { if (q.includes(code)) fach.push(`<span class="badge badge-tag">${label}</span>`); });
+      if (q.includes('Erste Hilfe')) med.push('<span class="badge badge-info" title="Ersthelfer">✚ Ersthelfer</span>');
+      ML_SANITAETER.forEach(s => { if (q.includes(s)) med.push(`<span class="badge badge-info">✚ ${s}</span>`); });
+      q.forEach(l => {
+        if (rangCodes.includes(l) || ML_FACH.some(f => f[0] === l) || l === 'Erste Hilfe' || ML_SANITAETER.includes(l)) return;
+        sonst.push(`<span class="badge badge-tag">${l}</span>`);
+      });
+      return { rang, fach, med, sonst };
+    }
+
+    function mlFilterZuruecksetzen() {
+      ['mlFilterStatus', 'mlFilterFunktion', 'mlFilterQual'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      renderApp();
+    }
+
+    function mannschaftslisteRendern() {
+      const memBody = document.getElementById('membersTableBody');
+      const matrixBody = document.getElementById('mlMatrixBody');
+      if (!memBody || !matrixBody) return;
+
+      // Funktions-Auswahl aus den vorhandenen Funktionen füllen
+      const selF = document.getElementById('mlFilterFunktion');
+      const altF = selF.value;
+      const funktionen = [...new Set(appData.members.map(m => m.funktion).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de'));
+      selF.innerHTML = '<option value="">Alle Funktionen</option>' + funktionen.map(f => `<option value="${f.replace(/"/g, '&quot;')}">${f === ML_STANDARD_FUNKTION ? 'Einsatzkraft (ohne Sonderfunktion)' : f}</option>`).join('');
+      selF.value = funktionen.includes(altF) ? altF : '';
+
+      const fStatus = document.getElementById('mlFilterStatus').value;
+      const fFunktion = selF.value;
+      const fQual = document.getElementById('mlFilterQual').value;
+      const sortierung = document.getElementById('mlSortierung').value;
+
+      const gefiltert = appData.members.filter(m =>
+        (!fStatus || (m.status || 'Aktiv') === fStatus) &&
+        (!fFunktion || m.funktion === fFunktion) &&
+        (!fQual || mlHatQual(m, fQual)));
+
+      ['mlFilterStatus', 'mlFilterFunktion', 'mlFilterQual'].forEach(id => { const el = document.getElementById(id); el.classList.toggle('aktiv', !!el.value); });
+      document.getElementById('mlFilterReset').style.display = (fStatus || fFunktion || fQual) ? '' : 'none';
+      document.getElementById('mlTreffer').innerText = `${gefiltert.length} von ${appData.members.length} Kameraden`;
+
+      // Ansicht umschalten
+      document.getElementById('mlTabelleListe').style.display = mlAnsicht === 'liste' ? '' : 'none';
+      document.getElementById('mlTabelleMatrix').style.display = mlAnsicht === 'matrix' ? '' : 'none';
+      document.getElementById('mlBtnListe').classList.toggle('aktiv', mlAnsicht === 'liste');
+      document.getElementById('mlBtnMatrix').classList.toggle('aktiv', mlAnsicht === 'matrix');
+
+      // Gruppen nach Status
+      const statusListe = [...ML_STATUS_REIHENFOLGE, ...new Set(gefiltert.map(m => m.status || 'Aktiv').filter(s => !ML_STATUS_REIHENFOLGE.includes(s)))];
+      const vergleich = mlVergleichen(sortierung);
+      const gruppen = statusListe.map(st => ({ st, liste: gefiltert.filter(m => (m.status || 'Aktiv') === st).sort(vergleich) })).filter(g => g.liste.length);
+
+      const nameZelle = m => `<td><strong>${m.nachname || ''}</strong><br>${m.vorname || ''}</td>`;
+      let html = '', matrixHtml = '';
+
+      if (!gruppen.length) {
+        html = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Keine Kameraden gefunden.</td></tr>';
+        matrixHtml = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:1.5rem;">Keine Kameraden gefunden.</td></tr>';
+      }
+
+      // Anzahl je Qualifikation (Qualifikationsübersicht)
+      const matrixSpalten = [['AGT'], ['Maschinist'], ['Funk'], ['Motorkettensäge'], ['CSA'], ['ERSTHELFER'], ['SANITAETER'], ['AUSB'], ['GERAETEWART']];
+      if (gruppen.length) {
+        matrixHtml += `<tr class="matrix-summe"><td>Anzahl</td><td></td>${matrixSpalten.map(([k]) => `<td>${gefiltert.filter(m => mlHatQual(m, k)).length}</td>`).join('')}</tr>`;
+      }
+
+      gruppen.forEach(g => {
+        const kopf = `<tr class="gruppen-kopf"><td colspan="COLS">${ML_STATUS_TITEL[g.st] || g.st}<span class="gruppen-zahl">${g.liste.length}</span></td></tr>`;
+        html += kopf.replace('COLS', 7);
+        matrixHtml += kopf.replace('COLS', 11);
+
+        g.liste.forEach(m => {
+          const qs = mlQualifikationen(m);
+
+          let geb = '';
+          if (m.geburtsdatum && /^\d{4}-\d{2}-\d{2}$/.test(m.geburtsdatum)) {
+            const [gy, gm, gd] = m.geburtsdatum.split('-');
+            const tage = mlTageBisGeburtstag(m.geburtsdatum);
+            const marke = tage === 0 ? ' <span title="Heute Geburtstag">🎂 heute</span>' : (tage <= 7 ? ` <span title="Geburtstag in ${tage} Tagen">🎂 in ${tage} T.</span>` : '');
+            geb = `${gd}.${gm}.${gy} <small>(${mlAlter(m.geburtsdatum)})</small>${marke}`;
+          }
+
+          const funktion = (m.funktion && m.funktion !== ML_STANDARD_FUNKTION) ? funktionAnzeige(m) : '';
+          const qualis = [...qs.fach, ...qs.med, ...qs.sonst].join(' ');
+
+          html += `
+            <tr>
+              ${nameZelle(m)}
+              <td>${dienstgradAnzeige(m)}</td>
+              <td>${funktion}</td>
+              <td class="ml-geb">${geb}</td>
+              <td>${qs.rang.join(' ')}</td>
+              <td>${qualis}</td>
+              <td style="white-space:nowrap;">
+                <button class="btn btn-secondary btn-sm ml-icon" title="Bearbeiten" onclick="openMemberModal('${m.id}')">✏️</button>
+                <button class="btn btn-danger btn-sm ml-icon" title="Löschen" onclick="deleteMember('${m.id}')">🗑️</button>
+              </td>
+            </tr>`;
+
+          const haken = k => mlHatQual(m, k) ? '<span class="ml-haken">✓</span>' : '';
+          matrixHtml += `
+            <tr>
+              ${nameZelle(m)}
+              <td>${qs.rang.join(' ')}</td>
+              ${matrixSpalten.map(([k]) => `<td>${haken(k)}</td>`).join('')}
+            </tr>`;
+        });
+      });
+
+      memBody.innerHTML = html;
+      matrixBody.innerHTML = matrixHtml;
     }
 
     function istUvvDienst(d) {
@@ -2668,88 +2945,7 @@
           });
         }
 
-        const memBody = document.getElementById('membersTableBody');
-        if (memBody) {
-          memBody.innerHTML = '';
-          appData.members.forEach((m) => {
-            
-            const hasTm1 = m.lehrgaenge && m.lehrgaenge.includes('TM 1');
-            const hasTm2 = m.lehrgaenge && m.lehrgaenge.includes('TM 2');
-            const hasTfBrand = m.lehrgaenge && m.lehrgaenge.includes('TF Brand');
-            const hasTfTh = m.lehrgaenge && m.lehrgaenge.includes('TF TH');
-            const hasGf = m.lehrgaenge && m.lehrgaenge.includes('GF');
-            const hasZf = m.lehrgaenge && m.lehrgaenge.includes('ZF');
-            const hasVf = m.lehrgaenge && m.lehrgaenge.includes('VF');
-
-            // Höherwertige Führungsqualifikation ersetzt die darunterliegenden (FwDV 2): VF > ZF > GF > TF > TM 2 > TM 1
-            const hideZf = hasVf;
-            const hideGf = hasZf || hasVf;
-            const hideTf = hasGf || hasZf || hasVf;
-            const hideTm = hasGf || hasZf || hasVf || (hasTfBrand && hasTfTh);
-
-            let lgBadgesList = [];
-            let lgOtherList = [];
-
-            if (!hideTm) {
-              if (hasTm2) {
-                lgBadgesList.push(`<span class="badge badge-success" title="Truppmann Teil 2">⭐ TM 2</span>`);
-              } else if (hasTm1) {
-                lgBadgesList.push(`<span class="badge badge-success" title="Truppmann Teil 1">⭐ TM 1</span>`);
-              }
-            }
-
-            if (!hideTf) {
-              if (hasTfBrand && hasTfTh) {
-                lgBadgesList.push(`<span class="badge badge-success" title="Truppführer vollständig (Brand + TH)">⭐ TF komplett</span>`);
-              } else {
-                if (hasTfBrand) lgBadgesList.push(`<span class="badge badge-danger" title="Truppführer Brandbekämpfung">🔥 TF Brand</span>`);
-                if (hasTfTh) lgBadgesList.push(`<span class="badge badge-info" title="Truppführer Technische Hilfe">🚗 TF TH</span>`);
-              }
-            }
-
-            (m.lehrgaenge || []).forEach(l => {
-              if (l === 'TM 1' || l === 'TM 2' || l === 'TF Brand' || l === 'TF TH') return;
-              if (l === 'GF' && hideGf) return;
-              if (l === 'ZF' && hideZf) return;
-              if (l === 'VF') { lgBadgesList.push(`<span class="badge badge-success" title="Verbandsführer">⭐ VF</span>`); return; }
-              if (l === 'ZF') { lgBadgesList.push(`<span class="badge badge-success" title="Zugführer">⭐ ZF</span>`); return; }
-              if (l === 'GF') { lgBadgesList.push(`<span class="badge badge-success" title="Gruppenführer">⭐ GF</span>`); return; }
-              if (l === 'Erste Hilfe') { lgOtherList.push(`<span class="badge badge-info" title="Ersthelfer">✚ Ersthelfer</span>`); return; }
-              if (l === 'Rettungssanitäter' || l === 'Rettungsassistent' || l === 'Notfallsanitäter') { lgOtherList.push(`<span class="badge badge-info">✚ ${l}</span>`); return; }
-              lgOtherList.push(`<span class="badge badge-tag">${l}</span>`);
-            });
-
-            // Führungs-/Truppqualifikation in der ersten Zeile, alle übrigen Qualifikationen darunter
-            let qualiCell = '-';
-            if (lgBadgesList.length || lgOtherList.length) {
-              qualiCell = '';
-              if (lgBadgesList.length) qualiCell += `<div>${lgBadgesList.join(' ')}</div>`;
-              if (lgOtherList.length) qualiCell += `<div style="margin-top:${lgBadgesList.length ? '0.35rem' : '0'};">${lgOtherList.join(' ')}</div>`;
-            }
-
-            let geburtsdatumDisplay = '-';
-            if (m.geburtsdatum && /^\d{4}-\d{2}-\d{2}$/.test(m.geburtsdatum)) {
-              const [gy, gm, gd] = m.geburtsdatum.split('-');
-              geburtsdatumDisplay = `${gd}.${gm}.${gy}`;
-            }
-
-
-            memBody.innerHTML += `
-              <tr>
-                <td><strong>${m.nachname || ''}</strong><br>${m.vorname || ''}</td>
-                <td>${dienstgradAnzeige(m)}</td>
-                <td>${funktionAnzeige(m)}</td>
-                <td>${geburtsdatumDisplay}</td>
-                <td>${qualiCell}</td>
-                <td><span class="badge ${(m.status || 'Aktiv') === 'Aktiv' ? 'badge-success' : (m.status === 'Nicht einsatzfähig' ? 'badge-danger' : 'badge-tag')}">${m.status === 'Nicht einsatzfähig' ? '⛔ ' : ''}${m.status || 'Aktiv'}</span></td>
-                <td>
-                  <button class="btn btn-secondary btn-sm" onclick="openMemberModal('${m.id}')">✏️ Bearbeiten</button>
-                  <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">🗑️</button>
-                </td>
-              </tr>
-            `;
-          });
-        }
+        mannschaftslisteRendern();
         renderKalender();
         jahresplanButtonAktualisieren();
         mobileTabellenBeschriften();
