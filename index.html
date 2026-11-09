@@ -1352,13 +1352,24 @@
 
     // Kurzname für Rollen im Dienstbuch: Anfangsbuchstabe(n) des Vornamens + Nachname.
     // Ein Buchstabe genügt; bei gleichem Nachnamen und gleichem Anfangsbuchstaben werden so viele Buchstaben genommen, bis es eindeutig ist (z. B. Ro. und Ra. Kissmann).
+    // Nachnamen gelten als gleich, wenn sie sich höchstens in einem Buchstaben unterscheiden (Tippfehler wie "Kissman", "Kissmanm", "Kissmann")
+    function nachnameAehnlich(a, b) {
+      if (a === b) return true;
+      if (a.length < 4 || b.length < 4 || a[0] !== b[0] || Math.abs(a.length - b.length) > 1) return false;
+      let i = 0;
+      while (i < a.length && i < b.length && a[i] === b[i]) i++;
+      if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1);      // ein Buchstabe ersetzt
+      const kurz = a.length < b.length ? a : b, lang = a.length < b.length ? b : a;
+      return kurz.slice(i) === lang.slice(i + 1);                               // ein Buchstabe zu viel / zu wenig
+    }
+
     function kurzname(m) {
       // Schreibweisen wie "Kißmann" und "Kissmann" oder zusätzliche Leerzeichen gelten als gleicher Nachname
       const lose = t => String(t || '').toLowerCase().replace(/ß/g, 'ss').replace(/[^a-zäöü0-9]/g, '');
       const vorname = (m.vorname || '').trim();
       if (!vorname) return m.nachname || '';
-      // Andere Kameraden mit gleichem Nachnamen (Vergleich über das Objekt, nicht über die ID)
-      const gleiche = appData.members.filter(x => x !== m && !(x.id === m.id && lose(x.vorname) === lose(m.vorname) && lose(x.nachname) === lose(m.nachname)) && lose(x.nachname) === lose(m.nachname));
+      // Andere Kameraden mit gleichem oder fast gleichem Nachnamen (Vergleich über das Objekt, nicht über die ID)
+      const gleiche = appData.members.filter(x => x !== m && !(x.id === m.id && lose(x.vorname) === lose(m.vorname) && lose(x.nachname) === lose(m.nachname)) && nachnameAehnlich(lose(x.nachname), lose(m.nachname)));
       if (!gleiche.length) return `${vorname.charAt(0).toUpperCase()}. ${m.nachname}`;
       const v = lose(vorname);
       let n = 1;
