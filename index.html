@@ -118,6 +118,13 @@
     }
 
     .std-pille { display: inline-block; min-width: 4.2rem; text-align: center; padding: 0.15rem 0.6rem; border-radius: 999px; font-weight: 700; font-size: 0.8rem; }
+    /* Kalender: Menü beim Doppelklick */
+    #kalenderMenue { position: fixed; z-index: 9000; min-width: 220px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); padding: 0.35rem; }
+    #kalenderMenue .km-kopf { padding: 0.35rem 0.6rem; font-size: 0.75rem; font-weight: 700; color: #93c5fd; border-bottom: 1px solid var(--border); margin-bottom: 0.25rem; }
+    #kalenderMenue button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 0.5rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+    #kalenderMenue button:hover { background: var(--card-header); }
+    .cal-day { user-select: none; }
+    @media (max-width: 768px), (hover: none) { .nur-desktop { display: none; } }
     /* KALENDER */
     .cal-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
     .cal-year { font-size: 1.25rem; font-weight: 800; min-width: 4.5rem; text-align: center; }
@@ -1539,6 +1546,47 @@
       kalenderAuswahl = null;
       renderApp();
     }
+    // Doppelklick auf einen Kalendertag (nur Rechner mit Maus): kleines Menü zum Eintragen
+    function kalenderTagMenueSchliessen() {
+      const m = document.getElementById('kalenderMenue');
+      if (m) m.remove();
+    }
+
+    function kalenderTagMenue(key, ev) {
+      if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+      kalenderTagMenueSchliessen();
+      const menue = document.createElement('div');
+      menue.id = 'kalenderMenue';
+      menue.innerHTML = `<div class="km-kopf">📅 ${kalDeDatum(key)}</div>
+        <button type="button" onclick="kalenderNeuerDienst('${key}')">+ Dienst / Termin eintragen</button>
+        <button type="button" onclick="kalenderNeuerLehrgang('${key}')">+ Lehrgang eintragen</button>`;
+      document.body.appendChild(menue);
+      // Menü an der Mausposition platzieren, aber im sichtbaren Bereich halten
+      const b = menue.getBoundingClientRect();
+      menue.style.left = Math.max(8, Math.min(ev.clientX, window.innerWidth - b.width - 8)) + 'px';
+      menue.style.top = Math.max(8, Math.min(ev.clientY, window.innerHeight - b.height - 8)) + 'px';
+    }
+
+    function kalenderNeuerDienst(key) {
+      kalenderTagMenueSchliessen();
+      openDienstModal();
+      document.getElementById('dienstDatumVon').value = key;
+      handleDatumVonChange();
+    }
+
+    function kalenderNeuerLehrgang(key) {
+      kalenderTagMenueSchliessen();
+      openLehrgangModal();
+      document.getElementById('lehrgangStatus').value = 'Angemeldet';
+      document.getElementById('lehrgangStartDatum').value = key;
+      document.getElementById('lehrgangEndeDatum').value = key;
+      toggleLehrgangFields();
+      lehrgangStundenFeldAktualisieren();
+    }
+
+    document.addEventListener('click', (e) => { if (!e.target.closest('#kalenderMenue') && !e.target.closest('.cal-day')) kalenderTagMenueSchliessen(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') kalenderTagMenueSchliessen(); });
+
     function kalenderTagWaehlen(key) { kalenderAuswahl = (kalenderAuswahl === key) ? null : key; renderKalender(); }
 
     function kalenderSammleTermine() {
@@ -1659,7 +1707,7 @@
           }
           if (key === heuteKey) klassen.push('today');
           if (key === kalenderAuswahl) klassen.push('selected');
-          html += `<div class="${klassen.join(' ')}" style="${style}" ${ev.length ? `title="${tip}" onclick="kalenderTagWaehlen('${key}')"` : ''}>${tag}</div>`;
+          html += `<div class="${klassen.join(' ')}" style="${style}" ondblclick="kalenderTagMenue('${key}', event)" ${ev.length ? `title="${tip}" onclick="kalenderTagWaehlen('${key}')"` : ''}>${tag}</div>`;
         }
         html += '</div></div>';
       }
@@ -1683,7 +1731,7 @@
             ev.map(e => `<div class="cal-detail-item"><span class="cal-swatch" style="background:${KAL_KATEGORIEN[e.kat].farbe}; margin-top:0.3rem; flex-shrink:0;"></span><div><div><strong>${e.titel}</strong>${e.geplant ? ' <span class="badge badge-warning">geplant</span>' : ''}</div><div style="color:var(--text-muted);">${e.info}</div></div></div>`).join('') +
             '</div>';
         } else {
-          det.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">Tippe auf einen farbigen Tag, um die Einzelheiten zu sehen.</div>';
+          det.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">Tippe auf einen farbigen Tag, um die Einzelheiten zu sehen.<span class="nur-desktop"> Doppelklick auf einen Tag: neuen Eintrag anlegen.</span></div>';
         }
       }
     }
