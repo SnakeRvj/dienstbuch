@@ -151,6 +151,18 @@
     .mf-sektion { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #93c5fd; margin: 0.9rem 0 0.4rem; }
     .qual-chip { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.3rem 0.2rem 0.65rem; border-radius: 999px; background: rgba(148, 163, 184, 0.2); font-size: 0.8rem; margin: 0 0.3rem 0.3rem 0; }
     .qual-chip button { background: none; border: none; color: #fca5a5; cursor: pointer; font-size: 0.9rem; padding: 0 0.2rem; }
+    /* Kennzahlen oben: vier Kacheln nach Thema */
+    .stat-card.kz-ausbildung { border-left: 4px solid #1f8fff; }
+    .stat-card.kz-einsatz { border-left: 4px solid #e02424; }
+    .stat-card.kz-stunden { border-left: 4px solid #facc15; }
+    .stat-card.kz-mannschaft { border-left: 4px solid #22c55e; }
+    .stat-value small { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-left: 0.4rem; }
+    .kz-zeile { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0 0.5rem; font-size: 0.78rem; padding: 0.2rem 0; border-top: 1px dashed rgba(148, 163, 184, 0.2); }
+    .kz-zeile > span { color: var(--text-muted); }
+    .kz-zeile > b { text-align: right; margin-left: auto; }
+    .kz-balken { height: 7px; border-radius: 4px; background: var(--input-bg); overflow: hidden; margin: 0.4rem 0 0.15rem; display: flex; }
+    .kz-balken i { display: block; height: 100%; }
+    .kz-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
     /* Mannschaftsliste */
     .ml-ansicht { display: inline-flex; gap: 0.3rem; margin-right: 0.5rem; }
     .ml-ansicht .btn.aktiv { background: var(--primary); color: #ffffff; border-color: var(--primary); }
@@ -209,7 +221,7 @@
 
       /* Kacheln oben: zwei nebeneinander */
       .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 0.75rem; }
-      .stats-grid .stat-card:last-child { grid-column: span 2; }
+      .kz-zeile { font-size: 0.7rem; }
       .stat-card { padding: 0.65rem 0.75rem; }
       .stat-title { font-size: 0.65rem; margin-bottom: 0.2rem; }
       .stat-value { font-size: 1.35rem; }
@@ -366,36 +378,38 @@
 
   <div class="container">
     <div class="stats-grid">
-      <div class="stat-card highlight">
-        <span class="stat-title">Geleistete Stunden Aktive</span>
-        <span class="stat-value" id="statTotalHours">0,0 h</span>
-        <span class="stat-sub" id="statYearSub">Laufendes Dienstjahr (durchgeführte Dienste & Lehrgänge)</span>
-        <span class="stat-sub" id="statDurchgefuehrtTage" style="color:#4ade80; margin-top:0.05rem;"></span>
-        <span class="stat-sub" id="statPlannedSub" style="color:#facc15; font-weight:600; margin-top:0.15rem;"></span>
-        <span class="stat-sub" id="statPlannedTage" style="color:#facc15; margin-top:0.05rem;"></span>
+      <div class="stat-card kz-ausbildung">
+        <span class="stat-title" id="kzAusbildungTitel">Ausbildung</span>
+        <span class="stat-value" id="kzAusbildungProzent">0%<small>Beteiligung</small></span>
+        <span class="stat-sub" id="kzAusbildungSchnitt"></span>
+        <div class="kz-balken" id="kzAusbildungBalken"><i id="kzBalkenIst" style="background:#1f8fff;"></i><i id="kzBalkenPlan" style="background:rgba(31,143,255,0.3);"></i></div>
+        <span class="stat-sub" id="kzAusbildungFortschritt" style="margin-top:0.1rem; margin-bottom:0.3rem;"></span>
+        <div class="kz-zeile"><span>Tage</span><b id="kzAusbildungTage"></b></div>
+        <div class="kz-zeile"><span>Stunden</span><b id="kzAusbildungStunden"></b></div>
       </div>
-      <div class="stat-card">
-        <span class="stat-title">Beteiligung Ausbildung</span>
-        <span class="stat-value" id="statBeteiligung">0%</span>
-        <span class="stat-sub" id="statBeteiligungSub">Ø Teilnahme pro Dienst</span>
-        <span class="stat-sub" id="statBeteiligungStunden" style="margin-top:0.15rem;"></span>
+      <div class="stat-card kz-einsatz">
+        <span class="stat-title" id="kzEinsatzTitel">Einsätze</span>
+        <span class="stat-value" id="kzEinsatzAnzahl">0<small>Einsätze</small></span>
+        <span class="stat-sub" id="kzEinsatzArten" style="margin-bottom:0.3rem;"></span>
+        <div class="kz-zeile"><span>Beteiligung</span><b id="kzEinsatzProzent"></b></div>
+        <div class="kz-zeile"><span>Ø Kameraden</span><b id="kzEinsatzSchnitt"></b></div>
+        <div class="kz-zeile"><span>Einsatzzeit</span><b id="kzEinsatzZeit"></b></div>
       </div>
-      <div class="stat-card">
-        <span class="stat-title">Beteiligung Einsatz</span>
-        <span class="stat-value" id="statEinsatz">0%</span>
-        <span class="stat-sub" id="statEinsatzSub">Noch keine Einsätze</span>
-        <span class="stat-sub" id="statEinsatzStunden" style="margin-top:0.15rem;"></span>
+      <div class="stat-card kz-stunden">
+        <span class="stat-title" id="kzStundenTitel">Stunden gesamt</span>
+        <span class="stat-value" id="kzStundenGesamt">0<small>h geleistet</small></span>
+        <span class="stat-sub" style="margin-bottom:0.3rem;">alle Kameraden zusammen</span>
+        <div class="kz-zeile"><span><i class="kz-dot" style="background:#1f8fff;"></i>Ausbildung</span><b id="kzStdAusbildung"></b></div>
+        <div class="kz-zeile"><span><i class="kz-dot" style="background:#e02424;"></i>Einsatz</span><b id="kzStdEinsatz"></b></div>
+        <div class="kz-zeile"><span><i class="kz-dot" style="background:#10a874;"></i>Arbeitsdienst</span><b id="kzStdArbeit"></b></div>
+        <div class="kz-zeile"><span><i class="kz-dot" style="background:#5b61ad;"></i>Lehrgänge</span><b id="kzStdLehrgang"></b></div>
       </div>
-      <div class="stat-card">
-        <span class="stat-title">Atemschutz</span>
-        <span class="stat-value" id="statAgtCount">0</span>
-        <span class="stat-title" id="statUvvTitel" style="margin-top:0.7rem;">UVV-Unterweisung</span>
-        <span class="stat-value" id="statUvvCount">0%</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-title">Mannschaftsstärke</span>
-        <span class="stat-value" id="statMembersCount">0</span>
-        <span class="stat-sub" id="statMembersSub">Aktive Kameraden</span>
+      <div class="stat-card kz-mannschaft">
+        <span class="stat-title">Mannschaft</span>
+        <span class="stat-value" id="kzMannschaftZahl">0</span>
+        <span class="stat-sub" style="margin-bottom:0.3rem;">einsatzbereit / nicht einsatzbereit</span>
+        <div class="kz-zeile"><span>Atemschutz tauglich</span><b id="kzAtemschutz"></b></div>
+        <div class="kz-zeile"><span id="kzUvvTitel">UVV</span><b id="kzUvv"></b></div>
       </div>
     </div>
 
@@ -2654,77 +2668,110 @@
           }
         });
 
-        const statTotalEl = document.getElementById('statTotalHours');
-        if (statTotalEl) statTotalEl.innerText = totalHours.toFixed(1) + ' h';
-        
-        const statYearEl = document.getElementById('statYearSub');
-        if (statYearEl) statYearEl.innerText = `Gesamt geleistet im Jahr ${curYear}`;
+        // ===== KENNZAHLEN OBEN (vier Kacheln) =====
+        const setze = (id, text) => { const el = document.getElementById(id); if (el) el.innerText = text; };
+        const zahl1 = n => n.toFixed(1).replace('.', ',');
+        const tageText = n => `${n} ${n === 1 ? 'Tag' : 'Tage'}`;
+        const ampel = p => p < 30 ? '#ef4444' : (p < 55 ? '#facc15' : '#22c55e'); // unter 30 % rot, bis unter 55 % gelb, ab 55 % grün
+
         const uebersichtTitel = document.getElementById('uebersichtTitel');
         if (uebersichtTitel) uebersichtTitel.innerText = `📊 Jahresstunden-Übersicht ${curYear}`;
         const atemschutzTitel = document.getElementById('atemschutzTitel');
         if (atemschutzTitel) atemschutzTitel.innerText = `🤿 Atemschutzüberwachung ${curYear} (365-Tage-Regelung nach FwDV 7)`;
 
-        // Geplante Stunden des Jahres: Dienststunden aller geplanten Termine + angemeldete Lehrgänge (je Lehrgang einmal)
-        let geplanteStunden = 0;
-        appData.dienste.forEach(d => {
-          if ((d.status || 'Durchgeführt') !== 'Geplant') return;
-          if (d.typ === 'OWF-Versammlung' || d.typ === 'Veranstaltung') return;
-          if (new Date(d.datumVon || d.datum).getFullYear() !== curYear) return;
-          geplanteStunden += parseFloat(d.dauer) || 0;
-        });
-        const gezaehlteLehrgaenge = new Set();
-        (appData.lehrgangPlan || []).forEach(l => {
-          if (l.status !== 'Angemeldet' || !l.startDatum) return;
-          if (new Date(l.startDatum).getFullYear() !== curYear) return;
-          const schluessel = [l.titel, l.ort, l.startDatum, l.endeDatum || l.startDatum].join('|');
-          if (gezaehlteLehrgaenge.has(schluessel)) return;
-          gezaehlteLehrgaenge.add(schluessel);
-          geplanteStunden += lehrgangStunden(l);
-        });
-        const statPlannedEl = document.getElementById('statPlannedSub');
-        if (statPlannedEl) statPlannedEl.innerText = `Geplant: ${geplanteStunden.toFixed(1).replace('.', ',')} h`;
+        const jahrDe = d => new Date(d.datumVon || d.datum).getFullYear() === curYear;
+        const dStat = d => d.status || 'Durchgeführt';
+        const istAusb = d => d.typ === 'Ausbildung' || d.typ === 'UVV';
 
-        // Geplante Ausbildungstage in der Einheit (im Kalender blau: Ausbildung/Übung und UVV), jeder Tag nur einmal gezählt
-        const geplanteAusbildungsTage = new Set();
-        appData.dienste.forEach(d => {
-          if ((d.status || 'Durchgeführt') !== 'Geplant') return;
-          if (d.typ !== 'Ausbildung' && d.typ !== 'UVV') return;
-          const start = d.datumVon || d.datum;
-          if (new Date(start).getFullYear() !== curYear) return;
-          geplanteAusbildungsTage.add(start);
-        });
-        // Durchgeführte Ausbildungstage (Ausbildung/Übung und UVV), jeder Tag nur einmal
-        const durchgefuehrteAusbildungsTage = new Set();
-        appData.dienste.forEach(d => {
-          if ((d.status || 'Durchgeführt') !== 'Durchgeführt') return;
-          if (d.typ !== 'Ausbildung' && d.typ !== 'UVV') return;
-          const start = d.datumVon || d.datum;
-          if (new Date(start).getFullYear() !== curYear) return;
-          durchgefuehrteAusbildungsTage.add(start);
-        });
-        const statDurchgefuehrtTageEl = document.getElementById('statDurchgefuehrtTage');
-        if (statDurchgefuehrtTageEl) statDurchgefuehrtTageEl.innerText = `${durchgefuehrteAusbildungsTage.size} ${durchgefuehrteAusbildungsTage.size === 1 ? 'Ausbildungstag' : 'Ausbildungstage'} durchgeführt`;
-        const statPlannedTageEl = document.getElementById('statPlannedTage');
-        if (statPlannedTageEl) statPlannedTageEl.innerText = `${geplanteAusbildungsTage.size} ${geplanteAusbildungsTage.size === 1 ? 'Ausbildungstag' : 'Ausbildungstage'} geplant`;
-        
-        const statMemEl = document.getElementById('statMembersCount');
-        if (statMemEl) {
-          // grün: einsatzbereit (Status Aktiv, einsatzfähig, UVV-Pflicht erfüllt) / rot: alle übrigen Kameraden
-          const heuteKey = kalKey(new Date());
-          const bereit = appData.members.filter(m => m.status === 'Aktiv' && !einsatzGesperrtGrund(m, heuteKey)).length;
-          const nichtBereit = appData.members.length - bereit;
-          statMemEl.innerHTML = `<span style="color:#22c55e;">${bereit}</span> / <span style="color:${nichtBereit > 0 ? '#ef4444' : 'var(--text-muted)'};">${nichtBereit}</span>`;
-          const statMemSubEl = document.getElementById('statMembersSub');
-          if (statMemSubEl) statMemSubEl.innerText = 'einsatzbereit / nicht einsatzbereit';
-        }
-
-        let agtReady = 0, agtTotal = 0, uvvOk = 0;
         // Kameraden im aktiven Dienst: Status "Aktiv" und "Nicht einsatzfähig" (sie nehmen weiter an der Ausbildung teil)
         const activeMembers = appData.members.filter(m => m.status === 'Aktiv' || m.status === 'Nicht einsatzfähig');
-        activeMembers.forEach(m => {
-          const isUvvOk = checkUvvValidityForMember(m.id, curYear);
-          if (isUvvOk) uvvOk++;
+        const aktiveIds = new Set(activeMembers.map(m => m.id));
 
+        // --- Ausbildung: Tage (blau im Kalender: Ausbildung/Übung und UVV), Stunden, Beteiligung ---
+        const tageIst = new Set(), tagePlan = new Set();
+        let ausbStdIst = 0, ausbStdPlan = 0;
+        appData.dienste.forEach(d => {
+          if (!istAusb(d) || !jahrDe(d)) return;
+          const start = d.datumVon || d.datum;
+          const dauer = parseFloat(d.dauer) || 0;
+          if (dStat(d) === 'Durchgeführt') { tageIst.add(start); ausbStdIst += dauer; }
+          else if (dStat(d) === 'Geplant') { tagePlan.add(start); ausbStdPlan += dauer; }
+        });
+        let bDienste = 0, bQuoteSumme = 0, bTeilnahmen = 0;
+        if (activeMembers.length) {
+          appData.dienste.forEach(d => {
+            if (dStat(d) !== 'Durchgeführt') return;
+            // Beteiligung Ausbildung: nur Dienste, bei denen alle Aktiven teilnehmen sollen
+            if (!['Ausbildung', 'UVV', 'Arbeitsdienst', 'Versammlung'].includes(d.typ)) return;
+            if (!jahrDe(d)) return;
+            const anwesend = (d.teilnehmer || []).filter(id => aktiveIds.has(id)).length;
+            bDienste++;
+            bQuoteSumme += anwesend / activeMembers.length;
+            bTeilnahmen += anwesend;
+          });
+        }
+        const bProzent = bDienste ? Math.round((bQuoteSumme / bDienste) * 100) : 0;
+        setze('kzAusbildungTitel', `Ausbildung ${curYear}`);
+        const kzAusbProz = document.getElementById('kzAusbildungProzent');
+        if (kzAusbProz) {
+          kzAusbProz.innerHTML = `${bProzent}%<small>Beteiligung</small>`;
+          kzAusbProz.style.color = bDienste ? ampel(bProzent) : '';
+        }
+        setze('kzAusbildungSchnitt', bDienste ? `Ø ${zahl1(bTeilnahmen / bDienste)} von ${activeMembers.length} Kameraden pro Dienst` : `Noch keine durchgeführten Dienste in ${curYear}`);
+        const tageGesamt = tageIst.size + tagePlan.size;
+        const balken = document.getElementById('kzAusbildungBalken');
+        if (balken) balken.style.display = tageGesamt ? '' : 'none';
+        const bi = document.getElementById('kzBalkenIst'), bp = document.getElementById('kzBalkenPlan');
+        if (bi && bp && tageGesamt) { bi.style.width = (tageIst.size / tageGesamt * 100) + '%'; bp.style.width = (tagePlan.size / tageGesamt * 100) + '%'; }
+        setze('kzAusbildungFortschritt', tageGesamt ? `${tageIst.size} von ${tageGesamt} Ausbildungstagen durchgeführt` : '');
+        setze('kzAusbildungTage', `${tageIst.size} durchgeführt · ${tagePlan.size} geplant`);
+        setze('kzAusbildungStunden', `${zahl1(ausbStdIst)} h geleistet · ${zahl1(ausbStdPlan)} h geplant`);
+
+        // --- Einsätze: Anzahl, Arten, Beteiligung der einsatzfähigen Kameraden, Einsatzzeit ---
+        const einsatzfaehigeIds = new Set(appData.members.filter(m => m.status === 'Aktiv').map(m => m.id));
+        let nEinsaetze = 0, eQuoteSumme = 0, eTeilnahmen = 0, eStunden = 0, nBrand = 0, nHilfe = 0, nSonst = 0;
+        appData.dienste.forEach(d => {
+          if (d.typ !== 'Einsatz' || dStat(d) !== 'Durchgeführt' || !jahrDe(d)) return;
+          nEinsaetze++;
+          eStunden += parseFloat(d.dauer) || 0;
+          const art = einsatzArtVon(d);
+          if (art === 'B') nBrand++; else if (art === 'TH') nHilfe++; else nSonst++;
+          if (einsatzfaehigeIds.size) {
+            const anwesend = (d.teilnehmer || []).filter(id => einsatzfaehigeIds.has(id)).length;
+            eQuoteSumme += anwesend / einsatzfaehigeIds.size;
+            eTeilnahmen += anwesend;
+          }
+        });
+        const eProzent = nEinsaetze && einsatzfaehigeIds.size ? Math.round((eQuoteSumme / nEinsaetze) * 100) : 0;
+        setze('kzEinsatzTitel', `Einsätze ${curYear}`);
+        const kzEinsAnz = document.getElementById('kzEinsatzAnzahl');
+        if (kzEinsAnz) kzEinsAnz.innerHTML = `${nEinsaetze}<small>${nEinsaetze === 1 ? 'Einsatz' : 'Einsätze'}</small>`;
+        setze('kzEinsatzArten', nEinsaetze ? `${nBrand} Brand · ${nHilfe} Hilfeleistung${nSonst ? ` · ${nSonst} Sonstige` : ''}` : `Noch keine Einsätze in ${curYear}`);
+        const kzEinsProz = document.getElementById('kzEinsatzProzent');
+        if (kzEinsProz) { kzEinsProz.innerText = nEinsaetze ? eProzent + '%' : '–'; kzEinsProz.style.color = nEinsaetze ? ampel(eProzent) : ''; }
+        setze('kzEinsatzSchnitt', nEinsaetze && einsatzfaehigeIds.size ? `${zahl1(eTeilnahmen / nEinsaetze)} von ${einsatzfaehigeIds.size}` : '–');
+        setze('kzEinsatzZeit', nEinsaetze ? `${zahl1(eStunden)} h` : '–');
+
+        // --- Stunden gesamt: alle Kameraden zusammen, aufgeteilt nach Art ---
+        let sAusb = 0, sEins = 0, sArbeit = 0, sLehr = 0;
+        Object.values(memberHours).forEach(h => { sAusb += h.ausbildung; sEins += h.einsatz; sArbeit += h.nachbereitung; sLehr += h.lehrgang; });
+        setze('kzStundenTitel', `Stunden gesamt ${curYear}`);
+        const kzStdGes = document.getElementById('kzStundenGesamt');
+        if (kzStdGes) kzStdGes.innerHTML = `${zahl1(sAusb + sEins + sArbeit + sLehr)}<small>h geleistet</small>`;
+        setze('kzStdAusbildung', `${zahl1(sAusb)} h`);
+        setze('kzStdEinsatz', `${zahl1(sEins)} h`);
+        setze('kzStdArbeit', `${zahl1(sArbeit)} h`);
+        setze('kzStdLehrgang', `${zahl1(sLehr)} h`);
+
+        // --- Mannschaft: einsatzbereit, Atemschutz, UVV ---
+        const heuteKey = kalKey(new Date());
+        const bereit = appData.members.filter(m => m.status === 'Aktiv' && !einsatzGesperrtGrund(m, heuteKey)).length;
+        const nichtBereit = appData.members.length - bereit;
+        const kzMann = document.getElementById('kzMannschaftZahl');
+        if (kzMann) kzMann.innerHTML = `<span style="color:#22c55e;">${bereit}</span> / <span style="color:${nichtBereit > 0 ? '#ef4444' : 'var(--text-muted)'};">${nichtBereit}</span>`;
+        let agtReady = 0, agtTotal = 0, uvvOk = 0;
+        activeMembers.forEach(m => {
+          if (checkUvvValidityForMember(m.id, curYear)) uvvOk++;
           if (m.lehrgaenge && m.lehrgaenge.includes('AGT')) {
             agtTotal++;
             const g26 = checkG26Validity(m.g26Ablauf);
@@ -2732,77 +2779,12 @@
             if (g26.status !== 'danger' && str.status !== 'danger') agtReady++;
           }
         });
+        setze('kzAtemschutz', `${agtReady} von ${agtTotal}`);
+        setze('kzUvvTitel', `UVV ${curYear}`);
+        const uvvProzent = activeMembers.length ? Math.round((uvvOk / activeMembers.length) * 100) : 0;
+        const kzUvv = document.getElementById('kzUvv');
+        if (kzUvv) { kzUvv.innerText = uvvProzent + '%'; kzUvv.style.color = activeMembers.length ? ampel(uvvProzent) : ''; }
 
-        const statAgtEl = document.getElementById('statAgtCount');
-        if (statAgtEl) statAgtEl.innerText = `${agtReady} / ${agtTotal}`;
-        
-        const aktiveIds = new Set(activeMembers.map(m => m.id));
-        let bDienste = 0, bQuoteSumme = 0, bTeilnahmen = 0, bStundenIst = 0, bStundenSoll = 0;
-        if (activeMembers.length) {
-          appData.dienste.forEach(d => {
-            if ((d.status || 'Durchgeführt') !== 'Durchgeführt') return;
-            // Beteiligung Ausbildung: nur Dienste, bei denen alle Aktiven teilnehmen sollen
-            if (!['Ausbildung', 'UVV', 'Arbeitsdienst', 'Versammlung'].includes(d.typ)) return;
-            if (new Date(d.datumVon || d.datum).getFullYear() !== curYear) return;
-            const anwesend = (d.teilnehmer || []).filter(id => aktiveIds.has(id)).length;
-            const dauer = parseFloat(d.dauer) || 0;
-            bDienste++;
-            bQuoteSumme += anwesend / activeMembers.length;
-            bTeilnahmen += anwesend;
-            bStundenIst += dauer * anwesend;
-            bStundenSoll += dauer * activeMembers.length;
-          });
-        }
-        const statBetEl = document.getElementById('statBeteiligung');
-        if (statBetEl) {
-          const betProzent = bDienste ? Math.round((bQuoteSumme / bDienste) * 100) : 0;
-          statBetEl.innerText = betProzent + '%';
-          // unter 30 % rot, 30 bis unter 55 % gelb, ab 55 % grün (ohne Dienste neutral)
-          statBetEl.style.color = !bDienste ? '' : (betProzent < 30 ? '#ef4444' : (betProzent < 55 ? '#facc15' : '#22c55e'));
-        }
-        const statBetSubEl = document.getElementById('statBeteiligungSub');
-        if (statBetSubEl) statBetSubEl.innerText = bDienste
-          ? `Ø ${(bTeilnahmen / bDienste).toFixed(1).replace('.', ',')} von ${activeMembers.length} Kameraden bei ${bDienste} Diensten`
-          : `Noch keine durchgeführten Dienste in ${curYear}`;
-        const statBetStdEl = document.getElementById('statBeteiligungStunden');
-        if (statBetStdEl) statBetStdEl.innerText = bStundenSoll
-          ? `${bStundenIst.toFixed(1).replace('.', ',')} h von ${bStundenSoll.toFixed(1).replace('.', ',')} h möglich (${Math.round((bStundenIst / bStundenSoll) * 100)}%)`
-          : '';
-
-        // UVV-Quote steht jetzt in der Atemschutz-Kachel
-        const statUvvEl = document.getElementById('statUvvCount');
-        if (statUvvEl) statUvvEl.innerText = (activeMembers.length ? Math.round((uvvOk / activeMembers.length) * 100) : 0) + '%';
-        const statUvvTitelEl = document.getElementById('statUvvTitel');
-        if (statUvvTitelEl) statUvvTitelEl.innerText = `UVV-Unterweisung ${curYear}`;
-
-        // Beteiligung Einsatz: Anwesenheit der einsatzfähigen Kameraden (Status "Aktiv") bei den Einsätzen des Jahres
-        const einsatzfaehigeIds = new Set(appData.members.filter(m => m.status === 'Aktiv').map(m => m.id));
-        let nEinsaetze = 0, eQuoteSumme = 0, eTeilnahmen = 0, eStunden = 0;
-        if (einsatzfaehigeIds.size) {
-          appData.dienste.forEach(d => {
-            if (d.typ !== 'Einsatz' || (d.status || 'Durchgeführt') !== 'Durchgeführt') return;
-            if (new Date(d.datumVon || d.datum).getFullYear() !== curYear) return;
-            const anwesend = (d.teilnehmer || []).filter(id => einsatzfaehigeIds.has(id)).length;
-            nEinsaetze++;
-            eQuoteSumme += anwesend / einsatzfaehigeIds.size;
-            eTeilnahmen += anwesend;
-            eStunden += parseFloat(d.dauer) || 0;
-          });
-        }
-        const statEinsEl = document.getElementById('statEinsatz');
-        if (statEinsEl) {
-          const eProzent = nEinsaetze ? Math.round((eQuoteSumme / nEinsaetze) * 100) : 0;
-          statEinsEl.innerText = eProzent + '%';
-          // gleiche Farbstufen wie bei der Ausbildung: unter 30 % rot, 30 bis unter 55 % gelb, ab 55 % grün
-          statEinsEl.style.color = !nEinsaetze ? '' : (eProzent < 30 ? '#ef4444' : (eProzent < 55 ? '#facc15' : '#22c55e'));
-        }
-        const statEinsSubEl = document.getElementById('statEinsatzSub');
-        if (statEinsSubEl) statEinsSubEl.innerText = nEinsaetze
-          ? `${nEinsaetze} ${nEinsaetze === 1 ? 'Einsatz' : 'Einsätze'}, Ø ${(eTeilnahmen / nEinsaetze).toFixed(1).replace('.', ',')} von ${einsatzfaehigeIds.size} Kameraden`
-          : `Noch keine Einsätze in ${curYear}`;
-        const statEinsStdEl = document.getElementById('statEinsatzStunden');
-        if (statEinsStdEl) statEinsStdEl.innerText = nEinsaetze ? `Einsatzzeit gesamt: ${eStunden.toFixed(1).replace('.', ',')} h` : '';
-        
         const rankBody = document.getElementById('rankingTableBody');
         if (rankBody) {
           rankBody.innerHTML = '';
