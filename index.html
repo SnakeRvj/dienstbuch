@@ -371,6 +371,7 @@
         <span class="stat-value" id="statTotalHours">0,0 h</span>
         <span class="stat-sub" id="statYearSub">Laufendes Dienstjahr (durchgeführte Dienste & Lehrgänge)</span>
         <span class="stat-sub" id="statPlannedSub" style="color:#facc15; font-weight:600; margin-top:0.15rem;"></span>
+        <span class="stat-sub" id="statPlannedTage" style="color:#facc15; margin-top:0.05rem;"></span>
       </div>
       <div class="stat-card">
         <span class="stat-title">Beteiligung Ausbildung</span>
@@ -2681,6 +2682,18 @@
         });
         const statPlannedEl = document.getElementById('statPlannedSub');
         if (statPlannedEl) statPlannedEl.innerText = `Geplant: ${geplanteStunden.toFixed(1).replace('.', ',')} h`;
+
+        // Geplante Ausbildungstage in der Einheit (im Kalender blau: Ausbildung/Übung und UVV), jeder Tag nur einmal gezählt
+        const geplanteAusbildungsTage = new Set();
+        appData.dienste.forEach(d => {
+          if ((d.status || 'Durchgeführt') !== 'Geplant') return;
+          if (d.typ !== 'Ausbildung' && d.typ !== 'UVV') return;
+          const start = d.datumVon || d.datum;
+          if (new Date(start).getFullYear() !== curYear) return;
+          geplanteAusbildungsTage.add(start);
+        });
+        const statPlannedTageEl = document.getElementById('statPlannedTage');
+        if (statPlannedTageEl) statPlannedTageEl.innerText = `${geplanteAusbildungsTage.size} ${geplanteAusbildungsTage.size === 1 ? 'Ausbildungstag' : 'Ausbildungstage'} geplant`;
         
         const statMemEl = document.getElementById('statMembersCount');
         if (statMemEl) {
