@@ -370,6 +370,7 @@
         <span class="stat-title">Geleistete Stunden Aktive</span>
         <span class="stat-value" id="statTotalHours">0,0 h</span>
         <span class="stat-sub" id="statYearSub">Laufendes Dienstjahr (durchgeführte Dienste & Lehrgänge)</span>
+        <span class="stat-sub" id="statDurchgefuehrtTage" style="color:#4ade80; margin-top:0.05rem;"></span>
         <span class="stat-sub" id="statPlannedSub" style="color:#facc15; font-weight:600; margin-top:0.15rem;"></span>
         <span class="stat-sub" id="statPlannedTage" style="color:#facc15; margin-top:0.05rem;"></span>
       </div>
@@ -2692,6 +2693,17 @@
           if (new Date(start).getFullYear() !== curYear) return;
           geplanteAusbildungsTage.add(start);
         });
+        // Durchgeführte Ausbildungstage (Ausbildung/Übung und UVV), jeder Tag nur einmal
+        const durchgefuehrteAusbildungsTage = new Set();
+        appData.dienste.forEach(d => {
+          if ((d.status || 'Durchgeführt') !== 'Durchgeführt') return;
+          if (d.typ !== 'Ausbildung' && d.typ !== 'UVV') return;
+          const start = d.datumVon || d.datum;
+          if (new Date(start).getFullYear() !== curYear) return;
+          durchgefuehrteAusbildungsTage.add(start);
+        });
+        const statDurchgefuehrtTageEl = document.getElementById('statDurchgefuehrtTage');
+        if (statDurchgefuehrtTageEl) statDurchgefuehrtTageEl.innerText = `${durchgefuehrteAusbildungsTage.size} ${durchgefuehrteAusbildungsTage.size === 1 ? 'Ausbildungstag' : 'Ausbildungstage'} durchgeführt`;
         const statPlannedTageEl = document.getElementById('statPlannedTage');
         if (statPlannedTageEl) statPlannedTageEl.innerText = `${geplanteAusbildungsTage.size} ${geplanteAusbildungsTage.size === 1 ? 'Ausbildungstag' : 'Ausbildungstage'} geplant`;
         
