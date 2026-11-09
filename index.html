@@ -1353,13 +1353,16 @@
     // Kurzname für Rollen im Dienstbuch: Anfangsbuchstabe(n) des Vornamens + Nachname.
     // Ein Buchstabe genügt; bei gleichem Nachnamen und gleichem Anfangsbuchstaben werden so viele Buchstaben genommen, bis es eindeutig ist (z. B. Ro. und Ra. Kissmann).
     function kurzname(m) {
-      const norm = t => String(t || '').trim().toLowerCase();
+      // Schreibweisen wie "Kißmann" und "Kissmann" oder zusätzliche Leerzeichen gelten als gleicher Nachname
+      const lose = t => String(t || '').toLowerCase().replace(/ß/g, 'ss').replace(/[^a-zäöü0-9]/g, '');
       const vorname = (m.vorname || '').trim();
-      const gleicheNachnamen = appData.members.filter(x => x.id !== m.id && norm(x.nachname) === norm(m.nachname));
       if (!vorname) return m.nachname || '';
-      if (!gleicheNachnamen.length) return `${vorname.charAt(0).toUpperCase()}. ${m.nachname}`;
+      // Andere Kameraden mit gleichem Nachnamen (Vergleich über das Objekt, nicht über die ID)
+      const gleiche = appData.members.filter(x => x !== m && !(x.id === m.id && lose(x.vorname) === lose(m.vorname) && lose(x.nachname) === lose(m.nachname)) && lose(x.nachname) === lose(m.nachname));
+      if (!gleiche.length) return `${vorname.charAt(0).toUpperCase()}. ${m.nachname}`;
+      const v = lose(vorname);
       let n = 1;
-      while (n < vorname.length && gleicheNachnamen.some(x => norm(x.vorname).startsWith(norm(vorname).slice(0, n)))) n++;
+      while (n < vorname.length && gleiche.some(x => lose(x.vorname).startsWith(v.slice(0, n)))) n++;
       const kuerzel = vorname.slice(0, n);
       return `${kuerzel.charAt(0).toUpperCase()}${kuerzel.slice(1).toLowerCase()}. ${m.nachname}`;
     }
