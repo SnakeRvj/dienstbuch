@@ -12,9 +12,6 @@
       appId: "1:716762987891:web:6d95c768f38765eaf0d906"
     };
 
-    let dbRef = null;
-    let isRemoteUpdate = false;
-
     function updateSyncStatus(state, text) {
       const dot = document.getElementById('syncDot');
       const txt = document.getElementById('syncText');
@@ -46,14 +43,9 @@
       lehrgangPlan: []
     };
 
-    function normalizeData(parsed) {
-      appData.members = parsed.members || appData.members || [];
-      appData.dienste = parsed.dienste || [];
-      appData.lehrgangPlan = parsed.lehrgangPlan || [];
-      // Umbenannt: "Truppführer TH (Technische Hilfe)" heißt jetzt "Truppführer Technische Hilfe"
-      appData.lehrgangPlan.forEach(l => { if (l.titel === 'Truppführer TH (Technische Hilfe)') l.titel = 'Truppführer Technische Hilfe'; });
-      
-      appData.members.forEach((m, idx) => {
+    // Normalisierung einzelner Bereiche (wird auch beim Laden aus der Cloud benutzt)
+    function normalizeMembers(liste) {
+      liste.forEach((m, idx) => {
         if (m.personalnummer === undefined || m.personalnummer === null || m.personalnummer === '') {
           m.personalnummer = idx + 1;
         } else {
@@ -74,10 +66,26 @@
           m.lehrgaenge = m.lehrgaenge.filter(k => k !== 'TF' && k !== 'TH' && k !== 'TH-Basis');
         }
       });
+    }
 
-      appData.dienste.forEach(d => {
+    function normalizeDienste(liste) {
+      liste.forEach(d => {
         if (!d.teilnehmer) d.teilnehmer = [];
       });
+    }
+
+    function normalizeLehrgaenge(liste) {
+      // Umbenannt: "Truppführer TH (Technische Hilfe)" heißt jetzt "Truppführer Technische Hilfe"
+      liste.forEach(l => { if (l.titel === 'Truppführer TH (Technische Hilfe)') l.titel = 'Truppführer Technische Hilfe'; });
+    }
+
+    function normalizeData(parsed) {
+      appData.members = parsed.members || appData.members || [];
+      appData.dienste = parsed.dienste || [];
+      appData.lehrgangPlan = parsed.lehrgangPlan || [];
+      normalizeLehrgaenge(appData.lehrgangPlan);
+      normalizeMembers(appData.members);
+      normalizeDienste(appData.dienste);
     }
 
     function loadData() {
@@ -123,7 +131,7 @@
     }
 
     // Zugangs-E-Mail: Dieses Konto wird in der Firebase-Konsole (Authentication) angelegt, das Passwort steht NUR dort.
-    const APP_VERSION = '12.11.2026 · Anmeldung mit eigener E-Mail';  // erscheint unten auf dem Anmeldebildschirm
+    const APP_VERSION = '12.11.2026 · Rollen und Änderungsprotokoll';  // erscheint unten auf dem Anmeldebildschirm
 
     const LOGIN_EMAIL = 'dienstbuch@ff-christdorf.de';  // gemeinsamer Zugang (bleibt auf den Handys angemeldet)
     const SUPER_ADMIN_EMAILS = ['mathias.juergens@ff-christdorf.de'];  // eigener Zugang des Super-Admins
@@ -137,8 +145,9 @@
     function rolleAnzeigen(user) {
       const el = document.getElementById('rolleAnzeige');
       if (!el) return;
-      if (!user) { el.style.display = 'none'; return; }
+      if (!user) { el.style.display = 'none'; document.body.classList.remove('rolle-super'); return; }
       const super_ = user.email && SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase());
+      document.body.classList.toggle('rolle-super', !!super_);
       el.innerText = super_ ? '👑 Super-Admin' : '🛠️ Admin';
       el.title = user.email || '';
       el.style.display = '';
@@ -190,68 +199,6 @@
 
     function logout() {
       if (confirm('Von diesem Gerät abmelden?')) firebase.auth().signOut();
-    }
-
-    let cloudConnRef = null;
-    function startCloudSync() {
-      if (dbRef) return; // läuft bereits
-      const db = firebase.database();
-      dbRef = db.ref('dienstbuchData');
-
-      // Verbindungsstatus überwachen
-      cloudConnRef = db.ref('.info/connected');
-      cloudConnRef.on('value', (snap) => {
-        if (snap.val() === true) {
-          updateSyncStatus('online', 'Live-Sync aktiv');
-        } else {
-          updateSyncStatus('offline', 'Offline (Lokal)');
-        }
-      });
-
-      // Echtzeit-Listener für Änderungen von anderen Geräten (PC / Handy)
-      dbRef.on('value', (snapshot) => {
-        const cloudData = snapshot.val();
-        if (cloudData && cloudData.members) {
-          isRemoteUpdate = true;
-          normalizeData(cloudData);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-          sortMembers();
-          populateYearFilter();
-          renderApp();
-          isRemoteUpdate = false;
-          updateSyncStatus('online', 'Live-Sync aktiv');
-        } else {
-          // Falls die Cloud noch ganz leer ist (erster Start), lokalen Stand automatisch hochladen!
-          dbRef.set(JSON.parse(JSON.stringify(appData)));
-        }
-      }, (err) => {
-        console.error("Firebase Lesefehler:", err);
-        updateSyncStatus('offline', 'Sync-Fehler');
-      });
-    }
-
-    function stopCloudSync() {
-      if (dbRef) { dbRef.off(); dbRef = null; }
-      if (cloudConnRef) { cloudConnRef.off(); cloudConnRef = null; }
-    }
-
-    function saveData() {
-      // Immer sofort lokal sichern
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-      renderApp();
-
-      // Und live an Firebase senden
-      if (dbRef && !isRemoteUpdate) {
-        updateSyncStatus('syncing', 'Synchronisiere...');
-        dbRef.set(JSON.parse(JSON.stringify(appData)))
-          .then(() => {
-            updateSyncStatus('online', 'Live-Sync aktiv');
-          })
-          .catch((err) => {
-            console.error("Fehler beim Cloud-Speichern:", err);
-            updateSyncStatus('offline', 'Speicherfehler');
-          });
-      }
     }
 
     function sortMembers() {
@@ -354,11 +301,12 @@
 
       const tabs = Array.from(document.querySelectorAll('.nav-tab'));
       const mobBtns = Array.from(document.querySelectorAll('.mobile-btn'));
-      const idx = ['kalender', 'dashboard', 'dienste', 'atemschutz', 'lehrgaenge', 'mitglieder'].indexOf(tabId);
+      const idx = ['kalender', 'dashboard', 'dienste', 'atemschutz', 'lehrgaenge', 'mitglieder', 'verwaltung'].indexOf(tabId);
       if (idx !== -1) {
         if (tabs[idx]) tabs[idx].classList.add('active');
         if (mobBtns[idx]) mobBtns[idx].classList.add('active');
       }
+      if (tabId === 'verwaltung' && typeof verwaltungOeffnen === 'function') verwaltungOeffnen();
     }
 
     // ===== MOBILE ANSICHT: Tabellen als Karten beschriften =====

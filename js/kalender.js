@@ -40,6 +40,7 @@
     }
 
     function kalenderTagMenue(key, ev) {
+      if (!istSuperAdmin()) return;
       if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
       kalenderTagMenueSchliessen();
       const menue = document.createElement('div');
@@ -218,7 +219,7 @@
             ev.map(e => `<div class="cal-detail-item"><span class="cal-swatch" style="background:${KAL_KATEGORIEN[e.kat].farbe}; margin-top:0.3rem; flex-shrink:0;"></span><div><div><strong>${e.titel}</strong>${e.geplant ? ' <span class="badge badge-warning">geplant</span>' : ''}</div><div style="color:var(--text-muted);">${e.info}</div></div></div>`).join('') +
             '</div>';
         } else {
-          det.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">Tippe auf einen farbigen Tag, um die Einzelheiten zu sehen.<span class="nur-desktop"> Doppelklick auf einen Tag: neuen Eintrag anlegen.</span></div>';
+          det.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem;">Tippe auf einen farbigen Tag, um die Einzelheiten zu sehen.<span class="nur-desktop" data-nur-super> Doppelklick auf einen Tag: neuen Eintrag anlegen.</span></div>';
         }
       }
     }

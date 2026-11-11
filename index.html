@@ -102,6 +102,7 @@
       <button class="nav-tab" onclick="switchTab('atemschutz')">🤿 Atemschutz</button>
       <button class="nav-tab" onclick="switchTab('lehrgaenge')">🎓 Lehrgangsplanung</button>
       <button class="nav-tab" onclick="switchTab('mitglieder')">👨‍🚒 Mannschaftsliste</button>
+      <button class="nav-tab" data-nur-super onclick="switchTab('verwaltung')">⚙️ Verwaltung</button>
     </div>
 
     <!-- TAB 1: ÜBERSICHT -->
@@ -175,7 +176,7 @@
           </select>
           <button type="button" id="dienstFilterReset" class="filter-reset" onclick="resetDienstSuche()" style="display:none;">✕ zurücksetzen</button>
           <span id="dienstSuchTreffer" class="filter-treffer"></span>
-          <button class="btn btn-success btn-sm" id="btnJahresplanImport" onclick="importJahresplan2027()" style="display:none;">📥 Jahresplan 2027 importieren</button>
+          <button class="btn btn-success btn-sm" id="btnJahresplanImport" data-nur-super onclick="importJahresplan2027()" style="display:none;">📥 Jahresplan 2027 importieren</button>
           <button class="btn btn-primary btn-sm" onclick="openDienstModal()">+ Neuer Dienst / Termin</button>
         </div>
         <div class="card-body" style="padding:0;">
@@ -206,7 +207,7 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title">📆 Jahreskalender</div>
-          <button class="btn btn-secondary btn-sm" onclick="jahresberichtOeffnen()" title="Bericht für die Jahreshauptversammlung (PDF)">📄 Jahresbericht</button>
+          <button class="btn btn-secondary btn-sm" data-nur-super onclick="jahresberichtOeffnen()" title="Bericht für die Jahreshauptversammlung (PDF)">📄 Jahresbericht</button>
         </div>
         <div class="cal-toolbar">
           <div class="cal-mobile-nav">
@@ -349,6 +350,63 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: VERWALTUNG (nur Super-Admin) -->
+    <section id="view-verwaltung" class="view-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⚙️ Verwaltung</div>
+        </div>
+        <div class="card-body">
+
+          <div class="mf-sektion" style="margin-top:0;">Sicherung</div>
+          <p class="verw-hinweis">Speichert alle Kameraden, Dienste und Lehrgänge in einer Datei auf diesem Gerät. Die Datei enthält auch Geburtsdaten und sollte gut aufbewahrt werden.</p>
+          <button type="button" class="btn btn-primary btn-sm" onclick="sicherungHerunterladen()">💾 Sicherung herunterladen</button>
+
+          <div class="mf-sektion">Zugänge und Rollen</div>
+          <div class="table-responsive">
+            <table>
+              <thead><tr><th>Rolle</th><th>Zugang</th><th>Rechte</th></tr></thead>
+              <tbody>
+                <tr><td><strong>👑 Super-Admin</strong></td><td>eigene E-Mail (mathias.juergens@ff-christdorf.de)</td><td>alles, dazu Verwaltung, Sicherung, Protokoll, Jahresbericht, Jahresplan-Import, Löschen von Lehrgängen und Kameraden, Doppelklick im Kalender</td></tr>
+                <tr><td><strong>🛠️ Admin</strong></td><td>gemeinsamer Zugang (dienstbuch@ff-christdorf.de)</td><td>ansehen, Dienste, Lehrgänge und Kameraden anlegen und bearbeiten, Dienste löschen</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="verw-hinweis">Neue Zugänge legst du in der Firebase-Konsole unter Authentication an. Damit sie auch Daten lesen und schreiben dürfen, muss ihre E-Mail-Adresse zusätzlich in den Datenbankregeln stehen.</p>
+
+          <div class="mf-sektion">Änderungsprotokoll</div>
+          <div class="dienst-filter" style="padding-left:0; padding-right:0;">
+            <select id="protokollFilterWer" onchange="protokollAnzeigen()" title="Wer">
+              <option value="">Alle Benutzer</option>
+              <option value="Super-Admin">Super-Admin</option>
+              <option value="Admin (gemeinsamer Zugang)">Admin (gemeinsamer Zugang)</option>
+            </select>
+            <select id="protokollFilterBereich" onchange="protokollAnzeigen()" title="Bereich">
+              <option value="">Alle Bereiche</option>
+              <option value="Kamerad">Kameraden</option>
+              <option value="Dienst">Dienste</option>
+              <option value="Lehrgang">Lehrgänge</option>
+            </select>
+            <select id="protokollFilterAktion" onchange="protokollAnzeigen()" title="Aktion">
+              <option value="">Alle Aktionen</option>
+              <option value="angelegt">angelegt</option>
+              <option value="geändert">geändert</option>
+              <option value="gelöscht">gelöscht</option>
+            </select>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="protokollLaden()">↻ Aktualisieren</button>
+            <span id="protokollTreffer" class="filter-treffer"></span>
+          </div>
+          <div class="table-responsive">
+            <table id="protokollTabelle">
+              <thead><tr><th>Zeit</th><th>Wer</th><th>Bereich</th><th>Aktion</th><th>Eintrag</th><th>Änderung</th></tr></thead>
+              <tbody id="protokollBody"></tbody>
+            </table>
+          </div>
+          <p class="verw-hinweis">Es werden die letzten 300 Einträge geladen. Änderungen vom Handy erscheinen als „Admin (gemeinsamer Zugang)“, auch wenn du sie selbst gemacht hast.</p>
         </div>
       </div>
     </section>
@@ -787,6 +845,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
   <script src="js/kern.js"></script>
+  <script src="js/cloud.js"></script>
   <script src="js/kennzahlen.js"></script>
   <script src="js/kalender.js"></script>
   <script src="js/uebersicht.js"></script>
@@ -795,6 +854,7 @@
   <script src="js/lehrgaenge.js"></script>
   <script src="js/mannschaft.js"></script>
   <script src="js/bericht.js"></script>
+  <script src="js/verwaltung.js"></script>
   <script>
     // Service Worker für Installation als App und Offline-Start
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

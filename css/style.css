@@ -158,6 +158,9 @@
     .kz-balken { height: 7px; border-radius: 4px; background: var(--input-bg); overflow: hidden; margin: 0.4rem 0 0.15rem; display: flex; }
     .kz-balken i { display: block; height: 100%; }
     .kz-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+    /* Rollen: Funktionen nur für den Super-Admin */
+    body:not(.rolle-super) [data-nur-super] { display: none !important; }
+    .verw-hinweis { color: var(--text-muted); font-size: 0.8rem; margin: 0.4rem 0 0.7rem; }
     /* Mannschaftsliste */
     .ml-ansicht { display: inline-flex; gap: 0.3rem; margin-right: 0.5rem; }
     .ml-ansicht .btn.aktiv { background: var(--primary); color: #ffffff; border-color: var(--primary); }

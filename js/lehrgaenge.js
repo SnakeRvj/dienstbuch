@@ -488,6 +488,7 @@
     }
 
     function deleteLehrgang(id) {
+      if (!istSuperAdmin()) { alert('Lehrgänge darf nur der Super-Admin löschen.'); return; }
       if (confirm('Lehrgangseintrag wirklich löschen?')) {
         appData.lehrgangPlan = (appData.lehrgangPlan || []).filter(x => x.id !== id);
         saveData();
@@ -542,7 +543,7 @@
                 <td><span class="badge ${sBadge}">${l.status}</span></td>
                 <td>
                   <button class="btn btn-secondary btn-sm" onclick="openLehrgangModal('${l.id}')">✏️ Bearbeiten</button>
-                  <button class="btn btn-danger btn-sm" onclick="deleteLehrgang('${l.id}')">🗑️</button>
+                  <button class="btn btn-danger btn-sm" data-nur-super onclick="deleteLehrgang('${l.id}')">🗑️</button>
                 </td>
               </tr>
             `;

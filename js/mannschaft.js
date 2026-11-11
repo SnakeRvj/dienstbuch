@@ -196,7 +196,7 @@
               <td>${qualis}</td>
               <td style="white-space:nowrap;">
                 <button class="btn btn-secondary btn-sm ml-icon" title="Bearbeiten" onclick="openMemberModal('${m.id}')">✏️</button>
-                <button class="btn btn-danger btn-sm ml-icon" title="Löschen" onclick="deleteMember('${m.id}')">🗑️</button>
+                <button class="btn btn-danger btn-sm ml-icon" data-nur-super title="Löschen" onclick="deleteMember('${m.id}')">🗑️</button>
               </td>
             </tr>`;
 
@@ -408,6 +408,7 @@
     }
 
     function deleteMember(id) {
+      if (!istSuperAdmin()) { alert('Kameraden darf nur der Super-Admin löschen.'); return; }
       if (confirm('Kamerad wirklich löschen?')) {
         appData.members = appData.members.filter(m => m.id !== id);
         saveData();

@@ -6,6 +6,7 @@
     }
 
     function jahresberichtOeffnen() {
+      if (!istSuperAdmin()) { alert('Den Jahresbericht darf nur der Super-Admin erstellen.'); return; }
       const jahr = kalenderJahr;
       const zahl = (n, stellen = 1) => n.toFixed(stellen).replace('.', ',');
       const prozent = (a, b) => b ? Math.round((a / b) * 100) + ' %' : '–';

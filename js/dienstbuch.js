@@ -93,6 +93,7 @@
     }
 
     function importJahresplan2027() {
+      if (!istSuperAdmin()) { alert('Den Jahresplan darf nur der Super-Admin importieren.'); return; }
       const offen = jahresplanOffen();
       if (!offen.length) { alert('Alle Termine des Jahresplans sind bereits eingetragen.'); return; }
       const ef = findeEinheitsfuehrer();
