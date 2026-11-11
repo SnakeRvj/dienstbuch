@@ -103,10 +103,12 @@
         firebase.auth().onAuthStateChanged((user) => {
           if (user) {
             zeigeLogin(false);
+            rolleAnzeigen(user);
             startCloudSync();
             window.scrollTo(0, 0);
           } else {
             stopCloudSync();
+            rolleAnzeigen(null);
             zeigeLogin(true, '');
             updateSyncStatus('offline', 'Nicht angemeldet');
           }
@@ -119,7 +121,34 @@
     }
 
     // Zugangs-E-Mail: Dieses Konto wird in der Firebase-Konsole (Authentication) angelegt, das Passwort steht NUR dort.
-    const LOGIN_EMAIL = 'dienstbuch@ff-christdorf.de';
+    const LOGIN_EMAIL = 'dienstbuch@ff-christdorf.de';  // gemeinsamer Zugang (bleibt auf den Handys angemeldet)
+    const SUPER_ADMIN_EMAILS = ['mathias.juergens@ff-christdorf.de'];  // eigener Zugang des Super-Admins
+
+    function istSuperAdmin() {
+      const u = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+      return !!(u && u.email && SUPER_ADMIN_EMAILS.includes(u.email.toLowerCase()));
+    }
+
+    // Anzeige der Rolle neben dem Verbindungsstatus
+    function rolleAnzeigen(user) {
+      const el = document.getElementById('rolleAnzeige');
+      if (!el) return;
+      if (!user) { el.style.display = 'none'; return; }
+      const super_ = user.email && SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase());
+      el.innerText = super_ ? '👑 Super-Admin' : '🛠️ Admin';
+      el.title = user.email || '';
+      el.style.display = '';
+    }
+
+    // Umschalten zwischen gemeinsamem Passwort und eigener E-Mail
+    let loginEigen = false;
+    function loginModusWechseln() {
+      loginEigen = !loginEigen;
+      document.getElementById('loginEmail').style.display = loginEigen ? '' : 'none';
+      document.getElementById('loginUmschalter').innerText = loginEigen ? 'Mit gemeinsamem Passwort anmelden' : 'Mit eigener E-Mail anmelden';
+      const ziel = document.getElementById(loginEigen ? 'loginEmail' : 'loginPasswort');
+      if (ziel) ziel.focus();
+    }
 
     function zeigeLogin(anzeigen, meldung, gesperrt) {
       const ov = document.getElementById('loginOverlay');
@@ -138,14 +167,16 @@
     function loginSubmit(e) {
       e.preventDefault();
       const pw = document.getElementById('loginPasswort').value;
-      if (!pw) return;
+      const email = loginEigen ? document.getElementById('loginEmail').value.trim() : LOGIN_EMAIL;
+      if (!pw || !email) return;
       const btn = document.getElementById('loginButton');
       btn.disabled = true;
       document.getElementById('loginMeldung').innerText = 'Melde an...';
-      firebase.auth().signInWithEmailAndPassword(LOGIN_EMAIL, pw).catch((err) => {
+      firebase.auth().signInWithEmailAndPassword(email, pw).catch((err) => {
         const code = err && err.code;
         let text = 'Anmeldung fehlgeschlagen.';
-        if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found' || code === 'auth/invalid-login-credentials') text = 'Passwort falsch.';
+        if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found' || code === 'auth/invalid-login-credentials') text = loginEigen ? 'E-Mail oder Passwort falsch.' : 'Passwort falsch.';
+        else if (code === 'auth/invalid-email') text = 'Die E-Mail-Adresse ist ungültig.';
         else if (code === 'auth/too-many-requests') text = 'Zu viele Versuche. Bitte später erneut probieren.';
         else if (code === 'auth/network-request-failed') text = 'Keine Verbindung zum Server.';
         document.getElementById('loginMeldung').innerText = text;

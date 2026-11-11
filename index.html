@@ -21,9 +21,11 @@
       <h2 style="margin:0.75rem 0 0.25rem; font-size:1.2rem;">FF Christdorf Dienstbuch</h2>
       <p style="margin:0 0 1.25rem; color:var(--text-muted); font-size:0.85rem;">Bitte anmelden</p>
       <form onsubmit="loginSubmit(event)">
+        <input type="email" id="loginEmail" class="form-control" placeholder="E-Mail-Adresse" autocomplete="username" style="display:none; text-align:center; margin-bottom:0.5rem;">
         <input type="password" id="loginPasswort" class="form-control" placeholder="Passwort" autocomplete="current-password" style="text-align:center; margin-bottom:0.75rem;">
         <button type="submit" id="loginButton" class="btn btn-primary" style="width:100%;" disabled>Anmelden</button>
       </form>
+      <button type="button" id="loginUmschalter" class="filter-reset" onclick="loginModusWechseln()" style="margin-top:0.6rem;">Mit eigener E-Mail anmelden</button>
       <p id="loginMeldung" style="margin:0.9rem 0 0; min-height:1.2em; font-size:0.85rem; color:var(--text-muted);">Prüfe Anmeldung...</p>
     </div>
   </div>
@@ -46,6 +48,7 @@
       </div>
     </div>
     <div class="header-actions">
+      <span class="rolle-anzeige" id="rolleAnzeige" style="display:none;"></span>
       <div class="sync-badge" id="syncStatusBadge" title="Verbindungsstatus zur Echtzeit-Datenbank">
         <span class="sync-dot" id="syncDot"></span>
         <span id="syncText">Verbinde Cloud...</span>

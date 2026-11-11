@@ -145,6 +145,7 @@
     .mf-sektion { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #93c5fd; margin: 0.9rem 0 0.4rem; }
     .qual-chip { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.3rem 0.2rem 0.65rem; border-radius: 999px; background: rgba(148, 163, 184, 0.2); font-size: 0.8rem; margin: 0 0.3rem 0.3rem 0; }
     .qual-chip button { background: none; border: none; color: #fca5a5; cursor: pointer; font-size: 0.9rem; padding: 0 0.2rem; }
+    .rolle-anzeige { font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 999px; background: rgba(255, 255, 255, 0.14); color: #ffffff; white-space: nowrap; }
     /* Kennzahlen oben: vier Kacheln nach Thema */
     .stat-card.kz-ausbildung { border-left: 4px solid #1f8fff; }
     .stat-card.kz-einsatz { border-left: 4px solid #e02424; }
