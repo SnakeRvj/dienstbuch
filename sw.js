@@ -1,7 +1,7 @@
 // Service Worker: App-Dateien offline verfügbar machen, aber immer zuerst die aktuelle Version laden.
 // Die Daten selbst laufen über Firebase (Live-Sync, Websocket) und werden hier NICHT zwischengespeichert.
-const CACHE = 'ff-christdorf-v2';
-const DATEIEN = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'ff-christdorf-v3';
+const DATEIEN = ['./', 'index.html', 'css/style.css', 'js/kern.js', 'js/kennzahlen.js', 'js/kalender.js', 'js/uebersicht.js', 'js/dienstbuch.js', 'js/atemschutz.js', 'js/lehrgaenge.js', 'js/mannschaft.js', 'js/bericht.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(DATEIEN)).then(() => self.skipWaiting()));
@@ -31,6 +31,6 @@ self.addEventListener('fetch', (e) => {
         caches.open(CACHE).then((c) => c.put(req, kopie));
         return res;
       })
-      .catch(() => caches.match(req).then((hit) => hit || caches.match('index.html')))
+      .catch(() => caches.match(req).then((hit) => hit || (req.mode === 'navigate' ? caches.match('index.html') : Response.error())))
   );
 });
