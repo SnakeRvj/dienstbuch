@@ -79,12 +79,18 @@
         d.id === 'plan2027-' + e.datum || ((d.datumVon || d.datum) === e.datum && d.thema === e.thema)));
     }
 
+    // Anzeige im Bereich Verwaltung: Knopf nur, solange noch Termine fehlen
     function jahresplanButtonAktualisieren() {
       const b = document.getElementById('btnJahresplanImport');
       if (!b) return;
+      const gesamt = JAHRESPLAN_2027.length;
       const n = jahresplanOffen().length;
       b.style.display = n ? '' : 'none';
       b.innerText = `📥 Jahresplan 2027 importieren (${n})`;
+      const st = document.getElementById('jahresplanStatus');
+      if (st) st.innerText = n
+        ? `${n} von ${gesamt} Terminen des Jahresplans 2027 sind noch nicht eingetragen. Sie werden als „Geplant“ angelegt.`
+        : `✓ Alle ${gesamt} Termine des Jahresplans 2027 sind bereits eingetragen.`;
     }
 
     function findeEinheitsfuehrer() {

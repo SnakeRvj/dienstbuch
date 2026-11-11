@@ -1,10 +1,15 @@
 // Service Worker: App-Dateien offline verfügbar machen, aber immer zuerst die aktuelle Version laden.
 // Die Daten selbst laufen über Firebase (Live-Sync, Websocket) und werden hier NICHT zwischengespeichert.
-const CACHE = 'ff-christdorf-v6';
-const DATEIEN = ['./', 'index.html', 'css/style.css', 'js/kern.js', 'js/cloud.js', 'js/kennzahlen.js', 'js/kalender.js', 'js/uebersicht.js', 'js/dienstbuch.js', 'js/atemschutz.js', 'js/lehrgaenge.js', 'js/mannschaft.js', 'js/bericht.js', 'js/verwaltung.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'ff-christdorf-v9';
+const DATEIEN = ['./', 'index.html', 'css/style.css?v=20261112c', 'js/kern.js?v=20261112c', 'js/cloud.js?v=20261112c', 'js/kennzahlen.js?v=20261112c', 'js/kalender.js?v=20261112c', 'js/uebersicht.js?v=20261112c', 'js/dienstbuch.js?v=20261112c', 'js/atemschutz.js?v=20261112c', 'js/lehrgaenge.js?v=20261112c', 'js/mannschaft.js?v=20261112c', 'js/bericht.js?v=20261112c', 'js/verwaltung.js?v=20261112c', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(DATEIEN)).then(() => self.skipWaiting()));
+  // Alle App-Dateien frisch vom Server holen (nicht aus dem normalen Browser-Zwischenspeicher, der bis zu 10 Minuten alte Dateien behält)
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => Promise.all(DATEIEN.map((u) => fetch(u, { cache: 'reload' }).then((r) => { if (!r.ok) throw new Error(u); return c.put(u, r); }))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (e) => {
@@ -24,8 +29,10 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== self.location.origin && !istFirebaseSdk) return;
 
   // Network-first: bei Verbindung immer die neueste Version, sonst Zwischenspeicher
+  // (Eine Seitenanfrage "navigate" darf nicht mit Zusatzoptionen kopiert werden, deshalb dort neu aus der Adresse bauen)
+  const anfrage = req.mode === 'navigate' ? new Request(req.url, { cache: 'no-cache' }) : new Request(req, { cache: 'no-cache' });
   e.respondWith(
-    fetch(req)
+    fetch(anfrage)
       .then((res) => {
         const kopie = res.clone();
         caches.open(CACHE).then((c) => c.put(req, kopie));

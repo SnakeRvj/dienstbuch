@@ -5,9 +5,9 @@
       document.getElementById('berichtOverlay').classList.remove('offen');
     }
 
-    function jahresberichtOeffnen() {
+    function jahresberichtOeffnen(gewaehltesJahr) {
       if (!istSuperAdmin()) { alert('Den Jahresbericht darf nur der Super-Admin erstellen.'); return; }
-      const jahr = kalenderJahr;
+      const jahr = gewaehltesJahr ? parseInt(gewaehltesJahr) : kalenderJahr;
       const zahl = (n, stellen = 1) => n.toFixed(stellen).replace('.', ',');
       const prozent = (a, b) => b ? Math.round((a / b) * 100) + ' %' : '–';
       const esc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

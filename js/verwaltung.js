@@ -6,7 +6,26 @@ let protokollDaten = [];
 // Wird beim Öffnen des Reiters "Verwaltung" aufgerufen
 function verwaltungOeffnen() {
   if (!istSuperAdmin()) return;
+  berichtJahreFuellen();
   protokollLaden();
+}
+
+// Jahresauswahl für den Jahresbericht: alle Jahre mit Daten, dazu das laufende und das im Kalender gewählte Jahr
+function berichtJahreFuellen() {
+  const sel = document.getElementById('berichtJahr');
+  if (!sel) return;
+  const alt = sel.value;
+  const jahre = new Set([new Date().getFullYear(), kalenderJahr]);
+  appData.dienste.forEach(d => { const j = new Date(d.datumVon || d.datum).getFullYear(); if (j) jahre.add(j); });
+  (appData.lehrgangPlan || []).forEach(l => { if (l.startDatum) { const j = new Date(l.startDatum).getFullYear(); if (j) jahre.add(j); } });
+  const liste = [...jahre].filter(j => j >= 2000 && j <= 2100).sort((a, b) => b - a);
+  sel.innerHTML = liste.map(j => `<option value="${j}">${j}</option>`).join('');
+  sel.value = (alt && liste.includes(parseInt(alt))) ? alt : String(kalenderJahr);
+}
+
+function jahresberichtAusVerwaltung() {
+  const sel = document.getElementById('berichtJahr');
+  jahresberichtOeffnen(sel ? sel.value : undefined);
 }
 
 // Alle Daten in einer Datei speichern
