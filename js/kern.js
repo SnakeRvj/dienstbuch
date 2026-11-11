@@ -81,6 +81,8 @@
     }
 
     function loadData() {
+      const vEl = document.getElementById('appVersion');
+      if (vEl) vEl.innerText = 'Version: ' + APP_VERSION;
       if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
       window.scrollTo(0, 0);
       // 1. Zuerst lokalen Stand laden (damit sofort alles da ist)
@@ -121,6 +123,8 @@
     }
 
     // Zugangs-E-Mail: Dieses Konto wird in der Firebase-Konsole (Authentication) angelegt, das Passwort steht NUR dort.
+    const APP_VERSION = '12.11.2026 · Anmeldung mit eigener E-Mail';  // erscheint unten auf dem Anmeldebildschirm
+
     const LOGIN_EMAIL = 'dienstbuch@ff-christdorf.de';  // gemeinsamer Zugang (bleibt auf den Handys angemeldet)
     const SUPER_ADMIN_EMAILS = ['mathias.juergens@ff-christdorf.de'];  // eigener Zugang des Super-Admins
 
