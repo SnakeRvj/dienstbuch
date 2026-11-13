@@ -1,7 +1,7 @@
 // Service Worker: App-Dateien offline verfügbar machen, aber immer zuerst die aktuelle Version laden.
 // Die Daten selbst laufen über Firebase (Live-Sync, Websocket) und werden hier NICHT zwischengespeichert.
-const CACHE = 'ff-christdorf-v9';
-const DATEIEN = ['./', 'index.html', 'css/style.css?v=20261112c', 'js/kern.js?v=20261112c', 'js/cloud.js?v=20261112c', 'js/kennzahlen.js?v=20261112c', 'js/kalender.js?v=20261112c', 'js/uebersicht.js?v=20261112c', 'js/dienstbuch.js?v=20261112c', 'js/atemschutz.js?v=20261112c', 'js/lehrgaenge.js?v=20261112c', 'js/mannschaft.js?v=20261112c', 'js/bericht.js?v=20261112c', 'js/verwaltung.js?v=20261112c', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'ff-christdorf-v11';
+const DATEIEN = ['./', 'index.html', 'css/style.css?v=20261113b', 'js/kern.js?v=20261113b', 'js/cloud.js?v=20261113b', 'js/kennzahlen.js?v=20261113b', 'js/kalender.js?v=20261113b', 'js/uebersicht.js?v=20261113b', 'js/dienstbuch.js?v=20261113b', 'js/atemschutz.js?v=20261113b', 'js/lehrgaenge.js?v=20261113b', 'js/mannschaft.js?v=20261113b', 'js/bericht.js?v=20261113b', 'js/kraefte.js?v=20261113b', 'js/verwaltung.js?v=20261113b', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
   // Alle App-Dateien frisch vom Server holen (nicht aus dem normalen Browser-Zwischenspeicher, der bis zu 10 Minuten alte Dateien behält)

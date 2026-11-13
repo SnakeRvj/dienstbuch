@@ -5,6 +5,52 @@
       document.getElementById('berichtOverlay').classList.remove('offen');
     }
 
+
+    // ===== Einsatzbericht eines einzelnen Einsatzes (Ansicht, Druck / PDF) =====
+    function einsatzberichtOeffnen(id) {
+      const d = appData.dienste.find(x => x.id === id);
+      if (!d || d.typ !== 'Einsatz') return;
+      const esc = (t) => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+      const fmtDat = (iso) => iso ? new Date(iso).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) : '–';
+      const name = (mid) => { const m = appData.members.find(x => x.id === mid); return m ? `${m.vorname || ''} ${m.nachname || ''}`.trim() : ''; };
+      const zeile = (l, w) => `<div class="b-zeile"><span>${l}</span><strong>${w ? esc(w) : '–'}</strong></div>`;
+      const abschnitt = (titel, text) => text ? `<h2>${titel}</h2><div style="white-space:normal; line-height:1.5; padding:0.2rem 0 0.4rem;">${esc(text)}</div>` : '';
+      const art = einsatzArtVon(d);
+      const artText = art === 'B' ? 'Brand' : (art === 'TH' ? 'Hilfeleistung' : 'Sonstiges');
+      const dauer = parseFloat(d.dauer) || 0;
+      const kameraden = (d.teilnehmer || []).map(name).filter(Boolean).sort((a, b) => a.localeCompare(b, 'de'));
+
+      let h = `<h1>Einsatzbericht</h1><div class="b-untertitel">Freiwillige Feuerwehr Christdorf</div>`;
+      h += `<h2>Einsatz</h2>`;
+      h += zeile('Stichwort', d.thema);
+      h += zeile('Einsatzart', artText);
+      h += zeile('Datum', fmtDat(d.datumVon || d.datum));
+      h += zeile('Alarmzeit', d.zeitVon ? d.zeitVon + ' Uhr' : '');
+      if (d.ebEintreffen) h += zeile('Eintreffzeit', d.ebEintreffen + ' Uhr');
+      h += zeile('Einsatzende', d.zeitBis ? d.zeitBis + ' Uhr' : '');
+      h += zeile('Dauer', dauer ? dauer.toFixed(2).replace('.', ',') + ' h' : '');
+      if (d.ebOrt) h += zeile('Einsatzort', d.ebOrt);
+      if (d.ebNummer) h += zeile('Einsatznummer (Leitstelle)', d.ebNummer);
+      if (d.ebAlarm) h += zeile('Alarmierung', d.ebAlarm);
+      if (d.ebFahrzeug) h += zeile('Fahrzeug', d.ebFahrzeug);
+      h += `<h2>Besetzung</h2>`;
+      h += zeile('Einheitsführer', name(d.einheitsfuehrer));
+      h += zeile('Maschinist', name(d.maschinist));
+      h += zeile(`Eingesetzte Kameraden (${kameraden.length})`, kameraden.join(', '));
+      const kraefte = [...(d.ebKraefteListe || []), ...(d.ebKraefte ? [d.ebKraefte] : [])];
+      if (kraefte.length) h += `<div class="b-zeile"><span>Weitere beteiligte Kräfte</span><strong>${kraefte.map(esc).join('<br>')}</strong></div>`;
+      h += abschnitt('Lage bei Eintreffen', d.ebLage);
+      h += abschnitt('Durchgeführte Maßnahmen', d.ebMassnahmen);
+      h += abschnitt('Verbrauchtes oder beschädigtes Material', d.ebMaterial);
+      h += abschnitt('Besonderheiten / Nachbereitung', d.ebBesonderes);
+      if (!einsatzBerichtVorhanden(d)) h += '<div class="b-hinweis">Zu diesem Einsatz sind noch keine Berichtsangaben eingetragen. Sie lassen sich über „Bearbeiten“ ergänzen.</div>';
+      h += `<div class="b-hinweis">Erstellt am ${new Date().toLocaleDateString('de-DE')} aus dem Dienstbuch der Freiwilligen Feuerwehr Christdorf.</div>`;
+
+      document.getElementById('berichtInhalt').innerHTML = h;
+      document.getElementById('berichtOverlay').classList.add('offen');
+      document.getElementById('berichtOverlay').scrollTop = 0;
+    }
+
     function jahresberichtOeffnen(gewaehltesJahr) {
       if (!istSuperAdmin()) { alert('Den Jahresbericht darf nur der Super-Admin erstellen.'); return; }
       const jahr = gewaehltesJahr ? parseInt(gewaehltesJahr) : kalenderJahr;
@@ -67,7 +113,7 @@
         h += '<div style="margin-top:0.9rem;"><div class="b-liste-kopf"><span>Datum</span><span>Stichwort</span><span>Art</span><span>Kameraden</span></div>';
         einsaetze.forEach(d => {
           const art = einsatzArtVon(d);
-          h += `<div class="b-liste-zeile"><span>${new Date(d.datumVon || d.datum).toLocaleDateString('de-DE')}</span><span>${esc(d.thema)}</span><span>${art === 'B' ? 'Brand' : (art === 'TH' ? 'Hilfeleistung' : 'Sonstiges')}</span><span>${einsTeil(d)}</span></div>`;
+          h += `<div class="b-liste-zeile"><span>${new Date(d.datumVon || d.datum).toLocaleDateString('de-DE')}</span><span>${esc(d.thema)}${d.ebOrt ? ' – ' + esc(d.ebOrt) : ''}</span><span>${art === 'B' ? 'Brand' : (art === 'TH' ? 'Hilfeleistung' : 'Sonstiges')}</span><span>${einsTeil(d)}</span></div>`;
         });
         h += '</div>';
       }

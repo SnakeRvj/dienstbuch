@@ -131,7 +131,7 @@
     }
 
     // Zugangs-E-Mail: Dieses Konto wird in der Firebase-Konsole (Authentication) angelegt, das Passwort steht NUR dort.
-    const APP_VERSION = '12.11.2026 · Rollen und Änderungsprotokoll · Build 20261112c';  // erscheint unten auf dem Anmeldebildschirm
+    const APP_VERSION = '12.11.2026 · Rollen und Änderungsprotokoll · Build 20261113b';  // erscheint unten auf dem Anmeldebildschirm
 
     const LOGIN_EMAIL = 'dienstbuch@ff-christdorf.de';  // gemeinsamer Zugang (bleibt auf den Handys angemeldet)
     const SUPER_ADMIN_EMAILS = ['mathias.juergens@ff-christdorf.de'];  // eigener Zugang des Super-Admins

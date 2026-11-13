@@ -158,6 +158,18 @@
     .kz-balken { height: 7px; border-radius: 4px; background: var(--input-bg); overflow: hidden; margin: 0.4rem 0 0.15rem; display: flex; }
     .kz-balken i { display: block; height: 100%; }
     .kz-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+    /* Einsatzbericht im Dienst-Formular */
+    .eb-box { background: #172033; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1.1rem; }
+    .eb-box > summary { cursor: pointer; padding: 0.7rem 0.9rem; font-weight: 700; font-size: 0.85rem; color: #fca5a5; }
+    .eb-box .eb-inhalt { padding: 0 0.9rem 0.9rem; }
+    .eb-punkt { color: #22c55e; font-weight: 600; }
+    #ebFahrzeugListe { gap: 0.3rem; }
+    #ebFahrzeugListe .checkbox-item { font-size: 0.8rem; }
+    .eb-datenschutz { color: var(--text-muted); font-size: 0.75rem; margin-top: 0.3rem; }
+    .eb-box textarea.form-control { resize: vertical; }
+    .dienst-suche { flex: 1 1 14rem; min-width: 11rem; max-width: 22rem; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+    .dienst-suche.aktiv { border-color: #93c5fd; }
+    @media (max-width: 768px) { .dienst-suche { flex: 1 1 100%; max-width: none; font-size: 16px; } }
     /* Rollen: Funktionen nur für den Super-Admin */
     body:not(.rolle-super) [data-nur-super] { display: none !important; }
     .verw-hinweis { color: var(--text-muted); font-size: 0.8rem; margin: 0.4rem 0 0.7rem; }

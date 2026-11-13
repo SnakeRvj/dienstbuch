@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="manifest" href="manifest.webmanifest">
   <title>Freiwillige Feuerwehr Christdorf - Dienstbuch & Personal</title>
-  <link rel="stylesheet" href="css/style.css?v=20261112c">
+  <link rel="stylesheet" href="css/style.css?v=20261113b">
 </head>
 <body>
   <!-- ANMELDUNG: App-Inhalt ist erst nach erfolgreichem Login sichtbar -->
@@ -174,6 +174,7 @@
             <option value="OWF-Versammlung">Ortswehrführer-Versammlung</option>
             <option value="Versammlung">Jahreshaupt- / Dienstversammlung</option>
           </select>
+          <input type="search" id="dienstFilterText" class="dienst-suche" placeholder="🔍 Suche (Stichwort, Ort, Bericht, Name)" oninput="dienstbuchSucheGeaendert()" title="Sucht in Thema, Einsatzbericht und Teilnehmern">
           <button type="button" id="dienstFilterReset" class="filter-reset" onclick="resetDienstSuche()" style="display:none;">✕ zurücksetzen</button>
           <span id="dienstSuchTreffer" class="filter-treffer"></span>
           <button class="btn btn-primary btn-sm" onclick="openDienstModal()">+ Neuer Dienst / Termin</button>
@@ -488,11 +489,11 @@
             </div>
             <div class="form-row">
               <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label class="form-label">Uhrzeit Von</label>
+                <label class="form-label" id="labelZeitVon">Uhrzeit Von</label>
                 <input type="time" id="dienstZeitVon" class="form-control" onchange="autoCalculateHours()" required>
               </div>
               <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label class="form-label">Uhrzeit Bis</label>
+                <label class="form-label" id="labelZeitBis">Uhrzeit Bis</label>
                 <input type="time" id="dienstZeitBis" class="form-control" onchange="autoCalculateHours()" required>
               </div>
             </div>
@@ -569,6 +570,70 @@
             </label>
             <div class="attendance-list" id="attendanceCheckboxes" onchange="aktualisiereTeilnehmerZaehler()"></div>
           </div>
+
+          <details id="einsatzBerichtBox" class="eb-box" style="display:none;">
+            <summary>📝 Einsatzbericht (optional)<span id="ebHinweisPunkt" class="eb-punkt" style="display:none;"> · ausgefüllt</span></summary>
+            <div class="eb-inhalt">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Einsatzort</label>
+                  <input type="text" id="ebOrt" class="form-control" placeholder="z. B. Ortsstraße 12, Christdorf">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Einsatznummer (Leitstelle)</label>
+                  <input type="text" id="ebNummer" class="form-control" placeholder="falls bekannt">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Alarmierung</label>
+                  <select id="ebAlarm" class="form-control">
+                    <option value="">-- offen --</option>
+                    <option value="Leitstelle (Sirene, Funkmelder, App)">Leitstelle (Sirene, Funkmelder, App)</option>
+                    <option value="Nachalarmierung">Nachalarmierung</option>
+                    <option value="Direkt vor Ort / Anruf">Direkt vor Ort / Anruf</option>
+                    <option value="Sonstige">Sonstige</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Fahrzeug</label>
+                  <input type="text" id="ebFahrzeug" class="form-control" placeholder="z. B. TSF">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Eintreffzeit an der Einsatzstelle</label>
+                  <input type="time" id="ebEintreffen" class="form-control">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Weitere beteiligte Einheiten und Fahrzeuge (Stadt Wittstock/Dosse)</label>
+                <select id="ebEinheitWahl" class="form-control" onchange="ebFahrzeugeAnzeigen()">
+                  <option value="">-- Einheit wählen, dann Fahrzeuge ankreuzen --</option>
+                </select>
+                <div id="ebFahrzeugListe" class="checkbox-grid" style="margin-top:0.4rem;"></div>
+                <div id="ebKraefteChips" style="margin-top:0.4rem;"></div>
+                <input type="text" id="ebKraefte" class="form-control" style="margin-top:0.4rem;" placeholder="Weitere (Polizei, Rettungsdienst, andere Wehren …)">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Lage bei Eintreffen</label>
+                <textarea id="ebLage" class="form-control" rows="2"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Durchgeführte Maßnahmen</label>
+                <textarea id="ebMassnahmen" class="form-control" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Verbrauchtes oder beschädigtes Material</label>
+                <input type="text" id="ebMaterial" class="form-control" placeholder="z. B. 2 B-Schläuche defekt, Pulver">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Besonderheiten / Nachbereitung</label>
+                <textarea id="ebBesonderes" class="form-control" rows="2" placeholder="z. B. Mängel am Gerät, Hinweise für die nächste Übung"></textarea>
+              </div>
+              <div class="eb-datenschutz">🔒 Bitte keine Namen oder Gesundheitsdaten von betroffenen Personen eintragen.</div>
+            </div>
+          </details>
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="closeModal('modalDienst')">Abbrechen</button>
@@ -853,17 +918,18 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
-  <script src="js/kern.js?v=20261112c"></script>
-  <script src="js/cloud.js?v=20261112c"></script>
-  <script src="js/kennzahlen.js?v=20261112c"></script>
-  <script src="js/kalender.js?v=20261112c"></script>
-  <script src="js/uebersicht.js?v=20261112c"></script>
-  <script src="js/dienstbuch.js?v=20261112c"></script>
-  <script src="js/atemschutz.js?v=20261112c"></script>
-  <script src="js/lehrgaenge.js?v=20261112c"></script>
-  <script src="js/mannschaft.js?v=20261112c"></script>
-  <script src="js/bericht.js?v=20261112c"></script>
-  <script src="js/verwaltung.js?v=20261112c"></script>
+  <script src="js/kern.js?v=20261113b"></script>
+  <script src="js/cloud.js?v=20261113b"></script>
+  <script src="js/kennzahlen.js?v=20261113b"></script>
+  <script src="js/kalender.js?v=20261113b"></script>
+  <script src="js/uebersicht.js?v=20261113b"></script>
+  <script src="js/dienstbuch.js?v=20261113b"></script>
+  <script src="js/atemschutz.js?v=20261113b"></script>
+  <script src="js/lehrgaenge.js?v=20261113b"></script>
+  <script src="js/mannschaft.js?v=20261113b"></script>
+  <script src="js/bericht.js?v=20261113b"></script>
+  <script src="js/kraefte.js?v=20261113b"></script>
+  <script src="js/verwaltung.js?v=20261113b"></script>
   <script>
     // Service Worker für Installation als App und Offline-Start
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

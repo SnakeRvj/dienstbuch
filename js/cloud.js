@@ -50,7 +50,9 @@ const CLOUD_FELD_NAMEN = {
   geburtsdatum: 'Geburtsdatum', geschlecht: 'Geschlecht', personalnummer: 'Nummer', datumVon: 'Datum', datumBis: 'Datum bis',
   zeitVon: 'Beginn', zeitBis: 'Ende', dauer: 'Dauer', thema: 'Thema', typ: 'Kategorie', ausbilder: 'Ausbilder',
   einheitsfuehrer: 'Einheitsführer', maschinist: 'Maschinist', einsatzArt: 'Einsatzart', titel: 'Lehrgang',
-  ort: 'Ausbildungsstätte', startDatum: 'Beginn', endeDatum: 'Ende', stunden: 'Stunden', memberId: 'Kamerad'
+  ort: 'Ausbildungsstätte', startDatum: 'Beginn', endeDatum: 'Ende', stunden: 'Stunden', memberId: 'Kamerad',
+  ebOrt: 'Einsatzort', ebNummer: 'Einsatznummer', ebAlarm: 'Alarmierung', ebFahrzeug: 'Fahrzeug', ebEintreffen: 'Eintreffzeit',
+  ebKraefte: 'Weitere Kräfte', ebKraefteListe: 'Einheiten und Fahrzeuge', ebLage: 'Lage', ebMassnahmen: 'Maßnahmen', ebMaterial: 'Material', ebBesonderes: 'Besonderheiten'
 };
 const CLOUD_FELD_MIT_WERT = ['status', 'dienstgrad', 'funktion', 'typ', 'titel', 'ort'];
 

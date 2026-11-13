@@ -27,6 +27,12 @@
       const monat = val('dienstFilterMonat');
       const kategorie = val('dienstFilterKategorie');
       const dStart = d.datumVon || d.datum || '';
+      const text = val('dienstFilterText').trim().toLowerCase();
+      if (text) {
+        const namen = (d.teilnehmer || []).map(id => { const m = appData.members.find(x => x.id === id); return m ? `${m.vorname || ''} ${m.nachname || ''}` : ''; }).join(' ');
+        const heu = [d.thema, d.typ, (d.ebKraefteListe || []).join(' '), d.ebOrt, d.ebNummer, d.ebAlarm, d.ebFahrzeug, d.ebLage, d.ebMassnahmen, d.ebKraefte, d.ebMaterial, d.ebBesonderes, namen].join(' ').toLowerCase();
+        if (!heu.includes(text)) return false;
+      }
 
       if (status && (d.status || 'Durchgeführt') !== status) return false;
       if (jahr && dStart.slice(0, 4) !== jahr) return false;
@@ -35,8 +41,31 @@
       return true;
     }
 
+    // ===== Einsatzbericht: Zusatzfelder bei Einsätzen =====
+    const EINSATZBERICHT_FELDER = ['ebOrt', 'ebNummer', 'ebAlarm', 'ebFahrzeug', 'ebEintreffen', 'ebKraefte', 'ebLage', 'ebMassnahmen', 'ebMaterial', 'ebBesonderes'];
+
+    function einsatzBerichtVorhanden(d) {
+      if (d.typ !== 'Einsatz') return false;
+      // Die Vorgaben für Alarmierung und Fahrzeug allein gelten noch nicht als Bericht
+      const echt = EINSATZBERICHT_FELDER.some(f => d[f] && !(f === 'ebAlarm' && d[f] === EINSATZ_STANDARD_ALARM) && !(f === 'ebFahrzeug' && d[f] === EINSATZ_STANDARD_FAHRZEUG));
+      return echt || (Array.isArray(d.ebKraefteListe) && d.ebKraefteListe.length > 0);
+    }
+
+    // Die Box ist beim Bearbeiten aufgeklappt, wenn schon etwas eingetragen ist
+    function einsatzBerichtBoxOeffnenWennGefuellt() {
+      const box = document.getElementById('einsatzBerichtBox');
+      const gefuellt = EINSATZBERICHT_FELDER.some(f => { const el = document.getElementById(f); const w = el ? el.value.trim() : ''; return w && !(f === 'ebAlarm' && w === EINSATZ_STANDARD_ALARM) && !(f === 'ebFahrzeug' && w === EINSATZ_STANDARD_FAHRZEUG); }) || ebKraefteAuswahl.length > 0;
+      box.open = gefuellt;
+      document.getElementById('ebHinweisPunkt').style.display = gefuellt ? '' : 'none';
+    }
+
+    function dienstbuchSucheGeaendert() {
+      dienstbuchRendern();
+      mobileTabellenBeschriften();
+    }
+
     function resetDienstSuche() {
-      ['dienstFilterStatus', 'dienstFilterJahr', 'dienstFilterMonat', 'dienstFilterKategorie'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      ['dienstFilterStatus', 'dienstFilterJahr', 'dienstFilterMonat', 'dienstFilterKategorie', 'dienstFilterText'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
       renderApp();
     }
 
@@ -319,6 +348,15 @@
       // Einsatz: Einsatzart wählen, Gesamtdauer wird automatisch berechnet und nicht angezeigt
       const istEinsatz = (typ === 'Einsatz');
       document.getElementById('einsatzArtBox').style.display = istEinsatz ? 'block' : 'none';
+      document.getElementById('einsatzBerichtBox').style.display = istEinsatz ? 'block' : 'none';
+      document.getElementById('labelZeitVon').innerText = istEinsatz ? 'Alarmzeit (Von)' : 'Uhrzeit Von';
+      document.getElementById('labelZeitBis').innerText = istEinsatz ? 'Einsatzende (Bis)' : 'Uhrzeit Bis';
+      // Neuer Einsatz: übliche Alarmierung und eigenes Fahrzeug vorbelegen (nur wenn noch leer)
+      if (istEinsatz && !document.getElementById('dienstId').value) {
+        const al = document.getElementById('ebAlarm'), fz = document.getElementById('ebFahrzeug');
+        if (!al.value) al.value = EINSATZ_STANDARD_ALARM;
+        if (!fz.value) fz.value = EINSATZ_STANDARD_FAHRZEUG;
+      }
       // Einsätze sind immer durchgeführt: Status wird nicht abgefragt
       document.getElementById('dienstStatusGroup').style.display = istEinsatz ? 'none' : '';
       if (istEinsatz) { document.getElementById('dienstStatus').value = 'Durchgeführt'; dienstAutoGeplant = false; }
@@ -385,6 +423,9 @@
 
     function openDienstModal(dienstId = null) {
       document.getElementById('dienstForm').reset();
+      document.getElementById('einsatzBerichtBox').open = false;
+      document.getElementById('ebHinweisPunkt').style.display = 'none';
+      ebKraefteSetzen([]);
       document.querySelectorAll('#dienstTyp option[data-alt]').forEach(o => o.remove());
       const container = document.getElementById('attendanceCheckboxes');
       container.innerHTML = '';
@@ -429,6 +470,9 @@
           document.getElementById('dienstDatumBis').value = d.datumBis || d.datumVon || d.datum;
           document.getElementById('dienstZeitBis').value = d.zeitBis || d.bis || '21:00';
           document.getElementById('dienstThema').value = d.thema;
+          EINSATZBERICHT_FELDER.forEach(f => { const el = document.getElementById(f); if (el) el.value = d[f] || ''; });
+          ebKraefteSetzen(d.ebKraefteListe || []);
+          einsatzBerichtBoxOeffnenWennGefuellt();
           document.getElementById('dienstEinheitsfuehrer').value = d.einheitsfuehrer || '';
           document.getElementById('dienstMaschinist').value = d.maschinist || '';
 
@@ -553,6 +597,11 @@
 
       const dObj = { id, typ, status, datumVon, zeitVon, datumBis, zeitBis, dauer, einheitsfuehrer, maschinist, ausbilder, thema, teilnehmer };
       if (einsatzArt) dObj.einsatzArt = einsatzArt;
+      // Einsatzbericht (nur bei Einsätzen, nur ausgefüllte Felder)
+      if (typ === 'Einsatz') {
+        EINSATZBERICHT_FELDER.forEach(f => { const el = document.getElementById(f); const w = el ? el.value.trim() : ''; if (w) dObj[f] = w; });
+        if (ebKraefteAuswahl.length) dObj.ebKraefteListe = ebKraefteAuswahl.slice();
+      }
 
       const existingIdx = appData.dienste.findIndex(x => x.id === id);
       if (existingIdx !== -1) {
@@ -606,7 +655,7 @@
           const trefferEl = document.getElementById('dienstSuchTreffer');
           if (trefferEl) trefferEl.innerText = `${sortedDienste.length} von ${appData.dienste.length} Einträgen`;
           // Aktive Filter dezent hervorheben, "zurücksetzen" nur bei Bedarf zeigen
-          const filterIds = ['dienstFilterStatus', 'dienstFilterJahr', 'dienstFilterMonat', 'dienstFilterKategorie'];
+          const filterIds = ['dienstFilterStatus', 'dienstFilterJahr', 'dienstFilterMonat', 'dienstFilterKategorie', 'dienstFilterText'];
           let filterAktiv = false;
           filterIds.forEach(id => { const el = document.getElementById(id); if (el) { el.classList.toggle('aktiv', !!el.value); if (el.value) filterAktiv = true; } });
           const resetBtn = document.getElementById('dienstFilterReset');
@@ -650,11 +699,12 @@
                 <td>${statusBadge}</td>
                 <td><strong>${timeStr}</strong></td>
                 <td><span class="badge badge-tag">${d.typ}</span></td>
-                <td><strong>${dienstTitel(d)}</strong></td>
+                <td><strong>${dienstTitel(d)}</strong>${einsatzBerichtVorhanden(d) ? ' <span title="Einsatzbericht vorhanden">📝</span>' : ''}</td>
                 <td>${rollenBadges.length ? rollenBadges.join(' ') : '<span style="color:var(--text-muted);">-</span>'}</td>
                 <td><strong style="color:${dStatus === 'Geplant' ? 'var(--text-muted)' : '#60a5fa'};">${d.dauer.toFixed(2)} h ${dStatus === 'Geplant' ? '<small>(ausstehend)</small>' : ''}</strong></td>
                 <td>${tnCount} Kameraden</td>
                 <td>
+                  ${d.typ === 'Einsatz' ? `<button class="btn btn-secondary btn-sm" onclick="einsatzberichtOeffnen('${d.id}')" title="Einsatzbericht ansehen, drucken oder als PDF speichern">📄 Bericht</button>` : ''}
                   <button class="btn btn-secondary btn-sm" onclick="openDienstModal('${d.id}')" title="Bearbeiten">✏️ Bearbeiten</button>
                   <button class="btn btn-danger btn-sm" onclick="deleteDienst('${d.id}')" title="Löschen">🗑️</button>
                 </td>
